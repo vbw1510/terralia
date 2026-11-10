@@ -4,6 +4,7 @@
 (() => {
   if (!window.THREE) { document.body.innerHTML = '<div class="erro">Não consegui carregar o motor 3D. Recarregue a página.</div>'; return; }
   const KEY = 'terralia-v1';
+  const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -185,9 +186,16 @@
       }
     } catch (e) { console.warn(e); S = null; }
     if (!S) S = novo();
+    salvoAntes = S.salvoEm || 0; { const t = S.salvoEm; S.salvoEm = 0; ultimoJson = JSON.stringify(S); S.salvoEm = t; }
     S.objetos.forEach(o => { const n = parseInt(String(o.id).replace(/\D/g, ''), 10) || 0; if (n >= proxId && n < 1e9) proxId = n + 1; });
   }
-  function salvar() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  let salvoAntes = 0; // horário do último save deste aparelho antes de abrir o jogo (para comparar com a nuvem)
+  let ultimoJson = '';
+  function salvar() {
+    try { const t = S.salvoEm; S.salvoEm = 0; const j = JSON.stringify(S); S.salvoEm = t;
+      if (j !== ultimoJson) { ultimoJson = j; S.salvoEm = Date.now(); ON.sujo = true; } // só conta como mudança se algo mudou de verdade
+      localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+  }
   const novoId = () => 'o' + (proxId++);
 
   const xpProx = n => Math.round(30 * Math.pow(n, 1.6));
@@ -2160,7 +2168,7 @@
   function abrirSeletor(v) { seletorAberto = v; renderHotbar(); }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem'};
+  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['loja', 'armazem', 'celeiro', 'animais'];
   const SUBLOJA = {sementes:'🌱 Sementes', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
@@ -2168,6 +2176,7 @@
   function abrir(nome, sub) {
     if (editar.ativo && nome !== 'config') return;
     if (nome === 'melhorias' || nome === 'construir') { sub = nome === 'construir' ? 'construcoes' : 'melhorias'; nome = 'loja'; }
+    if (nome === 'ranking') ON.rank = null;
     if (nome === 'loja') subLoja = sub || (janela === 'loja' ? subLoja : 'sementes');
     if (nome === 'nome' || nome === 'fabrica') janelaArg = sub;
     if (nome === 'moinho') { nome = 'fabrica'; janelaArg = 'moinho'; }
@@ -2362,10 +2371,14 @@
     }
     if (janela === 'config') {
       h += `<div class="linha-cfg"><span>🎨 Gráficos</span><button class="btn" data-acao="qualidade">${S.leve ? 'Leve (mais rápido)' : 'Bonito'}</button></div>
+        ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
+        <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
         ${MODO_TESTE ? '<div class="linha-cfg"><span>↺ Recomeçar do zero (teste)</span><button class="btn vermelho" data-abrir="reset">Recomeçar</button></div>' : ''}`;
     }
+    if (janela === 'ranking') h += htmlRanking();
+    if (janela === 'nuvem') h += htmlNuvem();
     if (janela === 'reset') {
       h += `<div class="texto"><p>Você vai perder moedas, nível, construções, sementes, melhorias, animais e terras. Não dá para desfazer.</p>
       <div class="acoes"><button class="btn" data-acao="fechar">Cancelar</button><button class="btn vermelho" data-acao="reset-sim">Recomeçar</button></div></div>`;
@@ -2611,6 +2624,12 @@
     if (ac === 'salvar-perfil') salvarPerfil();
     if (ac === 'editar') { fechar(); entrarEdicao(); toast('Toque numa construção para mover'); }
     if (ac === 'ver-terra') { fechar(); guiarTerra(); }
+    if (ac === 'entrar-google') entrarGoogle();
+    if (ac === 'sair-conta') sairConta();
+    if (ac === 'salvar-nuvem') { enviarSave(true); }
+    if (ac === 'usar-nuvem') usarSaveNuvem();
+    if (ac === 'usar-local') { janela = 'x'; fechar(); enviarSave(true); }
+    if (ac.startsWith('rank-')) { ON.ordem = ac.slice(5); carregarRanking(); }
     if (ac === 'qualidade') { S.leve = !S.leve; aplicarQualidade(); salvar(); renderJanela(); }
     if (ac === 'vender-tudo') { let t = 0; VENDAVEIS.forEach(c => t += vender(c.id)); if (t) { toast(`Vendeu tudo por ${fmtN(t)} moedas`, 'bom'); pulsar(); } tudo(); }
     if (ac === 'reset-sim') { const leve = S.leve; S = novo(); S.leve = leve; S.viuAjuda = true; salvar(); location.reload(); }
@@ -2725,6 +2744,107 @@
     renderer.render(scene, camera);
   }
 
+  // ================= ONLINE (Supabase: login Google, save na nuvem, ranking) =================
+  const SB_URL = 'https://oxnhimwkotsrfuxakazo.supabase.co', SB_KEY = 'sb_publishable_LFUz1Cn-9RouOGJbayeg1Q_YDrqcqOZ';
+  const podeLogar = () => /^https?:$/.test(location.protocol) && window.top === window; // Google não deixa entrar dentro de iframe nem em arquivo local
+  const producaoTotal = () => [S.stats.colheu, S.stats.coletou, S.stats.fez].reduce((a, o) => a + Object.values(o || {}).reduce((x, y) => x + (+y || 0), 0), 0);
+  function iniciarOnline() {
+    if (!window.supabase || !window.supabase.createClient) return;
+    try { ON.sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce'}}); } catch (e) { console.warn(e); return; }
+    ON.sb.auth.onAuthStateChange((ev, sess) => {
+      const u = sess && sess.user, novo = u && (!ON.user || ON.user.id !== u.id);
+      ON.user = u || null;
+      if (novo) setTimeout(sincronizarAoEntrar, 0);
+      if (janela === 'config' || janela === 'ranking') renderJanela();
+    });
+    setInterval(() => { if (ON.user && ON.sujo && Date.now() - ON.ultimo > 30000) enviarSave(); }, 5000);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && ON.user && ON.sujo) enviarSave(); });
+  }
+  async function entrarGoogle() {
+    if (!ON.sb) { toast('Sem conexão com o servidor agora'); return; }
+    if (!podeLogar()) { toast('Para entrar com Google, abra o jogo pelo endereço do site (não pelo arquivo nem pela prévia)'); return; }
+    const {error} = await ON.sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:location.origin + location.pathname}});
+    if (error) toast('Não deu para entrar: ' + error.message);
+  }
+  async function sairConta() {
+    if (ON.sujo) await enviarSave();
+    await ON.sb.auth.signOut(); ON.user = null; toast('Você saiu da conta. A fazenda continua salva neste aparelho.'); renderJanela();
+  }
+  async function sincronizarAoEntrar() {
+    if (!ON.user) return;
+    const {data, error} = await ON.sb.from('saves').select('dados, atualizado').eq('user_id', ON.user.id).maybeSingle();
+    if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); return; }
+    if (!data) { await enviarSave(true); return; } // primeira vez: sobe a fazenda deste aparelho
+    const nv = data.dados || {}, nuvemEm = nv.salvoEm || Date.parse(data.atualizado) || 0;
+    const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
+    if (S.uid === ON.user.id) { // este aparelho já é dessa conta: fica com o mais recente
+      if (nuvemEm > salvoAntes + 1000) { ON.nuvem = nv; usarSaveNuvem(); } else if (ON.sujo || nuvemEm < (S.salvoEm || 0)) enviarSave();
+      return;
+    }
+    if (localNovo) { ON.nuvem = nv; usarSaveNuvem(); return; }
+    ON.nuvem = nv; abrir('nuvem'); // dois progressos diferentes: o jogador escolhe
+  }
+  function usarSaveNuvem() {
+    if (!ON.nuvem) return;
+    const d = Object.assign({}, ON.nuvem, {uid:ON.user && ON.user.id});
+    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+    ON.sujo = false; ON.recarregando = true; toast('☁️ Fazenda carregada da nuvem!', 'bom'); setTimeout(() => location.reload(), 600);
+  }
+  async function enviarSave(avisar) {
+    if (!ON.user || ON.enviando || ON.recarregando) return;
+    ON.enviando = true; S.uid = ON.user.id; salvar();
+    const agora = new Date().toISOString(), p = S.perfil || {};
+    const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
+    const r2 = r1.error ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora});
+    ON.enviando = false;
+    const err = r1.error || r2.error;
+    if (err) { ON.erro = err.message; if (avisar) toast('☁️ Não deu para salvar na nuvem: ' + err.message); }
+    else { ON.sujo = false; ON.ultimo = Date.now(); ON.erro = ''; if (avisar) toast('☁️ Fazenda salva na nuvem!', 'bom'); }
+    if (janela === 'config') renderJanela();
+  }
+  const hora = t => t ? new Date(t).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '—';
+  function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])); }
+  function htmlOnlineCfg() {
+    if (!ON.sb) return '<div class="linha-cfg"><span>☁️ Conta online</span><span class="det">indisponível agora</span></div>';
+    const rank = '<div class="linha-cfg"><span>🏆 Ranking dos fazendeiros</span><button class="btn" data-abrir="ranking">Ver</button></div>';
+    if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn btn-google" data-acao="entrar-google"><b>G</b> Entrar com Google</button></div>` + rank;
+    const md = ON.user.user_metadata || {}, nome = md.full_name || md.name || ON.user.email || 'Conta Google';
+    return `<div class="linha-cfg"><span>☁️ ${esc(nome)}<br><small class="det">${ON.erro ? '⚠️ ' + esc(ON.erro) : ON.sujo ? 'salvando em instantes…' : 'salvo na nuvem às ' + hora(ON.ultimo || S.salvoEm)}</small></span>
+      <span class="botoes-cfg"><button class="btn" data-acao="salvar-nuvem">Salvar agora</button><button class="btn" data-acao="sair-conta">Sair</button></span></div>` + rank;
+  }
+  function htmlNuvem() {
+    const n = ON.nuvem || {}, cart = (ic, tit, d, ac) => `<div class="card"><div class="em">${ic}</div><div class="meio"><div class="nome">${tit}</div>
+      <div class="det">⭐ Nível ${d.nivel || 1} · ${moedaMini}${fmtN(d.moedas || 0)} · 🌾 ${fmtN(d.colhidos || 0)} colhidos</div><div class="det">Salvo em ${hora(d.salvoEm)}</div></div>
+      <div class="botoes"><button class="btn verde" data-acao="${ac}">Usar esta</button></div></div>`;
+    return `<p class="dica">Esta conta já tem uma fazenda na nuvem, diferente da que está neste aparelho. Qual você quer continuar? A outra será substituída.</p>`
+      + cart('☁️', 'Fazenda da nuvem', n, 'usar-nuvem') + cart('📱', 'Fazenda deste aparelho', S, 'usar-local');
+  }
+  async function carregarRanking() {
+    if (!ON.sb) { ON.rankErro = 'sem conexão com o servidor'; renderJanela(); return; }
+    ON.carregandoRank = true; ON.rankErro = ''; renderJanela();
+    const col = {nivel:'nivel', producao:'producao', terras:'terras'}[ON.ordem] || 'nivel';
+    let q = ON.sb.from('ranking').select('user_id, nome, nivel, producao, terras').order(col, {ascending:false});
+    if (col === 'nivel') q = q.order('producao', {ascending:false});
+    try { const {data, error} = await Promise.race([q.limit(50), new Promise((_, rej) => setTimeout(() => rej(new Error('tempo')), 9000))]); ON.rank = data || []; ON.rankErro = error ? error.message : ''; }
+    catch (e) { ON.rank = []; ON.rankErro = 'sem internet'; }
+    ON.carregandoRank = false;
+    if (janela === 'ranking') renderJanela();
+  }
+  function htmlRanking() {
+    if (!ON.rank && !ON.carregandoRank && !ON.rankErro) setTimeout(carregarRanking, 0);
+    const tabs = [['nivel', '⭐ Nível'], ['producao', '🌾 Produção'], ['terras', '🌳 Terras']].map(([k, t]) => `<button class="${ON.ordem === k ? 'ativa' : ''}" data-acao="rank-${k}">${t}</button>`).join('');
+    let h = `<div class="subabas">${tabs}</div>`;
+    if (ON.carregandoRank || !ON.rank && !ON.rankErro) return h + '<p class="dica">Carregando…</p>';
+    if (ON.rankErro) return h + `<p class="dica">⚠️ Não deu para carregar o ranking (${esc(ON.rankErro)}).</p>`;
+    const lista = ON.rank, meu = ON.user ? lista.findIndex(r => r.user_id === ON.user.id) : -1;
+    if (!lista.length) h += '<p class="dica">Ninguém no ranking ainda. Entre com Google para ser o primeiro! 🌱</p>';
+    h += '<div class="rank-lista">' + lista.map((r, i) => `<div class="rank-linha ${i === meu ? 'eu' : ''}"><span class="pos">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span><span class="nm">${esc(r.nome)}</span>
+      <span class="vl">${ON.ordem === 'producao' ? '🌾 ' + fmtN(r.producao) : ON.ordem === 'terras' ? '🌳 ' + r.terras : '⭐ ' + r.nivel}</span></div>`).join('') + '</div>';
+    if (!ON.user) h += '<p class="dica">Entre com Google nas Configurações para aparecer aqui.</p>';
+    else if (meu < 0) h += '<p class="dica">Você ainda não está no top 50. Continue crescendo! 💪</p>';
+    return h;
+  }
+
   // ================= INÍCIO =================
   document.querySelectorAll('[data-icone]').forEach(el => {
     const svg = ICO[el.dataset.icone]; if (!svg) return;
@@ -2738,6 +2858,7 @@
   atualizarProducao();
   tudo();
   requestAnimationFrame(animar);
+  iniciarOnline();
   setInterval(tickMercado, MERCADO_MS);
   setInterval(salvar, 5000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) salvar(); });

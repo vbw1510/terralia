@@ -395,3 +395,15 @@ body.editando .barra-construcao{display:flex}
 }
 .card.destaque{border-color:var(--ouro);box-shadow:0 0 0 3px rgba(255,197,61,.6);animation:piscaDest 1s ease 2}
 @keyframes piscaDest{50%{background:#fff3c4}}
+
+/* online: login, ranking */
+.btn-google{background:#fff!important;color:#3c3c3c!important;border:2px solid #d7d7d7!important;box-shadow:0 3px 0 #bdbdbd!important;white-space:nowrap}
+.btn-google b{font-family:Arial,sans-serif;font-weight:900;background:conic-gradient(from -45deg,#ea4335 0 25%,#4285f4 0 50%,#34a853 0 75%,#fbbc05 0);-webkit-background-clip:text;background-clip:text;color:transparent;margin-right:4px;font-size:1.1em}
+.botoes-cfg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.rank-lista{display:flex;flex-direction:column;gap:5px}
+.rank-linha{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--borda);border-radius:12px;padding:7px 12px;font-weight:800}
+.rank-linha .pos{width:30px;text-align:center;font-size:18px;color:var(--suave)}
+.rank-linha .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank-linha .vl{color:var(--madeira)}
+.rank-linha.eu{border-color:var(--ouro);background:#fff3c4}
+.dica.legal{text-align:center;font-size:12px}.dica.legal a{color:var(--madeira);font-weight:800}
