@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#7cc456">
+<meta name="screen-orientation" content="landscape">
+<title>Terrália</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="cena"></canvas>
+<div id="girar"><div class="cel"></div>Gire o celular<small>Terrália é jogado na horizontal</small></div>
+
+<!-- Tela inicial -->
+<div id="splash">
+  <div class="splash-logo">Terrália</div>
+  <div class="splash-baixo">
+    <button class="btn-jogar" id="btnJogar">JOGAR</button>
+    <p class="splash-sub">Plante, colha e cuide da sua fazenda</p>
+  </div>
+</div>
+
+<!-- Topo -->
+<div class="topo">
+  <div class="perfil" data-abrir="perfil">
+    <div class="avatar"><img id="avatarImg" src="assets/img/fazendeiro.jpg" alt=""></div>
+    <div class="estrela" data-icone="estrela"><span id="nivel">1</span></div>
+    <div class="xp"><div class="xpbar"><i id="xpbar"></i></div><span id="xptxt"></span></div>
+  </div>
+  <div class="topo-dir">
+    <div class="pill" id="chipMoedas"><span class="pill-ico" data-icone="moeda"></span><b id="moedas">0</b><button class="mais" data-abrir="loja">+</button></div>
+    <button class="redondo" data-abrir="config" data-icone="engrenagem" aria-label="Configurações"></button>
+  </div>
+</div>
+
+<!-- Botões laterais -->
+<div class="lateral">
+  <button class="mini" id="btnGirar" aria-label="Girar visão"><span class="txt-ico">⟳</span><small>Girar</small></button>
+  <button class="mini" id="btnCentro" aria-label="Centralizar"><span data-icone="alvo"></span><small>Centro</small></button>
+  <button class="mini" id="btnChamar" aria-label="Chamar animais"><span data-icone="osso"></span><small id="txtChamar">Chamar</small></button>
+  <button class="mini" id="btnEditar" aria-label="Editar fazenda"><span data-icone="lapis"></span><small>Editar</small></button>
+</div>
+
+<!-- Botões de canto -->
+<div class="cantos esq">
+  <button class="gbtn" data-abrir="loja"><i data-icone="loja"></i><span>Loja</span></button>
+  <button class="gbtn" data-abrir="construir"><i data-icone="martelo"></i><span>Construir</span></button>
+</div>
+<div class="cantos dir">
+  <button class="gbtn" data-abrir="animais"><i data-icone="pata"></i><span>Animais</span><b class="badge" id="badgeAnimais"></b></button>
+  <button class="gbtn" data-abrir="celeiro"><i data-icone="celeiro"></i><span>Celeiro</span></button>
+  <button class="gbtn" data-abrir="armazem"><i data-icone="caixa"></i><span>Armazém</span><b class="badge" id="badgeArmazem"></b></button>
+</div>
+
+<div class="dica-campo" id="dicaCampo"></div>
+<div class="missoes" id="missoes"></div>
+<div class="tutorial" id="tutorial">
+  <div class="tut-avatar"><img src="assets/img/fazendeiro.jpg" alt=""></div>
+  <div class="tut-corpo"><div class="tut-nome">Tonho</div><div class="tut-txt"></div>
+    <div class="tut-acoes"><button class="link-pular" data-tut="pular">Pular tutorial</button><button class="btn verde" data-tut="prox"></button></div></div>
+</div>
+<div class="maozinha" id="maozinha">👆</div>
+<div class="barra-edicao"><span>✏️ Modo edição · toque numa construção e arraste</span><button class="btn verde" data-ed="concluir">Concluir</button></div>
+<div class="ferr-edicao" id="ferrEdicao"><button data-ed="girar" title="Girar">⟳</button><button data-ed="ok" class="ok" title="Confirmar">✓</button><button data-ed="cancelar" class="nao" title="Cancelar">✕</button><button data-ed="vender" class="vend" title="Vender decoração">🗑</button></div>
+<div class="hotbar" id="hotbar"></div>
+<div class="seletor-sem" id="seletorSem"></div>
+<div class="fila-ui" id="filaUI"></div>
+<div class="barra-construcao" id="barraConstrucao"></div>
+<div class="tip" id="tip"></div>
+<div class="toast-area" id="toasts"></div>
+
+<!-- Janelas -->
+<div class="fundo" id="fundo">
+  <div class="janela">
+    <div class="jtopo"><h2 id="jtitulo"></h2><button class="fechar" data-acao="fechar">✕</button></div>
+    <div class="abas" id="jabas"></div>
+    <div class="jcorpo" id="jcorpo"></div>
+  </div>
+</div>
+
+<script src="assets/lib/three.min.js"></script>
+<script src="assets/lib/OrbitControls.js"></script>
+<script src="assets/lib/RoomEnvironment.js"></script>
+<script src="js/icones.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>
