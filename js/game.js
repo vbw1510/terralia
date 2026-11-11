@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.28'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.29'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -471,8 +471,11 @@
   { const L = Math.min(52, MEIA + 4); Object.assign(sol.shadow.camera, {left:-L, right:L, top:L, bottom:-L, near:1, far:90 + 2 * L}); }
   sol.shadow.bias = -0.0005; sol.shadow.normalBias = .02;
   scene.add(sol);
+  renderer.shadowMap.autoUpdate = false; // a sombra é recalculada a cada 3 quadros (a ilha quase não se mexe)
+  const gov = {soma:0, n:0, bons:0, pr:0, max:1};
   function aplicarQualidade() {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, S.leve ? 1 : (MOBILE ? 1.5 : 2)));
+    gov.max = gov.pr = Math.min(window.devicePixelRatio || 1, S.leve ? 1 : (MOBILE ? 1.5 : 2));
+    renderer.setPixelRatio(gov.pr);
     sol.castShadow = !S.leve;
   }
 
@@ -579,6 +582,8 @@
     const g = new THREE.ExtrudeGeometry(sh, {depth:d, bevelEnabled:true, bevelThickness:.06, bevelSize:.06, bevelSegments:1}); g.translate(0, 0, -d / 2);
     return mesh(g, cor);
   }
+  const congelar = g => g.traverse(o => { if (!o.userData.anim && !o.isSprite) { o.updateMatrix(); o.matrixAutoUpdate = false; } }); // nunca se mexe: não recalcula a posição a cada quadro
+  const semSombra = g => g.traverse(o => { if (o.isMesh) { o.castShadow = false; o.receiveShadow = false; } }); // decoração: só a sombrinha redonda
   const VERDES = [0x4fae3c, 0x5fbb45, 0x45a035, 0x6cc650, 0x55b240];
   function arvore(s = 1, fruta) {
     const g = new THREE.Group(), cor = VERDES[Math.random() * VERDES.length | 0];
@@ -586,24 +591,24 @@
     const galho = cil(.06 * s, .09 * s, .7 * s, 0x8a5a33, .2 * s, 1.3 * s, 0, 6); galho.rotation.z = -.7; g.add(galho);
     const claro = new THREE.Color(cor).offsetHSL(0, .03, .05).getHex();
     [[0, 2.05, 0, 1], [.6, 1.85, .25, .72], [-.55, 1.9, -.2, .75], [.1, 2.65, -.1, .72], [-.15, 1.75, .6, .62], [.35, 2.4, .45, .55], [-.4, 2.45, .3, .5]].forEach(([x, y, z, r], i) =>
-      g.add(mesh(new THREE.IcosahedronGeometry(r * s, 2), 0, x * s, y * s, z * s, true, liso(i >= 3 ? claro : cor))));
+      g.add(mesh(new THREE.IcosahedronGeometry(r * s, 1), 0, x * s, y * s, z * s, false, liso(i >= 3 ? claro : cor))));
     g.add(sombraBlob(1.5 * s));
     if (fruta) for (let i = 0; i < 7; i++) { const a = rnd(0, 6.28), b = rnd(-.2, .9); g.add(bola(.09 * s, fruta, Math.cos(a) * 1.0 * s, (2.0 + b * .5) * s, Math.sin(a) * 1.0 * s, 8)); }
-    g.rotation.y = rnd(0, 6); return g;
+    g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
   function pinheiro(s = 1) {
     const g = new THREE.Group(), cor = [0x3f9a4a, 0x358a42, 0x4aa654][Math.random() * 3 | 0];
     g.add(cil(.13 * s, .2 * s, 1 * s, 0x7a4b25, 0, .5 * s, 0, 8));
-    for (let i = 0; i < 4; i++) g.add(mesh(new THREE.ConeGeometry((1.15 - i * .24) * s, 1.15 * s, 16), 0, 0, (1.05 + i * .62) * s, 0, true, liso(i % 2 ? new THREE.Color(cor).offsetHSL(0, 0, .05).getHex() : cor)));
+    for (let i = 0; i < 4; i++) g.add(mesh(new THREE.ConeGeometry((1.15 - i * .24) * s, 1.15 * s, 9), 0, 0, (1.05 + i * .62) * s, 0, false, liso(i % 2 ? new THREE.Color(cor).offsetHSL(0, 0, .05).getHex() : cor)));
     g.add(sombraBlob(1.3 * s));
-    return g;
+    semSombra(g); return g;
   }
   function arbusto(s = 1) {
     const g = new THREE.Group(), cor = VERDES[Math.random() * VERDES.length | 0];
-    [[0, 0, .55], [.48, -.1, .4], [-.42, .05, .42], [.1, .3, .35]].forEach(([dx, dz, r]) => g.add(mesh(new THREE.IcosahedronGeometry(r * s, 2), 0, dx * s, r * s * .75, dz * s, true, liso(cor))));
+    [[0, 0, .55], [.48, -.1, .4], [-.42, .05, .42], [.1, .3, .35]].forEach(([dx, dz, r]) => g.add(mesh(new THREE.IcosahedronGeometry(r * s, 1), 0, dx * s, r * s * .75, dz * s, false, liso(cor))));
     g.add(sombraBlob(.9 * s));
     if (Math.random() < .4) for (let i = 0; i < 4; i++) g.add(bola(.07 * s, [0xff7aa8, 0xffffff, 0xffd84a][i % 3], rnd(-.5, .5) * s, rnd(.4, .8) * s, rnd(-.4, .4) * s, 6));
-    return g;
+    semSombra(g); return g;
   }
   const pedra = (s = 1) => { const m = mesh(new THREE.DodecahedronGeometry(.5 * s, 0), 0xb4b8bb, 0, .2 * s, 0); m.scale.y = .7; m.rotation.y = rnd(0, 6); return m; };
   function tora(s = 1) {
@@ -1042,7 +1047,7 @@
       f.scale.set(1, 1, .25); f.position.set(x, y + .1, 0); f.rotation.set(0, i / 7 * Math.PI * 2, 1.15); f.translateY(.85 * s); g.add(f);
     }
     g.add(bola(.13 * s, 0x7a5233, x + .1, y - .05, .08)); g.add(bola(.13 * s, 0x7a5233, x - .08, y - .08, -.1));
-    g.rotation.y = rnd(0, 6); return g;
+    g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
   function montarIlha() {
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
@@ -1091,7 +1096,7 @@
       const x = lado < 2 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
       const pm = palmeira(rnd(.9, 1.2)); pm.position.set(x, -.2, z); borda.add(pm);
     }
-    scene.add(borda); mesclar(borda);
+    scene.add(borda); mesclar(borda); congelar(borda);
   }
   const terras = {}; // decoração + placa das terras bloqueadas
   const clicaveisTerra = [];
@@ -1117,7 +1122,7 @@
       g.userData.rotulo = r; r.visible = false;
       const caixa = new THREE.Mesh(new THREE.BoxGeometry(ZONA * G, .6, ZONA * G), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
       caixa.position.set((z.zx * ZONA - 12 + 2) * G, .3, (z.zz * ZONA - 12 + 2) * G); caixa.userData.zona = z.key; g.add(caixa); clicaveisTerra.push(caixa);
-      mesclar(g, new Set([placa])); scene.add(g); terras[z.key] = g;
+      mesclar(g, new Set([placa])); scene.add(g); terras[z.key] = g; congelar(g);
     }
   }
   function atualizarPlacasTerra() {
@@ -2484,9 +2489,9 @@
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'armazem') || S.objetos.find(o => o.tipo === 'celeiro');
   const TUT = [
     {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
-    {txt:'Toque num <b>canteiro vazio</b> e toque no <b>trigo</b> (ou arraste o trigo por cima de vários canteiros).', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
-    {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 e use o <b>regador</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.plots.some(p => p.c && p.reg)},
-    {txt:'Muito bem! Espere crescer, toque nela quando aparecer ✨ e use a <b>foice</b> para colher.', p3:() => posTile(primeiro(p => p.c)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.colhidos > 0},
+    {txt:'Toque num <b>canteiro vazio</b> e <b>arraste a sacola de trigo</b> por cima dele.', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
+    {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 e <b>arraste o regador</b> por cima dela.', p3:() => posTile(primeiro(p => p.c && !p.reg)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.plots.some(p => p.c && p.reg)},
+    {txt:'Muito bem! Espere crescer, toque nela quando aparecer ✨ e <b>arraste a foice</b> por cima para colher.', p3:() => posTile(primeiro(p => p.c)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.colhidos > 0},
     {txt:'A colheita foi para o <b>Armazém</b>. Toque nele para vender! (O Celeiro guarda as sementes.)', p3:() => centro(celeiroObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'armazem'},
     {txt:'Toque em <b>Vender tudo</b> para ganhar moedas.', el:() => $('[data-acao=vender-tudo]'), ok:() => S.stats.vendeu > 0},
     {txt:'Agora vamos comprar mais sementes na <b>Loja</b>.', el:() => janela ? $('.fechar') : $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
@@ -2617,18 +2622,18 @@
       const bts = (cat ? [`<button class="sem ferr-arr" data-ferr-arr="catar"><span class="ico"><span class="emo-g">🖐️</span></span><small>Catar</small></button>`] : [])
         .concat(ks.map(k => { const q = qtdIns(k), serve = insumoServe(k, p);
           return `<button class="sem ins ${q ? '' : 'vazio'} ${serve ? '' : 'usado'}" data-ins="${k}" title="${INSUMOS[k].desc}"><span class="ico"><span class="emo-g">${INSUMOS[k].emoji}</span></span><small>${INSUMOS[k].nome.split(' ')[0]}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-ins="1">+</span>'}</button>`; }));
-      const tit = cat ? '🐛 Bichinho! Cate com a mão ou use o spray' : `⏳ Pronta em ${fmtT(restante(p) / 1000)}${p.dobro ? ' · 🌟 colheita dobrada' : ''}${p.prot ? ' · 🧴 protegida' : ''}`;
-      el.innerHTML = `<div class="sel-tit">${tit} <button class="x" data-sel="fechar">✕</button></div>` + (bts.length ? `<div class="sel-lista ferr">${bts.join('')}</div><div class="sel-dica">Arraste por cima das plantas para usar em várias</div>` : '<div class="sel-dica">Adubos e spray liberam no nível 4</div>');
+      const c = crop(p.c), pr = Math.floor(progresso(p) * 100), avisos = [temPraga(p) && '🐛 bichinho!', p.dobro && '🌟 colheita dobrada', p.prot && '🧴 protegida', p.rap && '⚡ adubada'].filter(Boolean);
+      el.innerHTML = `<div class="tempo-card"><div class="tc-anel" style="--p:${pr}"><span>${c.emoji}</span></div><div class="tc-txt"><b data-tc-tempo="1">${fmtT(restante(p) / 1000)}</b><small>${c.nome} · <span data-tc-pct="1">${pr}</span>%</small>${avisos.length ? `<em>${avisos.join(' · ')}</em>` : ''}</div></div>` + (bts.length ? `<div class="sel-lista ferr">${bts.join('')}</div>` : '');
       posicionarSeletor(); return;
     }
     if (modoSel !== 'sementes') {
       const col = modoSel === 'colher';
-      el.innerHTML = `<div class="sel-tit">${col ? '✂️ Arraste a foice por cima para colher' : '💧 Arraste o regador por cima para regar'}</div><div class="sel-lista ferr"><button class="sem ferr-arr" data-ferr-arr="${modoSel}"><span class="ico">${col ? FOICE : ICO.regador}</span><small>${col ? 'Foice' : 'Regador'}</small></button></div>`;
+      el.innerHTML = `<div class="sel-lista ferr"><button class="sem ferr-arr" data-ferr-arr="${modoSel}"><span class="ico">${col ? FOICE : ICO.regador}</span><small>${col ? 'Foice' : 'Regador'}</small></button></div>`;
       posicionarSeletor(); return;
     }
     const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
-    el.innerHTML = '<div class="sel-tit">🌱 Arraste a semente pelos canteiros <button class="x" data-sel="fechar">✕</button></div><div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.sementes[c.id] || 0;
-      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<div class="sel-pag"><button data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button><span>${paginaSem + 1}/${pags}</span><button data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button></div>` : '');
+    el.innerHTML = '<div class="sel-linha">' + (pags > 1 ? `<button class="pg" data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button>` : '') + '<div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.sementes[c.id] || 0;
+      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<button class="pg" data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button>` : '') + '</div>';
     posicionarSeletor();
   }
   function abrirSeletor(v) { seletorAberto = v; if (!v) alvoPlantio = null; renderSeletor(); }
@@ -3013,18 +3018,16 @@
   const fimArr = () => {
     if (!arr.ativo) return; arr.ativo = false; fant.classList.remove('on'); controls.enabled = true;
     if (arr.moveu) { arr.ate = arrastoAcabou = Date.now(); downPos = null; abrirSeletor(false); salvar(); verificarTutorial(); return; }
-    const i = alvoPlantio; arr.ate = Date.now(); abrirSeletor(false); // toque simples: usa só no canteiro escolhido e ensina a arrastar
-    if (i != null) { aplicarArr(i); salvar(); dicaArrasto(arr.tipo, i); } verificarTutorial();
+    arr.ate = Date.now(); if (alvoPlantio != null) dicaArrasto(arr.tipo, alvoPlantio); // só tocou: não faz nada, ensina a arrastar
   };
   window.addEventListener('pointerup', fimArr); window.addEventListener('pointercancel', fimArr);
   let arrastoAcabou = 0;
   function dicaArrasto(tipo, i) {
-    if (!S.dicaArr) S.dicaArr = {}; const n = S.dicaArr[tipo] || 0; if (n >= 3 || (S.tut >= 0 && S.tut <= 5)) return; S.dicaArr[tipo] = n + 1;
-    const el = $('#dicaArr'), v = posTile(i).project(camera), x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight;
+    const el = $('#dicaArr'), v = posTile(i).project(camera), x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight, sr = $('#seletorSem').getBoundingClientRect();
     const ic = {plantar:ICO.saco, regar:ICO.regador, colher:FOICE}[tipo] || `<span class="emo-g">${tipo === 'catar' ? '🖐️' : '🧴'}</span>`;
-    const txt = {plantar:'Arraste a sacola pelos canteiros para plantar vários de uma vez!', regar:'Arraste o regador por cima para regar vários!', colher:'Arraste a foice por cima para colher vários!'}[tipo] || 'Arraste por cima para usar em várias plantas!';
+    const txt = {plantar:'Arraste a semente pelos canteiros para plantar', regar:'Arraste o regador por cima das plantas para regar', colher:'Arraste a foice por cima para colher', catar:'Arraste a mão por cima para catar o bichinho'}[tipo] || 'Arraste por cima das plantas para usar';
     el.innerHTML = `<div class="da-trilha"><i></i><i></i><i></i><span class="da-ic">${ic}</span></div><div class="da-txt">${txt}</div>`;
-    el.style.left = Math.max(120, Math.min(innerWidth - 120, x)) + 'px'; el.style.top = Math.max(70, y - 40) + 'px';
+    const acima = sr.top > 150; el.style.left = Math.max(130, Math.min(innerWidth - 130, x)) + 'px'; el.style.top = (acima ? sr.top - 6 : Math.min(innerHeight - 10, sr.bottom + 110)) + 'px';
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 3200);
   }
 
@@ -3131,9 +3134,7 @@
     S.semSel = id;
     if (e.target.closest('[data-comprar-sem]') || !(S.sementes[id] || 0)) { abrirSeletor(false); destaqueSem = id; abrir('loja', 'sementes'); destaqueSem = null;
       const card = $(`[data-card-sem=${id}]`); if (card) card.scrollIntoView({block:'nearest', inline:'center'}); return; }
-    abrirSeletor(false);
-    if (alvo != null && !S.plots[alvo].c && !naFila(alvo) && (S.sementes[id] || 0) - semFila(id) > 0) enfileirarPlantio(alvo, id);
-    salvar(); verificarTutorial(); });
+    renderSeletor(); });
   window.addEventListener('pointerdown', e => { if (seletorAberto && !e.target.closest('#seletorSem')) abrirSeletor(false); }, true);
   document.addEventListener('click', e => {
     const ab = e.target.closest('[data-abrir]'); if (ab) { abrir(ab.dataset.abrir); return; }
@@ -3256,6 +3257,7 @@
     });
     if (aguaMar) aguaMar.position.y = -1.55 + Math.sin(t * .8) * .06;
   }
+  let quadro = 0;
   function animar(t) {
     requestAnimationFrame(animar);
     const dt = Math.min(.05, (t - ultimoT) / 1000 || .016); ultimoT = t;
@@ -3270,6 +3272,9 @@
       if (janela === 'pedidos' && !mudou && Math.floor(t / 1000) !== Math.floor((t - 260) / 1000)) renderJanela();
       S.plots.forEach((p, i) => atualizarTile(i));
       atualizarBaloes();
+      if (seletorAberto) posicionarSeletor();
+      if (seletorAberto && (modoSel === 'insumos' || modoSel === 'catar') && alvoPlantio != null) { const p = S.plots[alvoPlantio], te = $('[data-tc-tempo]');
+        if (!p || !p.c || pronto(p)) abrirSeletor(false); else if (te) { te.textContent = fmtT(restante(p) / 1000); const pr = Math.floor(progresso(p) * 100); $('[data-tc-pct]').textContent = pr; $('.tc-anel').style.setProperty('--p', pr); } }
       if (mudou) { renderHUD(); renderJanela(); salvar(); }
       else if (janela === 'fabrica') { // só atualiza o tempo e a barra (não redesenha a janela inteira)
         const f = fabEstado(janelaArg).fila[0], te = $('[data-fabtempo]'), br = $('[data-fabbarra]');
@@ -3334,6 +3339,15 @@
     desloc.set(Math.max(-lim, Math.min(lim, tg.x)) - tg.x, -tg.y, Math.max(-lim, Math.min(lim, tg.z)) - tg.z);
     if (desloc.lengthSq()) { tg.add(desloc); camera.position.add(desloc); }
     ajustarCamera(dt);
+    quadro++; renderer.shadowMap.needsUpdate = quadro % 3 === 0;
+    // qualidade automática: se estiver travando, baixa um pouco a resolução; quando melhorar, volta
+    gov.soma += dt; gov.n++;
+    if (gov.soma > 2.5) {
+      const med = gov.soma / gov.n; gov.soma = gov.n = 0;
+      if (med > 1 / 38 && gov.pr > .75) { gov.pr = Math.max(.75, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
+      else if (med < 1 / 56 && gov.pr < gov.max) { if (++gov.bons >= 2) { gov.pr = Math.min(gov.max, gov.pr + .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); } }
+      else gov.bons = 0;
+    }
     renderer.render(scene, camera);
   }
 
@@ -4157,7 +4171,7 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+    _teste:{ cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),

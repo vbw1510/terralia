@@ -643,3 +643,28 @@ body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.vi
 .emo-card{font-size:64px;line-height:1}
 .sem.ins.usado{opacity:.55}
 .sel-dica{text-align:center;color:#ffe9b8;font-size:11px;font-weight:700;margin-top:4px}
+
+/* balão do canteiro: só os ícones, sem caixa */
+.seletor-sem.flutua{background:none;padding:0;box-shadow:none;border:0}
+.seletor-sem.flutua .sel-tit,.seletor-sem.flutua .sel-dica{display:none}
+.seletor-sem.flutua .sem{background:none;border:0;box-shadow:none;width:58px;height:58px}
+.seletor-sem.flutua .sem .ico{width:50px;height:50px;filter:drop-shadow(0 0 1.5px #fff) drop-shadow(0 0 1.5px #fff) drop-shadow(0 4px 4px rgba(0,0,0,.4));transition:transform .12s}
+.seletor-sem.flutua .sem .ico .emo{font-size:20px;bottom:5px}
+.seletor-sem.flutua .sem small{display:none}
+.seletor-sem.flutua .sem.ativo .ico{transform:scale(1.12)}
+.seletor-sem.flutua .sem:active .ico{transform:scale(1.18)}
+.seletor-sem.flutua .sem.ferr-arr{width:76px;height:76px}.seletor-sem.flutua .sem.ferr-arr .ico{width:68px;height:68px}
+.seletor-sem.flutua .sem .qtd{bottom:2px;right:2px;border:2px solid #fff}
+.seletor-sem.flutua .sem .emo-g{font-size:40px}
+.seletor-sem.flutua .sel-lista.pag{gap:2px}
+.sel-linha{display:flex;align-items:center;gap:2px}
+.sel-linha .pg{width:30px;height:30px;border-radius:50%;background:#fff8ea;color:#8a5a2b;font-weight:900;font-size:13px;border:2px solid #c9a676;box-shadow:0 2px 4px rgba(0,0,0,.3);padding:0;flex:0 0 auto}
+.sel-linha .pg:disabled{opacity:.35}
+/* cartão do tempo da planta */
+.tempo-card{display:flex;align-items:center;gap:10px;margin:0 auto 6px;width:max-content;background:linear-gradient(180deg,#fff8ea,#f3e2c0);border:3px solid #8a5a2b;border-radius:18px;padding:6px 14px 6px 6px;box-shadow:0 5px 12px rgba(0,0,0,.3)}
+.tc-anel{--p:0;width:52px;height:52px;border-radius:50%;background:conic-gradient(#5cc23f calc(var(--p)*1%),#e3cfa6 0);display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tc-anel span{width:40px;height:40px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:24px}
+.tc-txt{display:flex;flex-direction:column;line-height:1.1}
+.tc-txt b{font-size:20px;color:#4a2e17;font-weight:900}
+.tc-txt small{font-size:11px;color:#8a6a4a;font-weight:800}
+.tc-txt em{font-style:normal;font-size:11px;font-weight:800;color:#c0392b;margin-top:2px}
