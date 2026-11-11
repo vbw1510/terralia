@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.19'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.20'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -206,8 +206,9 @@
   function salvar() {
     if (ON.recarregando) return;
     try { const t = S.salvoEm; S.salvoEm = 0; const j = JSON.stringify(S); S.salvoEm = t;
-      if (j !== ultimoJson) { ultimoJson = j; S.salvoEm = Date.now(); ON.sujo = true; } // só conta como mudança se algo mudou de verdade
-      localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+      if (j === ultimoJson) return; // nada mudou: não grava de novo
+      ultimoJson = j; S.salvoEm = Date.now(); ON.sujo = true; // só conta como mudança se algo mudou de verdade
+      localStorage.setItem(KEY, j.replace('"salvoEm":0', '"salvoEm":' + S.salvoEm)); } catch (e) {}
   }
   const novoId = () => 'o' + (proxId++);
 
@@ -295,7 +296,7 @@
   // ================= CENA 3D =================
   const canvas = $('#cena');
   const renderer = new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:'high-performance'});
-  renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   // cores corretas + "filme" (tone mapping) para um visual mais bonito
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .92;
@@ -335,13 +336,50 @@
   sol.shadow.bias = -0.0005; sol.shadow.normalBias = .02;
   scene.add(sol);
   function aplicarQualidade() {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, S.leve ? 1 : (MOBILE ? 1.75 : 2)));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, S.leve ? 1 : (MOBILE ? 1.5 : 2)));
     sol.castShadow = !S.leve;
   }
 
   const mats = {}, matsLiso = {};
   const mat = c => mats[c] || (mats[c] = new THREE.MeshStandardMaterial({color:C(c), flatShading:true, roughness:.95, metalness:0, envMapIntensity:.2}));
   const liso = c => matsLiso[c] || (matsLiso[c] = new THREE.MeshStandardMaterial({color:C(c), roughness:.6, metalness:0, envMapIntensity:.25}));
+  // ===== otimização: junta as peças paradas de um modelo em poucas malhas (uma por material) =====
+  // Menos objetos = muito menos trabalho para o celular desenhar a cada quadro.
+  function mesclar(raiz, pular) {
+    raiz.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(raiz.matrixWorld).invert(), grupos = new Map(), remover = [];
+    const ignorado = o => { for (let p = o; p && p !== raiz; p = p.parent) if (pular && pular.has(p)) return true; return false; };
+    raiz.traverse(o => {
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material) || o.material.transparent || !o.visible || ignorado(o)) return;
+      const g = o.geometry; if (!g || !g.attributes.position || g.morphAttributes && Object.keys(g.morphAttributes).length) return;
+      const k = o.material.uuid + '|' + o.castShadow + '|' + o.receiveShadow;
+      if (!grupos.has(k)) grupos.set(k, {mat:o.material, cast:o.castShadow, rec:o.receiveShadow, itens:[]});
+      grupos.get(k).itens.push(o); remover.push(o);
+    });
+    let juntou = 0;
+    grupos.forEach(gr => {
+      if (gr.itens.length < 2) { remover.splice(remover.indexOf(gr.itens[0]), 1); return; }
+      const usaUv = !!gr.mat.map, usaCor = !!gr.mat.vertexColors, pos = [], nor = [], uv = [], cor = [], m = new THREE.Matrix4(), nm = new THREE.Matrix3();
+      gr.itens.forEach(o => {
+        const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry;
+        m.multiplyMatrices(inv, o.matrixWorld); nm.getNormalMatrix(m);
+        const P = g.attributes.position, N = g.attributes.normal, U = g.attributes.uv, Cc = g.attributes.color, v = new THREE.Vector3();
+        for (let i = 0; i < P.count; i++) {
+          v.fromBufferAttribute(P, i).applyMatrix4(m); pos.push(v.x, v.y, v.z);
+          if (N) { v.fromBufferAttribute(N, i).applyMatrix3(nm).normalize(); nor.push(v.x, v.y, v.z); } else nor.push(0, 1, 0);
+          if (usaUv) U ? uv.push(U.getX(i), U.getY(i)) : uv.push(0, 0);
+          if (usaCor) Cc ? cor.push(Cc.getX(i), Cc.getY(i), Cc.getZ(i)) : cor.push(1, 1, 1);
+        }
+      });
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+      if (usaUv) geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); if (usaCor) geo.setAttribute('color', new THREE.Float32BufferAttribute(cor, 3));
+      geo.computeBoundingSphere();
+      const mm = new THREE.Mesh(geo, gr.mat); mm.castShadow = gr.cast; mm.receiveShadow = gr.rec; mm.userData.mesclado = true; raiz.add(mm); juntou++;
+    });
+    remover.forEach(o => o.parent && o.parent.remove(o));
+    return juntou;
+  }
   function mesh(geo, cor, x = 0, y = 0, z = 0, sombra = true, m) {
     const o = new THREE.Mesh(geo, m || mat(cor)); o.position.set(x, y, z);
     o.castShadow = sombra; o.receiveShadow = true; return o;
@@ -826,18 +864,20 @@
     for (let i = 0; i < 800; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.4)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); }
     for (let i = 0; i < 240; i++) { pontoIlha(); p.y = .12; sc.setScalar(rnd(.8, 1.2)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(coresF[i % 5]).convertSRGBToLinear()); }
     tufos.receiveShadow = true; scene.add(tufos, flores);
-    // árvores na borda e palmeiras na praia
+    // árvores na borda e palmeiras na praia (juntas numa malha só por material)
+    const borda = new THREE.Group();
     for (let i = 0; i < 64; i++) {
       const lado = i % 4, t = rnd(-MEIA + 2, MEIA - 2), o = MEIA - rnd(.3, .9);
       const x = lado === 0 ? t : lado === 1 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
       const a = Math.random() < .35 ? pinheiro(rnd(.85, 1.2)) : Math.random() < .25 ? arbusto(rnd(1, 1.3)) : arvore(rnd(.8, 1.1), Math.random() < .2 ? 0xe83b2c : null);
-      a.position.set(x, 0, z); scene.add(a);
+      a.position.set(x, 0, z); borda.add(a);
     }
     for (let i = 0; i < 14; i++) {
       const lado = i % 4, t = rnd(-MEIA, MEIA), o = MEIA + rnd(1.2, 2.2);
       const x = lado < 2 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
-      const pm = palmeira(rnd(.9, 1.2)); pm.position.set(x, -.2, z); scene.add(pm);
+      const pm = palmeira(rnd(.9, 1.2)); pm.position.set(x, -.2, z); borda.add(pm);
     }
+    scene.add(borda); mesclar(borda);
   }
   const terras = {}; // decoração + placa das terras bloqueadas
   const clicaveisTerra = [];
@@ -863,7 +903,7 @@
       g.userData.rotulo = r;
       const caixa = new THREE.Mesh(new THREE.BoxGeometry(ZONA * G, .6, ZONA * G), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
       caixa.position.set((z.zx * ZONA - OFF + 2) * G, .3, (z.zz * ZONA - OFF + 2) * G); caixa.userData.zona = z.key; g.add(caixa); clicaveisTerra.push(caixa);
-      scene.add(g); terras[z.key] = g;
+      mesclar(g, new Set([placa])); scene.add(g); terras[z.key] = g;
     }
   }
   function atualizarPlacasTerra() {
@@ -934,6 +974,7 @@
     else if (o.tipo === 'lago') g = modeloLago();
     else if (T.decor) g = modeloDecor(o.tipo);
     else g = modeloCercado(o.tipo, T.w, T.d);
+    if (o.tipo !== 'lote' && o.tipo !== 'lago') { const anim = new Set(); g.traverse(x => { if (fumacas.includes(x) || pasMoinho.includes(x) || fabRodas.includes(x) || x.userData.anim) anim.add(x); }); mesclar(g, anim); }
     let rot = null;
     if (T.fab) g.traverse(x => { if (fumacas.includes(x)) x.userData.tipo = o.tipo; if (pasMoinho.includes(x)) x.userData.oid = o.id; });
     if (T.abre || T.animal || T.fab) { rot = rotulo(T.nome); rot.position.set(0, T.animal ? 2.4 : o.tipo === 'celeiro' ? 5.4 : o.tipo === 'armazem' ? 4.6 : o.tipo === 'moinho' ? 6.4 : 4.3, T.animal ? -T.d * G / 2 + .3 : 0); rot.visible = false; g.add(rot); }
@@ -2218,10 +2259,12 @@
     const plantando = !!crop(S.ferramenta);
     const slot = (id, ico, nome, qtd, ativo, extra = '') => `<button class="slot ${ativo ? 'ativo' : ''} ${extra}" data-ferr="${id}"><span class="ico">${ico}</span><small>${nome}</small>${qtd != null ? `<span class="qtd">${qtd}</span>` : ''}</button>`;
     const c = semAtual(), q = S.sementes[c.id] || 0;
-    $('#hotbar').innerHTML = slot('mao', ICO.cesta, 'Colher', null, S.ferramenta === 'mao') + slot('regador', ICO.regador, 'Regar', null, S.ferramenta === 'regador')
+    const hb = slot('mao', ICO.cesta, 'Colher', null, S.ferramenta === 'mao') + slot('regador', ICO.regador, 'Regar', null, S.ferramenta === 'regador')
       + slot('plantar', ICO.saco + `<span class="emo">${c.emoji}</span>`, 'Plantar', q, plantando, (q ? '' : 'vazio ') + 'plantar' + (seletorAberto ? ' aberto' : '')).replace('</button>', '<span class="seta">▲</span></button>');
+    if (hb !== hotbarHTML) { hotbarHTML = hb; $('#hotbar').innerHTML = hb; }
     renderSeletor();
   }
+  let hotbarHTML = '';
   function renderSeletor() {
     const el = $('#seletorSem'); el.classList.toggle('on', seletorAberto); if (!seletorAberto) return;
     const atual = semAtual().id;
@@ -2329,7 +2372,7 @@
     }
     if (janela === 'animais') {
       atualizarProducao();
-      h += `<div class="loja-topo"><p class="dica">Cada animal come <b>1 ração</b> para produzir. Toque no cercado ou use os botões: o fazendeiro coleta o que estiver pronto e dá ração para quem tiver fome.</p></div><div class="vitrine">`;
+      h += `<div class="loja-topo"><div class="topo-linha"><p class="dica" style="flex:1;white-space:normal">Cada animal come <b>1 ração</b> para produzir. O fazendeiro coleta o que estiver pronto e dá ração para quem tiver fome.</p><button class="btn verde" data-acao="cuidar-todos">🐾 Cuidar de todos</button></div></div><div class="vitrine">`;
       for (const k in ANIMAIS) {
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
@@ -2344,7 +2387,7 @@
         const est = n ? [prod ? `⏳ ${prod} produzindo` : '', fome ? `🍽️ ${fome} com fome` : '', pr ? `${it.emoji} ${pr} pronto(s)` : ''].filter(Boolean).join(' · ') : 'Nenhum ainda';
         h += tile({cls:'larga', selo:`${n}/${mx}`, ic, nome:a.plural,
           info:`<span>${iconeItem(r, 'mini-ic')} ${S.celeiro[r.id] || 0} · 1 = ${a.porRacao} ${it.emoji} · ${fmtT(a.tempo)}</span><span>${est}</span>`,
-          acao:`<div class="t-col">${n ? `<button class="btn verde" data-ir-cercado="${k}">${pr ? `Coletar ${pr} ${it.emoji}` : fome ? (S.celeiro[r.id] > 0 ? 'Dar ração 🥣' : 'Sem ração') : (TIPOS[a.cercado].fem ? 'Ir à ' : 'Ir ao ') + nomeC}</button>` : ''}
+          acao:`<div class="t-col">${n && cercadosDe(k).some(o => objNaFila(o.id)) ? '<button class="btn" disabled>🚶 A caminho…</button>' : n ? `<button class="btn verde" data-ir-cercado="${k}">${pr ? `Coletar ${pr} ${it.emoji}` : fome ? (S.celeiro[r.id] > 0 ? 'Dar ração 🥣' : 'Sem ração') : (TIPOS[a.cercado].fem ? 'Ir à ' : 'Ir ao ') + nomeC}</button>` : ''}
             ${fome && !(S.celeiro[r.id] > 0) ? `<button class="btn" data-ir-moinho="1">Fazer ração</button>` : ''}
             <button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio' : `+1 ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}`}</button>
             ${S.nivel < nvProx ? `<span class="nv">Novo ${nomeC} no nível ${nvProx}</span>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>➕ ${TIPOS[a.cercado].nome} · ${moedaMini}${fmtN(cc)}</button>`}</div>`});
@@ -2658,7 +2701,12 @@
     const u = e.target.closest('[data-upg]'); if (u) { comprarUpg(u.dataset.upg); return; }
     const ad = e.target.closest('[data-adotar]'); if (ad) { adotarPet(ad.dataset.adotar); return; }
     const an = e.target.closest('[data-animal]'); if (an) { comprarAnimal(an.dataset.animal); return; }
-    const ic = e.target.closest('[data-ir-cercado]'); if (ic) { const o = cercadosDe(ic.dataset.irCercado).find(o => { const e2 = estadoCercado(o); return e2.prontos || e2.fome; }) || cercadosDe(ic.dataset.irCercado)[0]; fechar(); if (o) { focar(centro(o)); clicarConstrucao(o); } return; }
+    const ic = e.target.closest('[data-ir-cercado]'); if (ic) { // manda o fazendeiro cuidar de todos os cercados desse bicho, sem fechar a janela
+      const k = ic.dataset.irCercado, a = ANIMAIS[k], temRacao = (S.celeiro[a.racao] || 0) > 0;
+      const alvos = cercadosDe(k).filter(o => { const e2 = estadoCercado(o); return (e2.prontos || (e2.fome && temRacao)) && !objNaFila(o.id); });
+      if (!alvos.length) { toast(cercadosDe(k).some(o => objNaFila(o.id)) ? '👍 O fazendeiro já está indo lá' : 'Nada para fazer agora nesses cercados'); return; }
+      alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id}));
+      toast(`🐾 Indo cuidar ${alvos.length > 1 ? 'dos ' + alvos.length + ' cercados' : 'do cercado'} de ${a.plural.toLowerCase()}`, 'bom'); renderJanela(); return; }
     const im = e.target.closest('[data-ir-moinho]'); if (im) { const o = S.objetos.find(o => o.tipo === 'moinho'); if (o) { focar(centro(o)); clicarConstrucao(o); } else abrir('loja', 'construcoes'); return; }
     const rc = e.target.closest('[data-receita]'); if (rc) {
       if (rc.dataset.max) { let n = 0; while (produzir(rc.dataset.receita, true)) n++; toast(n ? `⚙️ ${n}× ${item(rc.dataset.receita).nome} na fila` : 'Sem ingredientes ou fila cheia', n ? 'bom' : ''); tudo(); }
@@ -2687,6 +2735,11 @@
     if (ac === 'editar') { fechar(); entrarEdicao(); toast('Toque numa construção para mover'); }
     if (ac === 'ver-terra') { fechar(); guiarTerra(); }
     if (ac === 'instalar' && pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.finally(() => { pedidoInstalar = null; renderJanela(); }); }
+    if (ac === 'cuidar-todos') {
+      const alvos = S.objetos.filter(o => { const T = TIPOS[o.tipo]; if (!T.animal || !qtdAnimal(T.animal) || objNaFila(o.id)) return false; const e2 = estadoCercado(o); return e2.prontos || (e2.fome && (S.celeiro[ANIMAIS[T.animal].racao] || 0) > 0); });
+      if (!alvos.length) toast('Nada para fazer agora: ninguém com fome (com ração) nem produto pronto');
+      else { alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo cuidar de ${alvos.length} cercado(s)`, 'bom'); renderJanela(); }
+    }
     if (ac === 'procurar-versao') procurarVersao(true);
     if (ac === 'atualizar-ja') atualizarJogo();
     if (ac === 'entrar-google') entrarGoogle();
@@ -3083,7 +3136,8 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
+    _teste:{ grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+      irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
       tilePos:i => { const v = posTile(i).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, heroi:() => JSON.stringify({fila:heroi.fila.map(a => a.tipo), atual:heroi.atual && {tipo:heroi.atual.tipo, fase:heroi.atual.fase, t:heroi.atual.t}, rota:heroi.rota.length, pos:heroi.g.position}), obj:id => clicarConstrucao(objPorId(id)), objs:() => S.objetos.map(o => o.id + ':' + o.tipo).join(' '), abrir:(n, x) => abrir(n, x), tile:i => clicarTile(i), ferr:f => { S.ferramenta = f; renderHotbar(); }, zona:k => comprarZona(k), cam:(x, z, d) => { controls.target.set(x, 0, z); camera.position.set(x + d * .5, d * .6, z + d * .5); }, girar90:() => girarCamera(), zonas:() => ZONAS.map(z => z.key), construir:t => { S.moedas += custoConstrucao(t); comprarConstrucao(t); }, nome:(id, ms) => mostrarNome(objPorId(id), ms), nomes:() => Object.values(obj3D).filter(r => r.rot && r.rot.visible).length + "/" + Object.values(obj3D).filter(r => r.rot).length + " ed:" + editar.ativo } };
