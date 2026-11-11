@@ -668,3 +668,14 @@ body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.vi
 .tc-txt b{font-size:20px;color:#4a2e17;font-weight:900}
 .tc-txt small{font-size:11px;color:#8a6a4a;font-weight:800}
 .tc-txt em{font-style:normal;font-size:11px;font-weight:800;color:#c0392b;margin-top:2px}
+
+/* moldura suave nas bordas da tela */
+.vinheta{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 45%,rgba(0,0,0,0) 58%,rgba(20,40,10,.22) 100%)}
+body.editando .vinheta{display:none}
+.tem-qtd{display:inline-block;background:#5a3519;color:#fff;border-radius:9px;padding:0 7px;font-size:12px;font-weight:900;margin-left:4px;vertical-align:1px}
+.tem-qtd.zero{background:#c0392b}
+.receita.destaque{box-shadow:0 0 0 3px #ffd34d,0 0 14px rgba(255,200,40,.8);animation:pisca 1s ease-in-out 3}
+@keyframes pisca{50%{box-shadow:0 0 0 5px #ffd34d,0 0 22px rgba(255,200,40,1)}}
+.da-txt{display:flex;flex-direction:column;gap:2px}
+.da-nome{font-size:15px;color:#5a3519}
+.da-desc{font-size:12px;color:#8a5a2b;font-weight:700}

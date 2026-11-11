@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.29'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.30'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -435,7 +435,7 @@
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   // cores corretas + "filme" (tone mapping) para um visual mais bonito
   renderer.outputEncoding = THREE.sRGBEncoding;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .92;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
   const C = h => new THREE.Color(h).convertSRGBToLinear();
   const scene = new THREE.Scene();
   scene.background = C(0xbfe6ff);
@@ -464,9 +464,9 @@
     camera.lookAt(tg);
   }
 
-  scene.add(new THREE.HemisphereLight(C(0xfff6e0), C(0x4f7f2e), .45));
-  const sol = new THREE.DirectionalLight(C(0xffe2b8), 2.0);
-  sol.position.set(16, 28, 14); sol.castShadow = true;
+  scene.add(new THREE.HemisphereLight(C(0xd8efff), C(0x3f7a25), .55));
+  const sol = new THREE.DirectionalLight(C(0xffd9a0), 2.35);
+  sol.position.set(24, 22, 9); sol.castShadow = true;
   sol.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
   { const L = Math.min(52, MEIA + 4); Object.assign(sol.shadow.camera, {left:-L, right:L, top:L, bottom:-L, near:1, far:90 + 2 * L}); }
   sol.shadow.bias = -0.0005; sol.shadow.normalBias = .02;
@@ -1049,6 +1049,7 @@
     g.add(bola(.13 * s, 0x7a5233, x + .1, y - .05, .08)); g.add(bola(.13 * s, 0x7a5233, x - .08, y - .08, -.1));
     g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
+  let sombraNuvens = null; const borboletas = [];
   function montarIlha() {
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
     aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(0x56b4e6), roughness:.3, metalness:.05}));
@@ -1066,7 +1067,8 @@
       let x = pos.getX(i), z = pos.getZ(i);
       if (Math.abs(x) > K && Math.abs(z) > K) { const cx = Math.sign(x) * K, cz = Math.sign(z) * K, dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz); if (d > R) { x = cx + dx / d * R; z = cz + dz / d * R; pos.setX(i, x); pos.setZ(i, z); } }
       const n = Math.sin(x * .23) * Math.cos(z * .19) + Math.sin((x + z) * .11) * .7 + Math.sin(x * .7 + z * .5) * .15;
-      c.setHSL(.26 + n * .012, .58 + n * .04, .45 + n * .04).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
+      const m = Math.sin(x * .05 + 1.3) * Math.cos(z * .06 - .4); // manchas grandes: grama mais clara e mais escura
+      c.setHSL(.265 + n * .018 - m * .015, .62 + n * .05, .40 + n * .05 + m * .045).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
     const tg = document.createElement('canvas'); tg.width = tg.height = 256; const gg = tg.getContext('2d');
@@ -1076,13 +1078,27 @@
     const grama = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({vertexColors:true, map:txg, roughness:1, envMapIntensity:.25}));
     grama.position.y = .01; grama.material.color = C(0xe6ffe0); grama.receiveShadow = true; scene.add(grama);
     const tufoGeo = new THREE.ConeGeometry(.07, .32, 4); tufoGeo.translate(0, .16, 0);
-    const tufos = new THREE.InstancedMesh(tufoGeo, liso(0x4f9f37), 800);
-    const flores = new THREE.InstancedMesh(new THREE.SphereGeometry(.09, 6, 5), new THREE.MeshStandardMaterial({roughness:.8}), 240);
-    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), coresF = [0xff7aa8, 0xffd84a, 0xffffff, 0xb08cff, 0xff9f43];
+    const tufos = new THREE.InstancedMesh(tufoGeo, new THREE.MeshStandardMaterial({roughness:.8, envMapIntensity:.25}), 1300);
+    const flores = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 6, 5), new THREE.MeshStandardMaterial({roughness:.8}), 420);
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), coresF = [0xff3f7f, 0xffc21a, 0xb06bff, 0xff7a2f, 0xff5fb0];
     const pontoIlha = () => p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1));
-    for (let i = 0; i < 800; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.4)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); }
-    for (let i = 0; i < 240; i++) { pontoIlha(); p.y = .12; sc.setScalar(rnd(.8, 1.2)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(coresF[i % 5]).convertSRGBToLinear()); }
+    for (let i = 0; i < 1300; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.5)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); tufos.setColorAt(i, c.setHSL(rnd(.24, .3), rnd(.5, .7), rnd(.3, .45)).convertSRGBToLinear()); }
+    { let cx = 0, cz = 0, cor = 0; for (let i = 0; i < 420; i++) { if (i % 14 === 0) { pontoIlha(); cx = p.x; cz = p.z; cor = coresF[Math.random() * 5 | 0]; } p.set(cx + rnd(-1.1, 1.1), .12, cz + rnd(-1.1, 1.1)); sc.setScalar(rnd(.8, 1.3)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(Math.random() < .8 ? cor : 0xffffff).convertSRGBToLinear()); } } // flores em canteirinhos
     tufos.receiveShadow = true; scene.add(tufos, flores);
+    // sombra das nuvens passando devagar pelo chão
+    { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g2 = cv.getContext('2d');
+      for (let i = 0; i < 9; i++) { const x = rnd(20, 236), y = rnd(20, 236), r = rnd(30, 60), gr = g2.createRadialGradient(x, y, 4, x, y, r); gr.addColorStop(0, 'rgba(0,20,0,.55)'); gr.addColorStop(1, 'rgba(0,20,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 256, 256); }
+      const tx = new THREE.CanvasTexture(cv); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(2, 2);
+      sombraNuvens = new THREE.Mesh(new THREE.PlaneGeometry(2 * MEIA, 2 * MEIA).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({map:tx, transparent:true, opacity:.22, depthWrite:false}));
+      sombraNuvens.position.y = .06; sombraNuvens.renderOrder = 1; scene.add(sombraNuvens); }
+    // borboletas
+    for (let i = 0; i < 7; i++) {
+      const g3 = new THREE.Group(), cor = [0xffd84a, 0xff8ac0, 0xffffff, 0x8fd3ff, 0xffa53d][i % 5], m3 = new THREE.MeshBasicMaterial({color:C(cor), side:THREE.DoubleSide});
+      const asa = new THREE.PlaneGeometry(.22, .18); asa.translate(.11, 0, 0);
+      const a1 = new THREE.Mesh(asa, m3), a2 = new THREE.Mesh(asa, m3); a2.rotation.y = Math.PI; g3.add(a1, a2);
+      g3.position.set(rnd(-MEIA + 3, MEIA - 3), rnd(.6, 1.4), rnd(-MEIA + 3, MEIA - 3)); scene.add(g3);
+      borboletas.push({g:g3, a1, a2, fase:rnd(0, 6), alvo:g3.position.clone(), vel:rnd(.6, 1)});
+    }
     // árvores na borda e palmeiras na praia (juntas numa malha só por material)
     const borda = new THREE.Group();
     for (let i = 0; i < 64; i++) {
@@ -2222,9 +2238,20 @@
     if (T.fruta) { const r = restaPomar(o); if (r > 0) toast(`${fruta(o).emoji} ${TIPOS[o.tipo].nome}: frutas em ${fmtT(r / 1000)}`); else enfileirar({tipo:'pomar', oid:o.id}); return; }
     if (T.animal) {
       if (!qtdAnimal(T.animal)) { abrir('animais'); return; }
+      { atualizarProducao(); const e = estadoCercado(o), a = ANIMAIS[T.animal];
+        if (e.fome && !e.prontos && !(S.celeiro[a.racao] > 0)) { irParaRacao(a); return; } }
       enfileirar({tipo:'cercado', oid:o.id}); return;
     }
     if (T.fab) { if (o.tipo === 'moinho') fabSel = o.id; const oidF = o.tipo === 'moinho' ? o.id : undefined; if (prontosFab(o.tipo, oidF) > 0) { coletarFab(o.tipo, oidF); tudo(); return; } abrir('fabrica', o.tipo); if (!objNaFila(o.id)) enfileirar({tipo:'andar', oid:o.id}); tudo(); }
+  }
+  let destaqueRec = null;
+  function irParaRacao(a) { // bicho com fome e sem ração: já abre o moinho mostrando a ração certa
+    const r = item(a.racao), m = listaMoinhos()[0];
+    if (!m) { toast(`${a.plural} com fome! Construa um Moinho para fazer ${r.nome.toLowerCase()} 🌾`); abrir('loja', 'construcoes'); return; }
+    fabSel = m.id; destaqueRec = r.id; abrir('fabrica', 'moinho'); destaqueRec = null;
+    const el = $(`[data-rec=${r.id}]`); if (el) el.scrollIntoView({block:'center'});
+    toast(`🍽️ ${a.plural} com fome! Faça ${r.nome.toLowerCase()} aqui no moinho`, 'bom');
+    apontar_(() => $(`[data-receita=${r.id}]`), null, 6000);
   }
   const clicavel = o => o && (TIPOS[o.tipo].abre || TIPOS[o.tipo].animal || TIPOS[o.tipo].fab || TIPOS[o.tipo].fruta);
   function vizinhos(i) {
@@ -2798,7 +2825,8 @@
       F.receitas.forEach(r => {
         const trava = S.nivel < r.nivel, ok = temIngredientes(r) && M.fila.length < vagas;
         const ings = Object.entries(r.ing).map(([id, n]) => { const q = S.celeiro[id] || 0; return `<span class="ing ${q >= n ? 'tem' : 'falta'}">${item(id).emoji}${q}/${n}</span>`; }).join('');
-        h += `<div class="receita ${trava ? 'trava' : ''}">${iconeItem(r, 'e')}<div class="meio"><b>${r.nome}</b>${trava ? ` <span class="nv">Nível ${r.nivel}</span>` : ''}
+        const tem = S.celeiro[r.id] || 0;
+        h += `<div class="receita ${trava ? 'trava' : ''} ${destaqueRec === r.id ? 'destaque' : ''}" data-rec="${r.id}">${iconeItem(r, 'e')}<div class="meio"><b>${r.nome}</b> <span class="tem-qtd ${tem ? '' : 'zero'}">×${tem}</span>${trava ? ` <span class="nv">Nível ${r.nivel}</span>` : ''}
           <div class="det">${ings} <span>⏱${tempoCurto(r.tempo * 1000)}</span> ${r.rende ? `<span>×${r.rende} porções</span>` : `<span>💰${r.preco}</span>`}</div></div>
           ${trava ? '' : `<button class="btn verde" data-receita="${r.id}" ${ok ? '' : 'disabled'}>+1</button><button class="btn" data-receita="${r.id}" data-max="1" ${ok ? '' : 'disabled'}>Máx</button>`}</div>`;
       });
@@ -3018,15 +3046,17 @@
   const fimArr = () => {
     if (!arr.ativo) return; arr.ativo = false; fant.classList.remove('on'); controls.enabled = true;
     if (arr.moveu) { arr.ate = arrastoAcabou = Date.now(); downPos = null; abrirSeletor(false); salvar(); verificarTutorial(); return; }
-    arr.ate = Date.now(); if (alvoPlantio != null) dicaArrasto(arr.tipo, alvoPlantio); // só tocou: não faz nada, ensina a arrastar
+    arr.ate = Date.now(); if (alvoPlantio != null) dicaArrasto(arr.tipo, alvoPlantio, arr.id); // só tocou: não faz nada, ensina a arrastar
   };
   window.addEventListener('pointerup', fimArr); window.addEventListener('pointercancel', fimArr);
   let arrastoAcabou = 0;
-  function dicaArrasto(tipo, i) {
+  function dicaArrasto(tipo, i, id) {
     const el = $('#dicaArr'), v = posTile(i).project(camera), x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight, sr = $('#seletorSem').getBoundingClientRect();
-    const ic = {plantar:ICO.saco, regar:ICO.regador, colher:FOICE}[tipo] || `<span class="emo-g">${tipo === 'catar' ? '🖐️' : '🧴'}</span>`;
+    const ic = {plantar:ICO.saco, regar:ICO.regador, colher:FOICE}[tipo] || `<span class="emo-g">${tipo === 'catar' ? '🖐️' : id && INSUMOS[id] ? INSUMOS[id].emoji : '🧴'}</span>`;
     const txt = {plantar:'Arraste a semente pelos canteiros para plantar', regar:'Arraste o regador por cima das plantas para regar', colher:'Arraste a foice por cima para colher', catar:'Arraste a mão por cima para catar o bichinho'}[tipo] || 'Arraste por cima das plantas para usar';
-    el.innerHTML = `<div class="da-trilha"><i></i><i></i><i></i><span class="da-ic">${ic}</span></div><div class="da-txt">${txt}</div>`;
+    const nome = tipo === 'plantar' && id ? `${crop(id).emoji} ${crop(id).nome}` : tipo === 'insumo' && id ? `${INSUMOS[id].emoji} ${INSUMOS[id].nome}` : {regar:'💧 Regador', colher:'✂️ Foice', catar:'🖐️ Catar bichinho'}[tipo] || '';
+    const desc = tipo === 'insumo' && id ? INSUMOS[id].desc : tipo === 'catar' ? 'O fazendeiro tira o bichinho da planta (de graça).' : '';
+    el.innerHTML = `<div class="da-trilha"><i></i><i></i><i></i><span class="da-ic">${ic}</span></div><div class="da-txt">${nome ? `<b class="da-nome">${nome}</b>` : ''}${desc ? `<span class="da-desc">${desc}</span>` : ''}<span>${txt}</span></div>`;
     const acima = sr.top > 150; el.style.left = Math.max(130, Math.min(innerWidth - 130, x)) + 'px'; el.style.top = (acima ? sr.top - 6 : Math.min(innerHeight - 10, sr.bottom + 110)) + 'px';
     el.classList.remove('on'); void el.offsetWidth; el.classList.add('on'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('on'), 3200);
   }
@@ -3296,6 +3326,12 @@
     } else { destaque.visible = false; area.visible = false; }
     { const kz = Math.min(1.6, Math.max(1, camera.position.distanceTo(controls.target) / 24)); // de longe os balões crescem um pouco para continuar legíveis
       for (const id in baloes) { const b = baloes[id]; if (b.visible && b.userData.k !== kz) { b.userData.k = kz; b.scale.set(2.2 * kz, 1.1 * kz, 1); } } }
+    if (sombraNuvens) { sombraNuvens.material.map.offset.x += dt * .006; sombraNuvens.material.map.offset.y += dt * .0035; }
+    borboletas.forEach(b => {
+      b.fase += dt * 18; const ab = Math.sin(b.fase) * 1.1; b.a1.rotation.y = ab; b.a2.rotation.y = Math.PI - ab;
+      const d = b.alvo.clone().sub(b.g.position); if (d.length() < .3) b.alvo.set(Math.max(-MEIA + 2, Math.min(MEIA - 2, b.g.position.x + rnd(-5, 5))), rnd(.5, 1.5), Math.max(-MEIA + 2, Math.min(MEIA - 2, b.g.position.z + rnd(-5, 5))));
+      d.normalize().multiplyScalar(dt * b.vel); b.g.position.add(d); b.g.position.y += Math.sin(b.fase * .15) * dt * .4; b.g.rotation.y = Math.atan2(d.x, d.z);
+    });
     for (let k = coracoes.length - 1; k >= 0; k--) { const h = coracoes[k]; h.sp.position.y = h.y + Math.sin(performance.now() / 400 + k) * .15; if (Date.now() > h.ate) { scene.remove(h.sp); coracoes.splice(k, 1); } }
     if (marcadorT > 0) { marcadorT -= dt * 1.2; marcador.material.opacity = Math.max(0, marcadorT); marcador.scale.setScalar(1 + (1 - marcadorT) * .6); if (marcadorT <= 0) marcador.visible = false; }
     atualizarNomes();
@@ -3344,7 +3380,7 @@
     gov.soma += dt; gov.n++;
     if (gov.soma > 2.5) {
       const med = gov.soma / gov.n; gov.soma = gov.n = 0;
-      if (med > 1 / 38 && gov.pr > .75) { gov.pr = Math.max(.75, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
+      if (med > 1 / 38 && gov.pr > 1) { gov.pr = Math.max(1, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
       else if (med < 1 / 56 && gov.pr < gov.max) { if (++gov.bons >= 2) { gov.pr = Math.min(gov.max, gov.pr + .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); } }
       else gov.bons = 0;
     }
