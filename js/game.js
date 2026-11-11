@@ -1,4 +1,4 @@
-/* Terrália — jogo de fazenda 3D (mobile first, horizontal)
+/* Terrália Farm — jogo de fazenda 3D (mobile first, horizontal)
    Estrutura: DADOS → MAPA → ESTADO → CENA 3D → MODELOS → OBJETOS DO MAPA → PERSONAGENS → CANTEIROS
               → REGRAS → EDIÇÃO → INTERFACE → ENTRADA → LOOP */
 (() => {
@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.30'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.31'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -1113,6 +1113,23 @@
       const pm = palmeira(rnd(.9, 1.2)); pm.position.set(x, -.2, z); borda.add(pm);
     }
     scene.add(borda); mesclar(borda); congelar(borda);
+    // placa com o nome do jogo na entrada da ilha
+    { const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 360; const g2 = cv.getContext('2d');
+      const desenhar = () => { g2.clearRect(0, 0, 1024, 360);
+      g2.fillStyle = '#9a5a24'; g2.strokeStyle = '#4a2a0e'; g2.lineWidth = 18; g2.beginPath(); g2.roundRect ? g2.roundRect(14, 14, 996, 332, 60) : g2.rect(14, 14, 996, 332); g2.fill(); g2.stroke();
+      g2.fillStyle = 'rgba(255,255,255,.14)'; g2.fillRect(50, 40, 924, 24); g2.strokeStyle = 'rgba(70,35,10,.35)'; g2.lineWidth = 5; [150, 250].forEach(y => { g2.beginPath(); g2.moveTo(50, y); g2.lineTo(974, y); g2.stroke(); });
+      g2.textAlign = 'center'; g2.textBaseline = 'middle'; g2.font = '800 150px "Baloo 2", sans-serif'; g2.lineJoin = 'round';
+      g2.lineWidth = 24; g2.strokeStyle = '#5a2d08'; g2.strokeText('Terrália', 512, 140); g2.fillStyle = '#ffd447'; g2.fillText('Terrália', 512, 140);
+      g2.font = '800 96px "Baloo 2", sans-serif'; g2.lineWidth = 18; g2.strokeText('FARM', 512, 268); g2.fillStyle = '#fff3c4'; g2.fillText('FARM', 512, 268); };
+      desenhar();
+      const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = ANISO;
+      const placa = new THREE.Group();
+      const pl = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.2), new THREE.MeshStandardMaterial({map:tx, transparent:true, roughness:.8})); pl.position.y = 1.55; pl.castShadow = true; placa.add(pl);
+      const tras = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, .08), liso(0x6b3d17)); tras.position.set(0, 1.55, -.06); placa.add(tras);
+      [-1.25, 1.25].forEach(x => placa.add(cil(.09, .11, 2.1, 0x6b3d17, x, 1.05, -.06, 7)));
+      [-1.6, 1.6].forEach(x => { const f = arbusto(.55); f.position.set(x, 0, .15); placa.add(f); });
+      placa.position.set(MEIA - .3, -.05, MEIA - .3); placa.rotation.y = Math.PI / 4; placa.scale.setScalar(1.5); scene.add(placa);
+      if (document.fonts) document.fonts.ready.then(() => { desenhar(); tx.needsUpdate = true; }); }
   }
   const terras = {}; // decoração + placa das terras bloqueadas
   const clicaveisTerra = [];
@@ -2515,7 +2532,7 @@
   const primeiro = f => { const i = S.plots.findIndex(f); return i < 0 ? 0 : i; };
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'armazem') || S.objetos.find(o => o.tipo === 'celeiro');
   const TUT = [
-    {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
+    {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália Farm</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
     {txt:'Toque num <b>canteiro vazio</b> e <b>arraste a sacola de trigo</b> por cima dele.', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
     {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 e <b>arraste o regador</b> por cima dela.', p3:() => posTile(primeiro(p => p.c && !p.reg)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.plots.some(p => p.c && p.reg)},
     {txt:'Muito bem! Espere crescer, toque nela quando aparecer ✨ e <b>arraste a foice</b> por cima para colher.', p3:() => posTile(primeiro(p => p.c)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.colhidos > 0},
@@ -2886,7 +2903,7 @@
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
-        <div class="linha-cfg"><span>🌱 Versão ${VERSAO}<br><small class="det">${novaVersao ? `Nova versão ${esc(novaVersao)} disponível!` : 'O jogo se atualiza sozinho quando abre.'}</small></span>
+        <div class="linha-cfg"><span>🌱 <b>Terrália Farm</b> · versão ${VERSAO}<br><small class="det">${novaVersao ? `Nova versão ${esc(novaVersao)} disponível!` : 'O jogo se atualiza sozinho quando abre.'}</small></span>
           <button class="btn ${novaVersao ? 'verde' : ''}" data-acao="${novaVersao ? 'atualizar-ja' : 'procurar-versao'}">${novaVersao ? 'Atualizar agora' : 'Procurar atualização'}</button></div>
         <p class="dica legal">🎵 Músicas e sons: Mixkit (licença livre), OpenGameArt (CC0) e Pixabay.</p>
         <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
@@ -4178,7 +4195,27 @@
   // ===== modo app (instalar na tela inicial) =====
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
   window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; if (janela === 'config') renderJanela(); });
-  window.addEventListener('appinstalled', () => { pedidoInstalar = null; toast('📲 Terrália instalado! Abra pelo ícone na tela inicial.', 'bom'); if (janela === 'config') renderJanela(); });
+  // botão "Baixar o jogo" da tela inicial: instala como app (ícone na tela do celular)
+  const btnInst = $('#btnInstalar');
+  function atualizarBtnInstalar() { if (btnInst) btnInst.style.display = instalado() ? 'none' : ''; }
+  function ajudaInstalar() {
+    const ua = navigator.userAgent, ios = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1), dentroApp = /Instagram|FBAN|FBAV|WhatsApp|Line\/|TikTok|Snapchat/i.test(ua);
+    let h;
+    if (dentroApp) h = `<p>Você abriu o jogo dentro de outro aplicativo. Para instalar:</p><ol><li>Toque nos <b>três pontinhos ⋮</b> ou no menu do app</li><li>Escolha <b>Abrir no navegador</b> (Chrome ou Safari)</li><li>Lá, toque de novo em <b>📲 Baixar o jogo</b></li></ol>`;
+    else if (ios) h = `<p>No iPhone é assim (pelo <b>Safari</b>):</p><ol><li>Toque no botão <b>Compartilhar</b> <span class="mi-ic">⬆️</span> na barra de baixo</li><li>Role e toque em <b>Adicionar à Tela de Início</b> <span class="mi-ic">➕</span></li><li>Toque em <b>Adicionar</b>. Pronto! O ícone do Terrália Farm aparece na sua tela 🐄</li></ol>`;
+    else h = `<p>No Android é assim (pelo <b>Chrome</b>):</p><ol><li>Toque nos <b>três pontinhos ⋮</b> lá em cima</li><li>Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b></li><li>Confirme. O ícone do Terrália Farm aparece na sua tela 🐄</li></ol>`;
+    $('#miCorpo').innerHTML = h + '<p class="mi-obs">Depois é só abrir pelo ícone: o jogo abre em tela cheia, igual a um aplicativo, e se atualiza sozinho.</p>';
+    $('#modalInst').classList.add('on');
+  }
+  if (btnInst) btnInst.addEventListener('click', e => {
+    e.stopPropagation();
+    if (pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.then(r => { if (r && r.outcome === 'accepted') btnInst.textContent = '✅ Instalando…'; }).finally(() => { pedidoInstalar = null; }); }
+    else ajudaInstalar();
+  });
+  $('#miFechar').addEventListener('click', () => $('#modalInst').classList.remove('on'));
+  $('#modalInst').addEventListener('click', e => { if (e.target.id === 'modalInst') $('#modalInst').classList.remove('on'); });
+  atualizarBtnInstalar();
+  window.addEventListener('appinstalled', () => { pedidoInstalar = null; if (btnInst) btnInst.textContent = '✅ Instalado! Abra pelo ícone'; toast('📲 Terrália Farm instalado! Abra pelo ícone na tela inicial.', 'bom'); if (janela === 'config') renderJanela(); });
   setInterval(tickMercado, MERCADO_MS);
   setInterval(salvar, 5000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) salvar(); });

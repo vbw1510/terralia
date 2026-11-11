@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#7cc456">
 <meta name="screen-orientation" content="landscape">
-<title>Terrália</title>
+<title>Terrália Farm</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#6cc357">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Terrália">
+<meta name="apple-mobile-web-app-title" content="Terrália Farm">
 <link rel="icon" type="image/png" href="assets/icones/favicon.png">
 <link rel="apple-touch-icon" href="assets/icones/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -19,7 +19,7 @@
 </head>
 <body>
 <canvas id="cena"></canvas>
-<div id="carregando"><div class="car-caixa"><div class="car-logo">Terrália</div><div class="car-txt"></div><div class="car-barra"><i></i></div><div class="car-dica"></div></div></div>
+<div id="carregando"><div class="car-caixa"><div class="car-logo">Terrália <span>Farm</span></div><div class="car-txt"></div><div class="car-barra"><i></i></div><div class="car-dica"></div></div></div>
 <script>
 (function(){
   var D=['Arraste a semente por cima de vários canteiros de uma vez!','Toque nos cercados para ouvir os bichinhos 🐄','Ajudar fazendas de amigos dá moedas e XP','Anuncie suas vendas da banca no chat 📢','Materiais de ampliação caem ao colher e produzir','Na cooperativa vocês pedem e doam itens entre si'];
@@ -29,16 +29,19 @@
   try{ var txt=sessionStorage.getItem('terralia-indo'); if(txt){ p=35; window.mostrarCarregando(txt); } }catch(e){}
 })();
 </script>
-<div id="girar"><div class="cel"></div>Gire o celular<small>Terrália é jogado na horizontal</small></div>
+<div id="girar"><div class="cel"></div>Gire o celular<small>Terrália Farm é jogado na horizontal</small></div>
 
 <!-- Tela inicial -->
 <div id="splash">
-  <div class="splash-logo">Terrália</div>
+  <div class="splash-logo">Terrália <span>Farm</span></div>
   <div class="splash-baixo">
     <button class="btn-jogar" id="btnJogar">JOGAR</button>
+    <button class="btn-instalar" id="btnInstalar">📲 Baixar o jogo no celular</button>
     <p class="splash-sub">Plante, colha e cuide da sua fazenda</p>
   </div>
 </div>
+
+<div class="modal-inst" id="modalInst"><div class="mi-caixa"><button class="mi-x" id="miFechar">✕</button><div class="mi-tit">📲 Terrália Farm no seu celular</div><div class="mi-corpo" id="miCorpo"></div></div></div>
 
 <!-- Topo -->
 <div class="topo">
@@ -93,6 +96,7 @@
 <div class="dica-campo" id="dicaCampo"></div>
 <div class="missoes" id="missoes"></div>
 <div class="vinheta"></div>
+<div class="marca-jogo">Terrália <b>Farm</b></div>
 <div class="chat" id="chat"></div>
 <div class="dica-arr" id="dicaArr"></div>
 <div class="tutorial" id="tutorial">
