@@ -5,46 +5,55 @@
   if (!window.THREE) { document.body.innerHTML = '<div class="erro">Não consegui carregar o motor 3D. Recarregue a página.</div>'; return; }
   const KEY = 'terralia-v1';
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
+  let pedidoInstalar = null; // pedido de instalação do app (Chrome)
+  const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
 
   // ================= DADOS =================
   const CROPS = [
-    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:4,   tempo:12,  preco:12,  xp:2,  nivel:1},
-    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:15,  preco:7,   xp:1,  nivel:1},
-    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:28,  preco:26,  xp:4,  nivel:1},
-    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:20,  tempo:50,  preco:50,  xp:7,  nivel:2},
-    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:75,  preco:84,  xp:11, nivel:3},
-    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:115, preco:148, xp:17, nivel:4},
-    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:185, preco:285, xp:28, nivel:5},
-    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:300, preco:590, xp:45, nivel:6},
+    // trigo, milho e cenoura: os 3 primeiros (baratos e usados na ração dos bichos); alface vem depois
+    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:30,  preco:7,   xp:1,  nivel:1},
+    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:5,   tempo:45,  preco:15,  xp:2,  nivel:1},
+    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:60,  preco:26,  xp:4,  nivel:1},
+    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:20,  tempo:90,  preco:50,  xp:7,  nivel:2},
+    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:120,  preco:84,  xp:11, nivel:3},
+    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:180, preco:148, xp:17, nivel:4},
+    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:270, preco:285, xp:28, nivel:5},
+    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:390, preco:590, xp:45, nivel:6},
   ];
   const EXTRAS = [
     {id:'ovo',   nome:'Ovo',   emoji:'🥚', preco:18, animal:'galinha'},
     {id:'leite', nome:'Leite', emoji:'🥛', preco:40, animal:'vaca'},
     {id:'la',    nome:'Lã',    emoji:'🧶', preco:70, animal:'ovelha'},
+    {id:'angora', nome:'Pelo de angorá', emoji:'☁️', preco:120, animal:'coelho'},
   ];
   // rações: feitas no moinho, servem para alimentar os animais (não são vendidas)
   const RACOES = [
     {id:'racaoG', nome:'Ração de galinha', emoji:'🥣', animal:'galinha', ing:{trigo:3}, tempo:60, nivel:2, preco:0, racao:true, rende:3},
     {id:'racaoV', nome:'Ração de vaca',    emoji:'🥣', animal:'vaca',    ing:{milho:2, trigo:2}, tempo:120, nivel:3, preco:0, racao:true, rende:3},
     {id:'racaoO', nome:'Ração de ovelha',  emoji:'🥣', animal:'ovelha',  ing:{trigo:2, cenoura:2}, tempo:180, nivel:5, preco:0, racao:true, rende:3},
+    {id:'racaoC', nome:'Ração de coelho',  emoji:'🥣', animal:'coelho',  ing:{alface:2, cenoura:2}, tempo:240, nivel:8, preco:0, racao:true, rende:3},
   ];
   RACOES.forEach(r => r.fab = 'moinho');
-  Object.assign(RACOES[0], {mini:'🐔', cor:'#f5c542'}); Object.assign(RACOES[1], {mini:'🐄', cor:'#6cc357'}); Object.assign(RACOES[2], {mini:'🐑', cor:'#5bb3ea'});
+  Object.assign(RACOES[0], {mini:'🐔', cor:'#f5c542'}); Object.assign(RACOES[1], {mini:'🐄', cor:'#6cc357'}); Object.assign(RACOES[2], {mini:'🐑', cor:'#5bb3ea'}); Object.assign(RACOES[3], {mini:'🐰', cor:'#f29ac0'});
   // produtos das fábricas (valem bem mais que o ingrediente cru)
   const PRODUTOS = [
     {id:'pao',      nome:'Pão',               emoji:'🍞', fab:'padaria',   ing:{trigo:3},                     tempo:180,  preco:60,   xp:6,  nivel:4},
     {id:'paoMilho', nome:'Pão de milho',      emoji:'🌽', fab:'padaria',   ing:{milho:2, ovo:1},              tempo:300,  preco:150,  xp:10, nivel:4},
     {id:'bolo',     nome:'Bolo',              emoji:'🎂', fab:'padaria',   ing:{trigo:2, ovo:2, leite:1},     tempo:600,  preco:320,  xp:18, nivel:5},
+    {id:'sanduiche',nome:'Sanduíche',         emoji:'🥪', fab:'padaria',   ing:{pao:1, alface:1, queijo:1},   tempo:540,  preco:480,  xp:24, nivel:6},
     {id:'manteiga', nome:'Manteiga',          emoji:'🧈', fab:'laticinio', ing:{leite:2},                     tempo:360,  preco:140,  xp:10, nivel:5},
     {id:'queijo',   nome:'Queijo',            emoji:'🧀', fab:'laticinio', ing:{leite:3},                     tempo:600,  preco:210,  xp:14, nivel:5},
     {id:'iogurte',  nome:'Iogurte de morango',emoji:'🍓', fab:'laticinio', ing:{leite:1, morango:2},          tempo:480,  preco:330,  xp:18, nivel:6},
     {id:'novelo',   nome:'Novelo de linha',   emoji:'🧶', fab:'tecelagem', ing:{la:1},                        tempo:300,  preco:110,  xp:8,  nivel:6},
     {id:'cachecol', nome:'Cachecol',          emoji:'🧣', fab:'tecelagem', ing:{la:2},                        tempo:720,  preco:240,  xp:16, nivel:6},
     {id:'sueter',   nome:'Suéter',            emoji:'🧥', fab:'tecelagem', ing:{la:3, novelo:1},              tempo:1500, preco:520,  xp:30, nivel:7},
+    {id:'luvas',    nome:'Luvas de angorá',   emoji:'🧤', fab:'tecelagem', ing:{angora:2},                    tempo:900,  preco:380,  xp:20, nivel:8},
+    {id:'gorro',    nome:'Gorro de angorá',   emoji:'👒', fab:'tecelagem', ing:{angora:3, novelo:1},          tempo:1800, preco:760,  xp:36, nivel:9},
     {id:'omelete',  nome:'Omelete',           emoji:'🍳', fab:'cozinha',   ing:{ovo:2, tomate:1},             tempo:480,  preco:150,  xp:10, nivel:7},
+    {id:'salada',   nome:'Salada da horta',   emoji:'🥗', fab:'cozinha',   ing:{alface:2, tomate:1, cenoura:1}, tempo:420, preco:290,  xp:15, nivel:7},
     {id:'torta',    nome:'Torta de abóbora',  emoji:'🥧', fab:'cozinha',   ing:{abobora:1, ovo:2, trigo:2},   tempo:1200, preco:640,  xp:32, nivel:7},
     {id:'geleia',   nome:'Geleia de uva',     emoji:'🍇', fab:'cozinha',   ing:{uva:3},                       tempo:900,  preco:1900, xp:60, nivel:8},
   ];
@@ -61,9 +70,8 @@
     // niv = nível do jogador necessário para cada nível da melhoria
     botas:    {nome:'Botas de couro',  emoji:'🥾', desc:'O fazendeiro anda 15% mais rápido por nível.', max:5, base:200, mult:2, niv:[2, 4, 6, 8, 10]},
     ferram:   {nome:'Ferramentas de qualidade', emoji:'🧰', desc:'Plantar, regar e colher 18% mais rápido por nível.', max:5, base:250, mult:2.1, niv:[2, 4, 6, 8, 10]},
-    regadorG: {nome:'Regador grande', emoji:'🚿', desc:'O regador molha os canteiros em volta de uma vez.', max:1, base:350,  mult:1, niv:[3]},
     fertil:   {nome:'Fertilizante',   emoji:'🌿', desc:'Plantas crescem 12% mais rápido por nível.', max:5, base:120, mult:2.2, niv:[3, 5, 7, 9, 11]},
-    cesta:    {nome:'Cesta grande', emoji:'🧺', desc:'Colha vários canteiros de uma vez: 2 no nível 1, 4 no nível 2.', max:2, base:400, mult:3, niv:[4, 8]},
+    maos:     {nome:'Mãos de fazendeiro', emoji:'🧤', desc:'Plante, regue e colha vários canteiros de uma vez: 2, 4, 6 e depois 9.', max:4, base:400, mult:2.6, niv:[4, 8, 13, 18]},
     moinhoVaga:{nome:'Fábricas maiores', emoji:'⚙️', desc:'+1 vaga na fila de produção do moinho e de todas as fábricas.', max:3, base:500, mult:2.2, niv:[4, 6, 8]},
     adubo:    {nome:'Adubo especial', emoji:'🧪', desc:'+12% de chance de colheita dupla por nível.', max:5, base:150, mult:2.3, niv:[5, 7, 9, 11, 13]},
     aspersor: {nome:'Aspersores',     emoji:'💦', desc:'Tudo que você planta já nasce regado.', max:1, base:1200, mult:1, niv:[7]},
@@ -76,6 +84,7 @@
     galinha: {nome:'Galinha', plural:'Galinhas', emoji:'🐔', img:null,       prod:'ovo',   tempo:120, porRacao:3, racao:'racaoG', porCercado:6, custo:150,  mult:1.3,  nivel:1, cercado:'galinheiro'},
     vaca:    {nome:'Vaca',    plural:'Vacas',    emoji:'🐄', img:'vaca.jpg', prod:'leite', tempo:300, porRacao:2, racao:'racaoV', porCercado:3, custo:800,  mult:1.45, nivel:2, cercado:'curral'},
     ovelha:  {nome:'Ovelha',  plural:'Ovelhas',  emoji:'🐑', img:null,       prod:'la',    tempo:480, porRacao:2, racao:'racaoO', porCercado:4, custo:1400, mult:1.4,  nivel:4, cercado:'pasto'},
+    coelho:  {nome:'Coelho',  plural:'Coelhos',  emoji:'🐰', img:null,       prod:'angora', tempo:600, porRacao:2, racao:'racaoC', porCercado:5, custo:2200, mult:1.4, nivel:8, cercado:'coelheira'},
   };
   // construções do mapa (tamanho em células da grade)
   const TIPOS = {
@@ -92,6 +101,7 @@
     galinheiro: {nome:'Galinheiro', w:3, d:2, animal:'galinha'},
     curral:     {nome:'Curral',     w:3, d:3, animal:'vaca'},
     pasto:      {nome:'Pasto',      w:3, d:3, animal:'ovelha'},
+    coelheira:  {nome:'Coelheira',  w:3, d:2, animal:'coelho', fem:true},
     lago:       {nome:'Lago',       w:3, d:3, fixo:true, obst:true},
     // decorações (só deixam a fazenda bonita)
     flores:     {nome:'Canteiro de flores', w:1, d:1, decor:true},
@@ -157,7 +167,7 @@
       stats:{colheu:{}, plantou:{}, coletou:{}, vendeu:0, compras:0, fez:{}, alimentou:0}, missoes:{idx:0, ativas:[], geradas:0}, az:0,
       ani:{}, moinhos:{}, fab:{}, nomes:{}, perfil:null, tutB:-2, presente:{}, cap:{armazem:0, celeiro:0},
       objetos:layoutInicial(), zonas:ZONAS.filter(z => z.inicial).map(z => z.key),
-      sementes:{alface:6}, celeiro:{}, upg:{}, amigos:{}, animais:{}, prod:{}, aniUpg:{}, seguir:false, ferramenta:'mao', semSel:'alface',
+      sementes:{trigo:6}, celeiro:{}, upg:{}, amigos:{}, animais:{}, prod:{}, aniUpg:{}, seguir:false, ferramenta:'mao', semSel:'trigo',
       precos:Object.fromEntries(ITENS.map(c => [c.id, 1])), tend:{}, evento:null,
       ganho:0, colhidos:0, viuAjuda:false, leve:MOBILE && (window.devicePixelRatio || 1) > 2.5 };
   }
@@ -168,7 +178,8 @@
         S = Object.assign(novo(), JSON.parse(r));
         ITENS.forEach(c => { if (S.precos[c.id] == null) S.precos[c.id] = 1; });
         if (S.amigos.vaca) { S.animais.vaca = Math.max(1, S.animais.vaca || 0); delete S.amigos.vaca; }
-        if (S.ferramenta && S.ferramenta !== 'mao' && S.ferramenta !== 'regador' && !crop(S.ferramenta)) S.ferramenta = 'mao'; if (crop(S.ferramenta)) S.semSel = S.ferramenta; if (!S.semSel) S.semSel = 'alface';
+        if (S.ferramenta && S.ferramenta !== 'mao' && S.ferramenta !== 'regador' && !crop(S.ferramenta)) S.ferramenta = 'mao'; if (crop(S.ferramenta)) S.semSel = S.ferramenta; if (!S.semSel) S.semSel = 'trigo';
+        if (S.upg.cesta || S.upg.regadorG) { S.upg.maos = Math.max(S.upg.maos || 0, S.upg.cesta || 0); if (S.upg.regadorG) S.moedas += 350; delete S.upg.cesta; delete S.upg.regadorG; }
         // saves antigos: plantação fixa → lotes de 4 canteiros
         const lotes = S.objetos.filter(o => o.tipo === 'lote').length;
         const precisa = Math.max(1, Math.ceil(S.plots.length / 4));
@@ -192,6 +203,7 @@
   let salvoAntes = 0; // horário do último save deste aparelho antes de abrir o jogo (para comparar com a nuvem)
   let ultimoJson = '';
   function salvar() {
+    if (ON.recarregando) return;
     try { const t = S.salvoEm; S.salvoEm = 0; const j = JSON.stringify(S); S.salvoEm = t;
       if (j !== ultimoJson) { ultimoJson = j; S.salvoEm = Date.now(); ON.sujo = true; } // só conta como mudança se algo mudou de verdade
       localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
@@ -212,15 +224,16 @@
     {tipo:'curral',     icone:'🐄', nivel:3, base:1200, desc:'Lugar das vacas: cabem 3.'},
     {tipo:'moinho',     icone:'🌾', nivel:2, base:400,  desc:'Fábrica de ração: transforma trigo, milho e cenoura em comida para os animais.'},
     {tipo:'pasto',      icone:'🐑', nivel:5, base:2500, desc:'Pasto das ovelhas: cabem 4.'},
-    {tipo:'padaria',    icone:'🥖', nivel:4, base:1500, desc:'Faz pão, pão de milho e bolo com trigo, milho, ovos e leite.', unico:true},
+    {tipo:'coelheira',  icone:'🐰', nivel:8, base:3500, desc:'Casa dos coelhos: cabem 5. Eles dão pelo de angorá.'},
+    {tipo:'padaria',    icone:'🥖', nivel:4, base:1500, desc:'Faz pão, pão de milho, bolo e sanduíche.', unico:true},
     {tipo:'laticinio',  icone:'🧀', nivel:5, base:2800, desc:'Transforma leite em manteiga, queijo e iogurte.', unico:true},
-    {tipo:'tecelagem',  icone:'🧵', nivel:6, base:4000, desc:'Transforma lã em novelo, cachecol e suéter.', unico:true},
-    {tipo:'cozinha',    icone:'🍳', nivel:7, base:6000, desc:'Faz omelete, torta de abóbora e geleia de uva.', unico:true},
+    {tipo:'tecelagem',  icone:'🧵', nivel:6, base:4000, desc:'Transforma lã e pelo de angorá em roupas.', unico:true},
+    {tipo:'cozinha',    icone:'🍳', nivel:7, base:6000, desc:'Faz omelete, salada, torta de abóbora e geleia.', unico:true},
   ];
   const consDe = t => CONSTRUCOES.find(c => c.tipo === t);
   const decDe = t => DECOR.find(c => c.tipo === t);
   // quantas de cada construção dá para ter, conforme o nível
-  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], moinho:[2, 7, 12, 17]};
+  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], moinho:[2, 7, 12, 17]};
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
   const maxPermitido = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
   const nivelConstrucao = t => t === 'lote' ? 1 + Math.ceil(nTipo('lote') * .67) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nTipo(t)) : consDe(t).nivel;
@@ -675,7 +688,7 @@
   }
   function modeloCercado(tipo, w, d) {
     const g = new THREE.Group(), W = w * G - .4, D = d * G - .4;
-    const cores = {galinheiro:0xd9c08a, curral:0xc9a66b, pasto:0x8fd06a};
+    const cores = {galinheiro:0xd9c08a, curral:0xc9a66b, pasto:0x8fd06a, coelheira:0x9fd67a};
     g.add(chaoPlano(W, D, cores[tipo], .025));
     g.add(cerca(W, D, true, 0xa86f3c));
     const fx = W / 2 - .9, fz = -D / 2 + .55;
@@ -694,6 +707,18 @@
       g.add(mesh(new THREE.BoxGeometry(1, .3, .45), 0, -W / 2 + .8, .15, D / 2 - .7, true, liso(0x9aa5ae)));
       g.add(mesh(new THREE.BoxGeometry(.9, .05, .35), 0, -W / 2 + .8, .3, D / 2 - .7, false, liso(0x5fb5e8)));
       for (let i = 0; i < 2; i++) { const f = cil(.45, .45, .8, 0xeccb5e, -W / 2 + .9, .45, -D / 2 + .9 + i * 1.0, 14); f.rotation.z = Math.PI / 2; g.add(f); }
+    }
+    if (tipo === 'coelheira') {
+      const c = new THREE.Group();
+      c.add(mesh(new THREE.BoxGeometry(1.7, .8, 1), 0, 0, .75, 0, true, liso(0xf2e3c6)));
+      [-.75, .75].forEach(x => [-.4, .4].forEach(z => c.add(cil(.05, .05, .4, 0x8b5a2b, x, .2, z, 6))));
+      const t = telhado(2, .55, 1.3, 0xd96a8a); t.position.y = 1.15; c.add(t);
+      c.add(mesh(new THREE.BoxGeometry(.7, .5, .05), 0, -.35, .75, .52, false, liso(0x7a5a3a)));
+      for (let k = 0; k < 4; k++) c.add(mesh(new THREE.BoxGeometry(.03, .5, .06), 0, .2 + k * .15, .75, .52, false, liso(0xb0b8c0)));
+      const rampa = mesh(new THREE.BoxGeometry(.32, .05, .7), 0, -.35, .25, .85, true, liso(0x9a6238)); rampa.rotation.x = .55; c.add(rampa);
+      c.position.set(-W / 2 + 1.1, 0, -D / 2 + .8); g.add(c);
+      // cenouras espalhadas
+      for (let i = 0; i < 4; i++) { const ce = mesh(new THREE.ConeGeometry(.06, .3, 6), 0, rnd(0, W / 2 - .5), .06, rnd(-D / 2 + .5, D / 2 - .5), true, liso(0xff8a2a)); ce.rotation.z = Math.PI / 2; ce.rotation.y = rnd(0, 6); g.add(ce); }
     }
     if (tipo === 'pasto') {
       for (let i = 0; i < 2; i++) { const f = cil(.45, .45, .8, 0xeccb5e, -W / 2 + .9, .45, D / 2 - .9 - i * 1.0, 14); f.rotation.z = Math.PI / 2; g.add(f); }
@@ -1190,6 +1215,23 @@
     return g;
   }
 
+  function criarCoelho() {
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.add(corpo);
+    const cor = [0xf7f3ee, 0xd8b48c, 0xb9b4b0][Math.random() * 3 | 0], rosa = 0xffa9c0;
+    const b = bola(.3, cor, 0, .32, -.05, 14); b.scale.set(.9, .85, 1.15); corpo.add(b);
+    const pernas = [[-.13, .18], [.13, .18], [-.15, -.2], [.15, -.2]].map(([x, z]) => { const p = perna(cor, .14, .05, x, .14, z); corpo.add(p); return p; });
+    const cab = new THREE.Group(); cab.position.set(0, .55, .24); corpo.add(cab);
+    cab.add(bola(.2, cor, 0, 0, 0, 14));
+    [-1, 1].forEach(s => { const o = bola(.07, cor, s * .08, .3, -.03, 10); o.scale.set(.7, 2.6, .5); o.rotation.z = -s * .15; cab.add(o);
+      const oi = bola(.045, rosa, s * .08, .3, .01, 8); oi.scale.set(.6, 2.4, .3); oi.rotation.z = -s * .15; cab.add(oi); });
+    cab.add(bola(.035, rosa, 0, -.02, .19, 8));
+    olhos(cab, .05, .16, .09, .035);
+    const cauda = new THREE.Group(); cauda.position.set(0, .35, -.38); corpo.add(cauda); cauda.add(bola(.1, 0xffffff, 0, 0, 0, 8));
+    g.add(sombraBlob(.4));
+    g.userData = {corpo, pernas, cauda, cab, fase:0, vel:1.1, pula:true};
+    return g;
+  }
+
   const heroi = {g:null, rota:[], acao:null, pulo:0, fila:[], atual:null};
   const pets = {};
   function montarPersonagens() {
@@ -1235,14 +1277,14 @@
     p.rot = rotulo(nomePet(k), '#3f8d33'); p.rot.scale.multiplyScalar(.55); p.rot.position.y = k === 'cachorro' ? 1.35 : .85; p.g.add(p.rot);
   }
   function atualizarRotulosPets() { for (const k in pets) colocarRotuloPet(k); }
-  const rebanho = {galinha:[], vaca:[], ovelha:[]};
+  const rebanho = {galinha:[], vaca:[], ovelha:[], coelho:[]};
   function cercadoDoAnimal(k, j) { const cs = cercadosDe(k); return cs[Math.min(cs.length - 1, Math.floor(j / ANIMAIS[k].porCercado))]; }
   function pontoNoCercado(o) { const L = limites(o); return V3(L.x + rnd(-L.hw, L.hw), 0, L.z + rnd(-L.hd, L.hd)); }
   function atualizarAnimais3D(reposicionar) {
     for (const k in ANIMAIS) {
       const lista = rebanho[k];
       while (lista.length < qtdAnimal(k)) {
-        const g = k === 'galinha' ? criarGalinha() : k === 'vaca' ? criarVaca() : criarOvelha();
+        const g = k === 'galinha' ? criarGalinha() : k === 'vaca' ? criarVaca() : k === 'coelho' ? criarCoelho() : criarOvelha();
         const o = cercadoDoAnimal(k, lista.length); if (!o) break;
         g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
         lista.push({g, alvo:g.position.clone(), espera:rnd(0, 3)});
@@ -1356,9 +1398,9 @@
       rebanho[k].forEach((a, j) => {
         const g = a.g, gu = g.userData;
         const mov = andar(g, a.alvo, gu.vel, dt);
-        if (mov) { animarPernas(gu, dt, k === 'galinha' ? 18 : 6, k === 'galinha' ? .6 : .4); if (gu.bica) gu.corpo.position.y = Math.abs(Math.sin(gu.fase)) * .04; }
+        if (mov) { animarPernas(gu, dt, k === 'galinha' ? 18 : k === 'coelho' ? 10 : 6, k === 'galinha' ? .6 : .4); if (gu.bica) gu.corpo.position.y = Math.abs(Math.sin(gu.fase)) * .04; if (gu.pula) gu.corpo.position.y = Math.abs(Math.sin(gu.fase)) * .18; }
         else {
-          gu.pernas.forEach(q => q.rotation.x *= .8);
+          gu.pernas.forEach(q => q.rotation.x *= .8); if (gu.pula) gu.corpo.position.y *= .8;
           gu.cab.rotation.x = gu.bica ? Math.max(0, Math.sin(t * 6 + g.id)) * .8 : .25 + Math.sin(t * 1.5 + g.id) * .08;
           a.espera -= dt;
           if (a.espera <= 0) { a.espera = rnd(2, 6); const o = cercadoDoAnimal(k, j); if (o && !(editar.sel === o)) a.alvo.copy(pontoNoCercado(o)); }
@@ -1695,9 +1737,25 @@
   const naFila = i => heroi.fila.some(a => a.i === i || (a.lista && a.lista.includes(i))) || (heroi.atual && (heroi.atual.i === i || (heroi.atual.lista && heroi.atual.lista.includes(i))));
   const objNaFila = id => heroi.fila.some(a => a.oid === id) || (heroi.atual && heroi.atual.oid === id);
   const alvoAcao = a => { if (a.pos) return {anda:a.pos.clone(), olha:a.pos}; if (a.oid) { const o = objPorId(a.oid), c = centro(o), [, D] = dims(o); return {anda:V3(c.x, 0, c.z + D * G / 2 + .6), olha:c}; } const t = posTile(a.i); return {anda:t.clone().add(V3(0, 0, G * .55)), olha:t}; };
-  const semFila = id => heroi.fila.filter(a => a.tipo === 'plantar' && a.id === id).length + (heroi.atual && heroi.atual.tipo === 'plantar' && heroi.atual.id === id ? 1 : 0);
+  const semFila = id => [heroi.atual, ...heroi.fila].filter(a => a && a.tipo === 'plantar' && a.id === id).reduce((n, a) => n + idsAcao(a).length, 0);
   function marcar(i, on) { if (i != null && tiles[i]) tiles[i].marca.visible = on; }
   const idsAcao = a => a.lista || (a.i != null ? [a.i] : []);
+  const areaMax = () => [1, 2, 4, 6, 9][S.upg.maos || 0]; // Mãos de fazendeiro: quantos canteiros por vez
+  function areaAcao(i, filtro, max, ignorar) { // o canteiro tocado + os mais perto que também servem
+    const c = posTile(i);
+    return [i, ...S.plots.map((q, j) => j).filter(j => j !== i && tiles[j] && filtro(S.plots[j]) && !naFila(j) && !(ignorar && ignorar.has(j)))
+      .sort((x, y) => posTile(x).distanceTo(c) - posTile(y).distanceTo(c))].slice(0, Math.max(1, Math.min(areaMax(), max)));
+  }
+  const regavel = p => p.c && !p.reg, vazio = p => !p.c;
+  // plantar: só nos canteiros que o jogador escolheu; canteiros seguidos com a mesma semente viram uma tarefa só (até o limite das Mãos)
+  // plantar, regar e colher: só nos canteiros que o jogador escolheu; canteiros seguidos da mesma ação viram uma tarefa só (até o limite das Mãos)
+  function enfileirarGrupo(tipo, i, id) {
+    const u = heroi.fila[heroi.fila.length - 1];
+    if (u && u.tipo === tipo && u.id === id && idsAcao(u).length < areaMax()) { u.lista = idsAcao(u).concat(i); marcar(i, true); renderFila(); return; }
+    enfileirar(id ? {tipo, i, id, lista:[i]} : {tipo, i, lista:[i]});
+  }
+  const enfileirarPlantio = (i, id) => enfileirarGrupo('plantar', i, id);
+  const colhendoNaFila = () => [heroi.atual, ...heroi.fila].filter(a => a && a.tipo === 'colher').reduce((n, a) => n + idsAcao(a).length, 0);
   const MAX_FILA = Infinity;
   function enfileirar(acao) {
     if (heroi.fila.length >= MAX_FILA) { toast('A lista de afazeres está cheia (20)'); return false; }
@@ -1751,21 +1809,22 @@
     if (a.tipo === 'cercado') { const o = objPorId(a.oid); if (o) trabalharCercado(o); return; }
     if (a.tipo === 'andar') return;
     const p = S.plots[a.i];
-    if (a.tipo === 'plantar' && !p.c) plantar(a.i, a.id);
+    if (a.tipo === 'plantar') idsAcao(a).forEach(j => { if (!S.plots[j].c && (S.sementes[a.id] || 0) > 0) plantar(j, a.id); });
     if (a.tipo === 'regar') idsAcao(a).forEach(j => regar(j));
     if (a.tipo === 'colher') idsAcao(a).forEach(j => { if (pronto(S.plots[j])) colher(j); });
   }
+  const listaColheita = (i, ignorar) => areaAcao(i, pronto, livreArmazem(), ignorar);
   function clicarTile(i) {
     const p = S.plots[i], f = S.ferramenta;
     if (naFila(i)) return;
     if (pronto(p) && livreArmazem() < 1) { avisarCheio(); return; }
     if (pronto(p)) { // com a Cesta grande colhe 2 ou 4 canteiros de uma vez
-      const max = [1, 2, 4][S.upg.cesta || 0], c = posTile(i);
-      const lista = [i, ...S.plots.map((q, j) => j).filter(j => j !== i && pronto(S.plots[j]) && !naFila(j) && tiles[j]).sort((x, y) => posTile(x).distanceTo(c) - posTile(y).distanceTo(c)).slice(0, max - 1)];
-      enfileirar({tipo:'colher', i, lista}); return;
+      if (livreArmazem() - colhendoNaFila() < 1) { avisarCheio(); return; }
+      enfileirarGrupo('colher', i); return;
     }
     if (f === 'regador') {
-      const lista = (S.upg.regadorG ? vizinhos(i) : [i]).filter(j => S.plots[j].c && !S.plots[j].reg && !naFila(j));
+      const lista = regavel(p) ? [i] : [];
+      if (lista.length) { enfileirarGrupo('regar', i); return; }
       if (!lista.length) { toast(p.c ? 'Essa já está regada' : 'Nada para regar aqui'); return; }
       enfileirar({tipo:'regar', i, lista}); return;
     }
@@ -1777,7 +1836,7 @@
     }
     if (!p.c) {
       if ((S.sementes[f] || 0) - semFila(f) <= 0) { toast(`Sem sementes de ${crop(f).nome}. Compre na Loja`); return; }
-      enfileirar({tipo:'plantar', i, id:f}); return;
+      enfileirarPlantio(i, f); return;
     }
     if (!p.reg) toast('Agora regue com o regador');
     else toast(`${crop(p.c).emoji} fica pronta em ${fmtT((p.dur - (Date.now() - p.t0)) / 1000)}`);
@@ -1913,7 +1972,7 @@
 
   // ================= MISSÕES =================
   const CADEIA = [
-    {t:'colher', id:'alface', n:5, r:30}, {t:'vender', n:50, r:25}, {t:'plantar', id:'cenoura', n:3, r:40},
+    {t:'colher', id:'trigo', n:5, r:30}, {t:'vender', n:50, r:25}, {t:'plantar', id:'cenoura', n:3, r:40},
     {t:'nivel', n:2, r:50}, {t:'ter', id:'lote', n:2, r:60}, {t:'ter', id:'galinheiro', n:1, r:80},
     {t:'animais', id:'galinha', n:3, r:120}, {t:'plantar', id:'trigo', n:6, r:60}, {t:'ter', id:'moinho', n:1, r:100},
     {t:'fazer', id:'racaoG', n:3, r:120}, {t:'alimentar', n:6, r:120}, {t:'coletar', id:'ovo', n:10, r:150},
@@ -1925,6 +1984,9 @@
     {t:'fazer', id:'racaoO', n:3, r:600}, {t:'coletar', id:'la', n:5, r:800}, {t:'ter', id:'laticinio', n:1, r:900},
     {t:'fazer', id:'queijo', n:2, r:700}, {t:'ter', id:'tecelagem', n:1, r:1200}, {t:'fazer', id:'cachecol', n:2, r:1000},
     {t:'terras', n:3, r:1500}, {t:'ter', id:'cozinha', n:1, r:1800}, {t:'fazer', id:'torta', n:2, r:2000},
+    {t:'colher', id:'alface', n:10, r:600}, {t:'fazer', id:'salada', n:2, r:900}, {t:'fazer', id:'sanduiche', n:2, r:1200},
+    {t:'ter', id:'coelheira', n:1, r:1500}, {t:'animais', id:'coelho', n:3, r:1800}, {t:'fazer', id:'racaoC', n:3, r:1200},
+    {t:'coletar', id:'angora', n:5, r:2000}, {t:'fazer', id:'luvas', n:2, r:2200}, {t:'fazer', id:'gorro', n:1, r:3000},
   ];
   const ABSOLUTA = ['nivel', 'ter', 'animais', 'terras', 'pet'];
   function valorMissao(m) {
@@ -2054,7 +2116,7 @@
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'armazem') || S.objetos.find(o => o.tipo === 'celeiro');
   const TUT = [
     {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
-    {txt:'Toque em <b>Plantar</b> aqui embaixo. (Tocando de novo você escolhe outra semente.)', el:() => $('[data-ferr=plantar]'), ok:() => S.ferramenta === 'alface'},
+    {txt:'Toque em <b>Plantar</b> aqui embaixo. (Tocando de novo você escolhe outra semente.)', el:() => $('[data-ferr=plantar]'), ok:() => S.ferramenta === 'trigo'},
     {txt:'Agora toque num <b>canteiro vazio</b> para plantar.', p3:() => posTile(primeiro(p => !p.c)), ok:() => S.plots.some(p => p.c)},
     {txt:'Toda planta precisa de água! Pegue o <b>regador</b>.', el:() => $('[data-ferr=regador]'), ok:() => S.ferramenta === 'regador'},
     {txt:'Toque na plantinha com a gotinha 💧 para <b>regar</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), ok:() => S.plots.some(p => p.c && p.reg)},
@@ -2062,7 +2124,7 @@
     {txt:'A colheita foi para o <b>Armazém</b>. Toque nele para vender! (O Celeiro guarda as sementes.)', p3:() => centro(celeiroObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'armazem'},
     {txt:'Toque em <b>Vender tudo</b> para ganhar moedas.', el:() => $('[data-acao=vender-tudo]'), ok:() => S.stats.vendeu > 0},
     {txt:'Agora vamos comprar mais sementes na <b>Loja</b>.', el:() => $('#jabas [data-abrir=loja]') || $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
-    {txt:'Compre <b>10 sementes de alface</b>.', el:() => $('[data-comprar=alface][data-q="10"]'), ok:() => S.stats.compras > 0},
+    {txt:'Compre <b>10 sementes de trigo</b>.', el:() => $('[data-comprar=trigo][data-q="10"]'), ok:() => S.stats.compras > 0},
     {txt:'Arraste a tela para passear pela fazenda e use a <b>pinça</b> (ou a rodinha) para zoom. O botão <b>⟳</b> gira a visão.', el:() => $('#btnGirar'), botao:'Entendi', entrar:() => fechar()},
     {txt:'Prontinho! Siga as <b>Missões</b> aqui do lado para crescer sua fazenda. Boa colheita! 🌻', el:() => $('#missoes'), botao:'Bora!'},
   ];
@@ -2172,7 +2234,7 @@
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['loja', 'armazem', 'celeiro', 'animais'];
   const SUBLOJA = {sementes:'🌱 Sementes', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
-  let subLoja = 'sementes';
+  let subLoja = 'sementes', vitrineChave = '';
   function abrir(nome, sub) {
     if (editar.ativo && nome !== 'config') return;
     if (nome === 'melhorias' || nome === 'construir') { sub = nome === 'construir' ? 'construcoes' : 'melhorias'; nome = 'loja'; }
@@ -2187,123 +2249,112 @@
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
+    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais'].includes(janela));
     let h = '';
+    const tile = o => `<div class="tile ${o.trava ? 'trava' : ''} ${o.cls || ''}" ${o.attr || ''}>
+      ${o.selo ? `<span class="selo ${o.seloCls || ''}">${o.selo}</span>` : ''}
+      <div class="t-ic">${o.ic}</div><div class="t-nome">${o.nome}</div>
+      <div class="t-info">${o.info}</div><div class="t-acao">${o.acao}</div></div>`;
+
     if (janela === 'loja') {
-      h += `<div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}</div>`;
-      if (subLoja === 'sementes') {
-        h += `<p class="dica">Sementes para plantar nos canteiros. Os saquinhos comprados ficam no botão <b>Plantar</b>, lá embaixo. Você tem ${moedaMini}${fmtN(S.moedas)}.</p>`;
-        CROPS.forEach(c => {
-          const trava = S.nivel < c.nivel, t = c.tempo * velocidade();
-          h += `<div class="card ${trava ? 'trava' : ''} ${c.id === destaqueSem ? 'destaque' : ''}" data-card-sem="${c.id}"><div class="em saco-card">${ICO.saco}<span class="emo">${c.emoji}</span></div>
-            <div class="meio"><div class="nome">${c.nome} ${trava ? `<span class="nv">Nível ${c.nivel}</span>` : `<span class="det">· você tem ${S.sementes[c.id] || 0}</span>`}</div>
-            <div class="det">Semente ${moedaMini}${c.semente} · cresce em ⏱ ${fmtT(t)}</div>
-            <div class="det">Vende por ~${moedaMini}${c.preco} · <b class="sobe">lucro ${fmtN(c.preco - c.semente)}</b> por canteiro · ⭐ ${c.xp} XP</div></div>
-            <div class="botoes"><button class="btn" data-comprar="${c.id}" data-q="1" ${trava || S.moedas < c.semente ? 'disabled' : ''}>+1</button>
-            <button class="btn" data-comprar="${c.id}" data-q="10" ${trava || S.moedas < c.semente * 10 ? 'disabled' : ''}>+10</button></div></div>`;
-        });
-      }
+      // loja em "vitrine": cartões grandes lado a lado, rolando para o lado
+      const DICAS = {sementes:'Os saquinhos comprados ficam no botão <b>Plantar</b>, lá embaixo.', construcoes:'Depois de comprar, arraste para onde quiser e toque ✓.',
+        decoracao:'Só deixam a fazenda mais bonita. Dá para vender pela metade no modo edição.', melhorias:'Fazem você ganhar mais e trabalhar mais rápido.'};
+      h += `<div class="loja-topo"><div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}</div>
+        <p class="dica">${DICAS[subLoja]}</p></div><div class="vitrine">`;
+      if (subLoja === 'sementes') CROPS.forEach(c => {
+        const trava = S.nivel < c.nivel, t = c.tempo * velocidade(), q = S.sementes[c.id] || 0;
+        h += tile({trava, cls:c.id === destaqueSem ? 'destaque' : '', attr:`data-card-sem="${c.id}"`,
+          selo:trava ? `🔒 Nível ${c.nivel}` : q ? `Você tem ${q}` : '', seloCls:trava ? 'trava' : '',
+          ic:`<span class="saco-card">${ICO.saco}<span class="emo">${c.emoji}</span></span>`, nome:c.nome,
+          info:`<span>⏱ ${fmtT(t)}</span><span>Vende ${moedaMini}${c.preco}</span><span class="sobe">lucro ${fmtN(c.preco - c.semente)}</span>`,
+          acao:trava ? '' : `<button class="btn verde" data-comprar="${c.id}" data-q="1" ${S.moedas < c.semente ? 'disabled' : ''}>${moedaMini}${c.semente}</button>
+            <button class="btn" data-comprar="${c.id}" data-q="10" ${S.moedas < c.semente * 10 ? 'disabled' : ''}>×10</button>`});
+      });
       if (subLoja === 'construcoes') {
         const livres = ZONAS.filter(z => !S.zonas.includes(z.key)).length;
-        h += `<p class="dica">Construções fazem sua fazenda produzir mais. Depois de comprar, arraste para onde quiser e toque ✓.</p>`;
         CONSTRUCOES.filter(c => c.tipo !== 'poco').forEach(c => {
           const T = TIPOS[c.tipo], nv = nivelConstrucao(c.tipo), trava = S.nivel < nv, custo = custoConstrucao(c.tipo), n = nTipo(c.tipo), feito = c.unico && n > 0, lim = LIMITES[c.tipo];
-          h += `<div class="card ${trava && !n ? 'trava' : ''}"><div class="em">${c.icone}</div><div class="meio">
-            <div class="nome">${T.nome} ${lim ? `<span class="det">· ${n}/${Math.max(n, maxPermitido(c.tipo))}</span>` : n && !feito ? `<span class="det">· você tem ${n}</span>` : ''} ${trava ? `<span class="nv">${n ? 'Próximo no nível' : 'Nível'} ${nv}</span>` : ''}</div>
-            <div class="det">${c.desc}</div></div>
-            ${trava ? '' : feito ? '<span class="nv">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`}</div>`;
+          h += tile({trava:trava && !n, selo:trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
+            ic:`<span class="emo-g">${c.icone}</span>`, nome:T.nome, info:`<span class="desc">${c.desc}</span>`,
+            acao:trava ? '' : feito ? '<span class="ok">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`});
         });
-        h += `<div class="card"><div class="em">🌳</div><div class="meio"><div class="nome">Terras <span class="det">· ${S.zonas.length} de ${ZONAS.length}</span></div>
-          <div class="det">${livres ? `Mais espaço para construir. Toque nas placas 🔒 em volta da fazenda. Próxima: ${moedaMini}${fmtN(custoZona())} · nível ${nivelZona()}` : 'Você liberou a ilha inteira!'}</div></div>
-          ${livres ? `<button class="btn" data-acao="ver-terra">Ver</button>` : ''}</div>
-          <div class="card"><div class="em">✏️</div><div class="meio"><div class="nome">Modo edição</div><div class="det">Mova e gire suas construções.</div></div>
-          <button class="btn" data-acao="editar">Editar</button></div>`;
+        h += tile({selo:`${S.zonas.length}/${ZONAS.length}`, ic:'<span class="emo-g">🌳</span>', nome:'Terras',
+          info:`<span class="desc">${livres ? `Mais espaço para construir. Próxima: ${moedaMini}${fmtN(custoZona())} · nível ${nivelZona()}` : 'Você liberou a ilha inteira!'}</span>`,
+          acao:livres ? `<button class="btn" data-acao="ver-terra">Ver</button>` : ''});
+        h += tile({ic:'<span class="emo-g">✏️</span>', nome:'Modo edição', info:'<span class="desc">Mova e gire suas construções.</span>', acao:`<button class="btn" data-acao="editar">Editar</button>`});
       }
-      if (subLoja === 'decoracao') {
-        h += `<p class="dica">Decorações só deixam a fazenda mais bonita: não produzem nada. Dá para vender pela metade do preço no modo edição.</p>`;
-        DECOR.forEach(c => {
-          const T = TIPOS[c.tipo], trava = S.nivel < c.nivel, n = nTipo(c.tipo);
-          h += `<div class="card ${trava ? 'trava' : ''}"><div class="em">${c.icone}</div><div class="meio">
-            <div class="nome">${T.nome} ${n ? `<span class="det">· você tem ${n}</span>` : ''} ${trava ? `<span class="nv">Nível ${c.nivel}</span>` : ''}</div>
-            <div class="det">Decoração · ocupa ${T.w}×${T.d}</div></div>
-            ${trava ? '' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < c.preco ? 'disabled' : ''}>${moedaMini}${fmtN(c.preco)}</button>`}</div>`;
-        });
+      if (subLoja === 'decoracao') DECOR.forEach(c => {
+        const T = TIPOS[c.tipo], trava = S.nivel < c.nivel, n = nTipo(c.tipo);
+        h += tile({trava, selo:trava ? `🔒 Nível ${c.nivel}` : n ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '', ic:`<span class="emo-g">${c.icone}</span>`, nome:T.nome,
+          info:`<span>Ocupa ${T.w}×${T.d}</span>`, acao:trava ? '' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < c.preco ? 'disabled' : ''}>${moedaMini}${fmtN(c.preco)}</button>`});
+      });
+      if (subLoja === 'melhorias') for (const k in UPG) {
+        const u = UPG[k], l = S.upg[k] || 0, max = l >= u.max, custo = custoUpg(k), trava = !max && S.nivel < u.niv[l];
+        h += tile({trava:trava && !l, selo:trava ? (l ? `${l}/${u.max} · próximo no nível ${u.niv[l]}` : `🔒 Nível ${u.niv[l]}`) : u.max > 1 ? `${l}/${u.max}` : l ? 'Ativo' : '', seloCls:trava ? 'trava' : max ? 'max' : '',
+          ic:`<span class="emo-g">${u.emoji}</span>`, nome:u.nome, info:`<span class="desc">${u.desc}</span>`,
+          acao:trava ? '' : `<button class="btn ${max ? '' : 'verde'}" data-upg="${k}" ${max || S.moedas < custo ? 'disabled' : ''}>${max ? (u.max > 1 ? 'Máximo' : 'Ok') : moedaMini + fmtN(custo)}</button>`});
       }
-      if (subLoja === 'melhorias') {
-        h += `<p class="dica">Melhorias fazem você ganhar mais e trabalhar mais rápido.</p>`;
-        for (const k in UPG) {
-          const u = UPG[k], l = S.upg[k] || 0, max = l >= u.max, custo = custoUpg(k), trava = !max && S.nivel < u.niv[l];
-          h += `<div class="card ${trava && !l ? 'trava' : ''}"><div class="em">${u.emoji}</div><div class="meio">
-            <div class="nome">${u.nome} ${u.max > 1 ? `<span class="nv">${l}/${u.max}</span>` : (l ? '<span class="nv">Ativo</span>' : '')}</div>
-            <div class="det">${u.desc}</div></div>
-            ${trava ? `<span class="nv">🔒 Nível ${u.niv[l]}</span>` : `<button class="btn" data-upg="${k}" ${max || S.moedas < custo ? 'disabled' : ''}>${max ? (u.max > 1 ? 'Máximo' : 'Ok') : moedaMini + fmtN(custo)}</button>`}</div>`;
-        }
-      }
+      h += '</div>';
     }
     const barraCap = (uso, cap, k) => `<div class="cap"><div class="cap-txt">📦 ${uso}/${cap}</div><div class="mis-barra"><i style="width:${Math.min(100, 100 * uso / cap)}%;${uso >= cap ? 'background:#e0503a' : ''}"></i></div>
       <button class="btn" data-ampliar="${k}" ${S.moedas < custoAmpliar(k) ? 'disabled' : ''}>Ampliar +25 · ${moedaMini}${fmtN(custoAmpliar(k))}</button></div>`;
     if (janela === 'celeiro') {
-      h += barraCap(usoCeleiro(), capCeleiro(), 'celeiro');
-      h += `<p class="dica">Aqui ficam as suas <b>sementes</b>. Escolha um saquinho na barra de baixo para plantar.</p>`;
+      h += `<div class="loja-topo">${barraCap(usoCeleiro(), capCeleiro(), 'celeiro')}<p class="dica">Aqui ficam as suas <b>sementes</b>. Use o botão <b>Plantar</b> lá embaixo para escolher qual plantar.</p></div><div class="vitrine">`;
       CROPS.filter(c => c.nivel <= S.nivel || S.sementes[c.id]).forEach(c => {
         const q = S.sementes[c.id] || 0;
-        h += `<div class="card"><div class="em saco-card">${ICO.saco}<span class="emo">${c.emoji}</span></div>
-          <div class="meio"><div class="nome">${c.nome} <span class="det">× ${q}</span></div><div class="det">Semente ${moedaMini}${c.semente} · cresce em ⏱ ${fmtT(c.tempo * velocidade())}</div></div>
-          <div class="botoes"><button class="btn" data-comprar="${c.id}" data-q="1" ${S.moedas < c.semente ? 'disabled' : ''}>+1</button>
-          <button class="btn" data-comprar="${c.id}" data-q="10" ${S.moedas < c.semente * 10 ? 'disabled' : ''}>+10</button></div></div>`;
+        h += tile({selo:`× ${q}`, seloCls:q ? '' : 'trava', ic:`<span class="saco-card">${ICO.saco}<span class="emo">${c.emoji}</span></span>`, nome:c.nome,
+          info:`<span>⏱ ${fmtT(c.tempo * velocidade())}</span><span>Semente ${moedaMini}${c.semente}</span>`,
+          acao:`<button class="btn verde" data-comprar="${c.id}" data-q="1" ${S.moedas < c.semente ? 'disabled' : ''}>+1</button><button class="btn" data-comprar="${c.id}" data-q="10" ${S.moedas < c.semente * 10 ? 'disabled' : ''}>+10</button>`});
       });
+      h += '</div>';
     }
     if (janela === 'armazem') {
-      h += barraCap(usoArmazem(), capArmazem(), 'armazem');
       const ev = eventoAtivo();
-      if (ev) { const c = crop(ev.id); h += `<div class="evento">📣 Feira de ${c.emoji} ${c.nome}: preço em dobro!</div>`; }
       let total = 0; VENDAVEIS.forEach(c => total += (S.celeiro[c.id] || 0) * precoAtual(c.id));
-      h += `<button class="btn verde grande" data-acao="vender-tudo" ${total ? '' : 'disabled'}>Vender tudo · ${fmtN(total)} moedas</button>`;
-      h += `<p class="dica">Os preços mudam a cada 20 segundos. Guardar e vender na alta dá mais lucro.</p>`;
-      VENDAVEIS.filter(c => (c.nivel ? c.nivel <= S.nivel : qtdAnimal(c.animal)) || S.celeiro[c.id]).forEach(c => {
+      h += `<div class="loja-topo"><div class="topo-linha">${barraCap(usoArmazem(), capArmazem(), 'armazem')}<button class="btn verde" data-acao="vender-tudo" ${total ? '' : 'disabled'}>Vender tudo · ${moedaMini}${fmtN(total)}</button></div>
+        ${ev ? `<div class="evento">📣 Feira de ${crop(ev.id).emoji} ${crop(ev.id).nome}: preço em dobro!</div>` : '<p class="dica">Os preços mudam a cada 20 segundos. Guardar e vender na alta dá mais lucro.</p>'}</div><div class="vitrine">`;
+      const lista = VENDAVEIS.filter(c => (c.nivel ? c.nivel <= S.nivel : qtdAnimal(c.animal)) || S.celeiro[c.id]).sort((a, b) => (S.celeiro[b.id] ? 1 : 0) - (S.celeiro[a.id] ? 1 : 0));
+      lista.forEach(c => {
         const q = S.celeiro[c.id] || 0, pr = precoAtual(c.id), td = S.tend[c.id] || 0;
-        const seta = td > 0 ? '<span class="sobe">▲</span>' : td < 0 ? '<span class="desce">▼</span>' : '<span>•</span>';
-        h += `<div class="card"><div class="em">${c.emoji}</div>
-          <div class="meio"><div class="nome">${c.nome} <span class="det">× ${q}</span></div>
-          <div class="preco">${moedaMini}${pr} ${seta} <span class="det">cada</span></div></div>
-          <button class="btn" data-vender="${c.id}" ${q ? '' : 'disabled'}>Vender</button></div>`;
+        const seta = td > 0 ? '<b class="sobe">▲</b>' : td < 0 ? '<b class="desce">▼</b>' : '';
+        h += tile({cls:q ? '' : 'vazio', selo:`× ${q}`, seloCls:q ? '' : 'trava', ic:`<span class="emo-g">${c.emoji}</span>`, nome:c.nome,
+          info:`<span class="preco-g">${moedaMini}${pr} ${seta}</span><span>cada</span>`,
+          acao:`<button class="btn" data-vender="${c.id}" ${q ? '' : 'disabled'}>Vender</button>`});
       });
-      const rs = RACOES.filter(r => S.celeiro[r.id]);
-      if (rs.length) { h += `<p class="sub">Rações</p>`; rs.forEach(r => h += `<div class="card"><div class="em">${iconeItem(r, 'grande')}</div><div class="meio"><div class="nome">${r.nome} <span class="det">× ${S.celeiro[r.id]}</span></div><div class="det">Cada porção alimenta 1 ${ANIMAIS[r.animal].nome.toLowerCase()}</div></div></div>`); }
+      RACOES.filter(r => S.celeiro[r.id]).forEach(r => h += tile({selo:`× ${S.celeiro[r.id]}`, seloCls:'max', ic:iconeItem(r, 'grande'), nome:r.nome,
+        info:`<span>Cada porção alimenta 1 ${ANIMAIS[r.animal].nome.toLowerCase()}</span>`, acao:'<span class="ok">Para os bichos</span>'}));
+      h += '</div>';
     }
     if (janela === 'animais') {
       atualizarProducao();
-      h += `<p class="sub">Criação</p><p class="dica">Cada animal precisa de <b>1 ração</b> para produzir. Toque no cercado: o fazendeiro vai até lá, coleta o que estiver pronto e dá ração para quem estiver com fome. As rações são feitas no <b>Moinho</b>.</p>`;
+      h += `<div class="loja-topo"><p class="dica">Cada animal come <b>1 ração</b> para produzir. Toque no cercado ou use os botões: o fazendeiro coleta o que estiver pronto e dá ração para quem tiver fome.</p></div><div class="vitrine">`;
       for (const k in ANIMAIS) {
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
-        if (!trava && !nTipo(a.cercado)) {
-          h += `<div class="card"><div class="em">${a.emoji}</div><div class="meio"><div class="nome">${a.plural}</div>
-            <div class="det">Primeiro construa um ${nomeC} para ter ${a.plural.toLowerCase()}.</div></div>
-            <button class="btn verde" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>Construir · ${moedaMini}${fmtN(cc)}</button></div>`;
+        const ic = a.img ? `<span class="foto-g"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`;
+        if (trava) { h += tile({trava:true, selo:`🔒 Nível ${Math.max(a.nivel, nvC)}`, seloCls:'trava', ic, nome:a.plural, info:`<span>Dão ${it.emoji} ${it.nome.toLowerCase()}</span>`, acao:''}); continue; }
+        if (!nTipo(a.cercado)) {
+          h += tile({selo:'0', ic, nome:a.plural, info:`<span class="desc">Primeiro construa ${TIPOS[a.cercado].fem ? 'uma' : 'um'} ${nomeC}.</span>`,
+            acao:`<button class="btn verde" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>${moedaMini}${fmtN(cc)}</button>`});
           continue;
         }
         let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
-        h += `<div class="card animal ${trava ? 'trava' : ''}"><div class="linha">
-          ${a.img ? `<div class="foto"><img src="assets/img/${a.img}" alt=""></div>` : `<div class="em">${a.emoji}</div>`}
-          <div class="meio"><div class="nome">${a.plural} ${trava ? `<span class="nv">Nível ${Math.max(a.nivel, nvC)}</span>` : `<span class="det">· ${n}/${mx}</span>`}</div>
-          <div class="det">1 ${iconeItem(r, 'mini-ic')} ${r.nome.toLowerCase()} = ${a.porRacao} ${it.emoji} · 1 a cada ${fmtT(a.tempo)}</div>
-          ${n ? `<div class="det">${prod ? `⏳ ${prod} produzindo` : ''}${fome ? ` · 🍽️ ${fome} com fome` : ''}${pr ? ` · ${it.emoji} ${pr} pronto(s)` : ''} · você tem ${S.celeiro[r.id] || 0} ${r.emoji}</div>` : ''}</div>
-          ${trava ? '' : `<button class="btn verde" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio' : '+1 · ' + moedaMini + fmtN(custoAnimal(k))}</button>`}</div>
-          ${trava ? '' : `<div class="linha2">
-            ${n ? `<button class="btn verde" data-ir-cercado="${k}">${pr ? `Coletar ${pr} ${it.emoji}` : fome ? 'Dar ração 🥣' : 'Ir ao ' + nomeC}</button>` : ''}
-            ${fome && !(S.celeiro[r.id] > 0) ? `<button class="btn" data-ir-moinho="1">Fazer ração no moinho</button>` : ''}
-            ${S.nivel < nvProx ? `<span class="nv">Novo ${nomeC} no nível ${nvProx}</span>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>➕ Novo ${nomeC} (+${a.porCercado}) · ${moedaMini}${fmtN(cc)}</button>`}</div>`}
-          </div>`;
+        const est = n ? [prod ? `⏳ ${prod} produzindo` : '', fome ? `🍽️ ${fome} com fome` : '', pr ? `${it.emoji} ${pr} pronto(s)` : ''].filter(Boolean).join(' · ') : 'Nenhum ainda';
+        h += tile({cls:'larga', selo:`${n}/${mx}`, ic, nome:a.plural,
+          info:`<span>${iconeItem(r, 'mini-ic')} ${S.celeiro[r.id] || 0} · 1 = ${a.porRacao} ${it.emoji} · ${fmtT(a.tempo)}</span><span>${est}</span>`,
+          acao:`<div class="t-col">${n ? `<button class="btn verde" data-ir-cercado="${k}">${pr ? `Coletar ${pr} ${it.emoji}` : fome ? (S.celeiro[r.id] > 0 ? 'Dar ração 🥣' : 'Sem ração') : (TIPOS[a.cercado].fem ? 'Ir à ' : 'Ir ao ') + nomeC}</button>` : ''}
+            ${fome && !(S.celeiro[r.id] > 0) ? `<button class="btn" data-ir-moinho="1">Fazer ração</button>` : ''}
+            <button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio' : `+1 ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}`}</button>
+            ${S.nivel < nvProx ? `<span class="nv">Novo ${nomeC} no nível ${nvProx}</span>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>➕ ${TIPOS[a.cercado].nome} · ${moedaMini}${fmtN(cc)}</button>`}</div>`});
       }
-      h += `<p class="sub">Bichinhos</p><p class="dica">Eles passeiam soltos pela fazenda. Use o botão <b>Chamar</b> para eles seguirem você.</p>`;
       for (const k in PETS) {
         const a = PETS[k], tem = S.amigos[k], trava = S.nivel < a.nivel;
-        h += `<div class="card ${tem ? 'amigo-ok' : trava ? 'trava' : ''}"><div class="foto"><img src="assets/img/${a.img}" alt=""></div>
-          <div class="meio"><div class="nome">${tem ? nomePet(k) : a.especie} ${tem ? `<span class="det">· ${a.especie}</span> <button class="lapis" data-renomear="${k}">✏️</button>` : ''}</div>
-          <div class="det">${a.desc}</div></div>
-          ${tem ? '<span class="nv">Na fazenda</span>' : trava ? `<span class="nv">Nível ${a.nivel}</span>`
-            : `<button class="btn verde" data-adotar="${k}" ${S.moedas < a.custo ? 'disabled' : ''}>${moedaMini}${fmtN(a.custo)}</button>`}</div>`;
+        h += tile({trava:trava && !tem, cls:tem ? 'amigo-ok' : '', selo:tem ? 'Na fazenda' : trava ? `🔒 Nível ${a.nivel}` : 'Bichinho', seloCls:tem ? 'max' : trava ? 'trava' : '',
+          ic:`<span class="foto-g"><img src="assets/img/${a.img}" alt=""></span>`, nome:tem ? `${nomePet(k)} <button class="lapis" data-renomear="${k}">✏️</button>` : a.especie,
+          info:`<span class="desc">${a.desc}</span>`, acao:tem || trava ? '' : `<button class="btn verde" data-adotar="${k}" ${S.moedas < a.custo ? 'disabled' : ''}>${moedaMini}${fmtN(a.custo)}</button>`});
       }
+      h += '</div>';
     }
     if (janela === 'fabrica') {
       const t = janelaArg, F = FABRICAS[t], M = fabEstado(t), vagas = vagasFab(t), prontos = prontosFab(t);
@@ -2371,6 +2422,7 @@
     }
     if (janela === 'config') {
       h += `<div class="linha-cfg"><span>🎨 Gráficos</span><button class="btn" data-acao="qualidade">${S.leve ? 'Leve (mais rápido)' : 'Bonito'}</button></div>
+        ${instalado() ? '' : `<div class="linha-cfg"><span>📲 Jogar como app (tela cheia, sem barra do navegador)</span>${pedidoInstalar ? '<button class="btn verde" data-acao="instalar">Instalar</button>' : '<span class="det">No Chrome: menu ⋮ → Instalar app</span>'}</div>`}
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
@@ -2383,7 +2435,9 @@
       h += `<div class="texto"><p>Você vai perder moedas, nível, construções, sementes, melhorias, animais e terras. Não dá para desfazer.</p>
       <div class="acoes"><button class="btn" data-acao="fechar">Cancelar</button><button class="btn vermelho" data-acao="reset-sim">Recomeçar</button></div></div>`;
     }
+    const vOld = $('#jcorpo .vitrine'), chaveV = janela + subLoja, sl = vOld && vitrineChave === chaveV ? vOld.scrollLeft : 0; vitrineChave = chaveV;
     $('#jcorpo').innerHTML = h;
+    const vNew = $('#jcorpo .vitrine'); if (vNew) vNew.scrollLeft = sl;
     if (janela === 'perfil') { const pv = $('#prevAvatar'); if (pv) pv.appendChild(mini.r.domElement); }
   }
 
@@ -2494,11 +2548,12 @@
     const f = S.ferramenta;
     if (arrasto.modo === 'plantar') {
       if ((S.sementes[f] || 0) - semFila(f) <= 0) { if (!arrasto.avisou) { arrasto.avisou = true; toast(`Acabaram as sementes de ${crop(f).nome}`); } return; }
-      enfileirar({tipo:'plantar', i, id:f});
-    } else if (arrasto.modo === 'regar') { const lista = S.upg.regadorG ? vizinhos(i).filter(j => S.plots[j].c && !S.plots[j].reg && !naFila(j)) : [i]; lista.forEach(j => arrasto.feitos.add(j)); enfileirar({tipo:'regar', i, lista}); }
+      enfileirarPlantio(i, f);
+    } else if (arrasto.modo === 'regar') { enfileirarGrupo('regar', i); }
     else if (arrasto.modo === 'colher') {
       if (livreArmazem() < 1) { avisarCheio(); return; }
-      enfileirar({tipo:'colher', i, lista:[i]});
+      if (livreArmazem() - colhendoNaFila() < 1) { avisarCheio(); return; }
+      enfileirarGrupo('colher', i);
     }
   }
   window.addEventListener('pointerdown', ev => {
@@ -2506,7 +2561,7 @@
     apontar(ev); const i = pickTile(); if (i < 0) return;
     const m = modoTile(i); if (!m) return;
     arrasto.ativo = true; arrasto.modo = m; arrasto.avisou = false; arrasto.feitos = new Set(); controls.enabled = false;
-    if (m === 'colher' && (S.upg.cesta || 0) > 0) { arrasto.feitos.add(i); clicarTile(i); } else tentarArrasto();
+    tentarArrasto();
   }, true);
   window.addEventListener('pointermove', ev => { if (arrasto.ativo) { apontar(ev); tentarArrasto(); } });
   window.addEventListener('pointerup', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; downPos = null; arrastoAcabou = Date.now(); } });
@@ -2624,11 +2679,12 @@
     if (ac === 'salvar-perfil') salvarPerfil();
     if (ac === 'editar') { fechar(); entrarEdicao(); toast('Toque numa construção para mover'); }
     if (ac === 'ver-terra') { fechar(); guiarTerra(); }
+    if (ac === 'instalar' && pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.finally(() => { pedidoInstalar = null; renderJanela(); }); }
     if (ac === 'entrar-google') entrarGoogle();
     if (ac === 'sair-conta') sairConta();
-    if (ac === 'salvar-nuvem') { enviarSave(true); }
+    if (ac === 'salvar-nuvem') { if (ON.pausado && ON.nuvem) abrir('nuvem'); else enviarSave(true); }
     if (ac === 'usar-nuvem') usarSaveNuvem();
-    if (ac === 'usar-local') { janela = 'x'; fechar(); enviarSave(true); }
+    if (ac === 'usar-local') { janela = 'x'; fechar(); ON.pausado = false; enviarSave(true, true); }
     if (ac.startsWith('rank-')) { ON.ordem = ac.slice(5); carregarRanking(); }
     if (ac === 'qualidade') { S.leve = !S.leve; aplicarQualidade(); salvar(); renderJanela(); }
     if (ac === 'vender-tudo') { let t = 0; VENDAVEIS.forEach(c => t += vender(c.id)); if (t) { toast(`Vendeu tudo por ${fmtN(t)} moedas`, 'bom'); pulsar(); } tudo(); }
@@ -2697,7 +2753,7 @@
     for (const k in baloes) if (baloes[k].visible) baloes[k].position.y = baloes[k].userData.y + Math.sin(seg * 3) * .15;
     if (hoverI >= 0) {
       const p = posTile(hoverI); destaque.position.set(p.x, .15, p.z); destaque.rotation.y = tiles[hoverI].g.parent.rotation.y; destaque.visible = true;
-      if (S.ferramenta === 'regador' && S.upg.regadorG) { area.position.set(p.x, .34, p.z); area.visible = true; } else area.visible = false;
+      area.visible = false;
     } else { destaque.visible = false; area.visible = false; }
     if (marcadorT > 0) { marcadorT -= dt * 1.2; marcador.material.opacity = Math.max(0, marcadorT); marcador.scale.setScalar(1 + (1 - marcadorT) * .6); if (marcadorT <= 0) marcador.visible = false; }
     atualizarNomes();
@@ -2754,7 +2810,7 @@
     ON.sb.auth.onAuthStateChange((ev, sess) => {
       const u = sess && sess.user, novo = u && (!ON.user || ON.user.id !== u.id);
       ON.user = u || null;
-      if (novo) setTimeout(sincronizarAoEntrar, 0);
+      if (novo) { ON.sincronizado = false; setTimeout(sincronizarAoEntrar, 0); }
       if (janela === 'config' || janela === 'ranking') renderJanela();
     });
     setInterval(() => { if (ON.user && ON.sujo && Date.now() - ON.ultimo > 30000) enviarSave(); }, 5000);
@@ -2770,36 +2826,57 @@
     if (ON.sujo) await enviarSave();
     await ON.sb.auth.signOut(); ON.user = null; toast('Você saiu da conta. A fazenda continua salva neste aparelho.'); renderJanela();
   }
+  // Sincronização: cada save na nuvem tem um carimbo (atualizado). O aparelho guarda o carimbo que conhece (S.nuvemVer).
+  // Se o carimbo da nuvem mudou sem ser por este aparelho, outro aparelho salvou: carrega de lá ou pergunta, nunca sobrescreve sem querer.
+  const verDe = t => Date.parse(t) || 0;
+  async function lerNuvem(campos) { return ON.sb.from('saves').select(campos).eq('user_id', ON.user.id).maybeSingle(); }
   async function sincronizarAoEntrar() {
-    if (!ON.user) return;
-    const {data, error} = await ON.sb.from('saves').select('dados, atualizado').eq('user_id', ON.user.id).maybeSingle();
-    if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); return; }
-    if (!data) { await enviarSave(true); return; } // primeira vez: sobe a fazenda deste aparelho
-    const nv = data.dados || {}, nuvemEm = nv.salvoEm || Date.parse(data.atualizado) || 0;
+    if (!ON.user || ON.recarregando) return;
+    const {data, error} = await lerNuvem('dados, atualizado');
+    if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); setTimeout(sincronizarAoEntrar, 15000); return; } // tenta de novo depois; até lá não envia nada
+    if (!data) { ON.sincronizado = true; await enviarSave(true); return; } // primeira vez: sobe a fazenda deste aparelho
+    const nv = data.dados || {}, ver = verDe(data.atualizado);
     const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
-    if (S.uid === ON.user.id) { // este aparelho já é dessa conta: fica com o mais recente
-      if (nuvemEm > salvoAntes + 1000) { ON.nuvem = nv; usarSaveNuvem(); } else if (ON.sujo || nuvemEm < (S.salvoEm || 0)) enviarSave();
-      return;
-    }
-    if (localNovo) { ON.nuvem = nv; usarSaveNuvem(); return; }
-    ON.nuvem = nv; abrir('nuvem'); // dois progressos diferentes: o jogador escolhe
+    if (S.uid === ON.user.id && S.nuvemVer == null && Math.abs((nv.salvoEm || 0) - (S.salvoEm || 0)) < 2000) S.nuvemVer = ver; // saves antigos
+    const mudouAqui = (S.salvoEm || 0) > (S.nuvemVer || 0) + 2000; // jogou neste aparelho depois do último envio
+    if (S.uid === ON.user.id && S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo) enviarSave(); return; } // tudo em dia
+    if (S.uid === ON.user.id && !mudouAqui) { carregarDaNuvem(nv, ver); return; } // outro aparelho avançou: pega de lá
+    if (S.uid !== ON.user.id && localNovo) { carregarDaNuvem(nv, ver); return; }
+    ON.nuvem = nv; ON.nuvemVer = ver; ON.pausado = true; ON.sincronizado = true; ON.motivo = S.uid === ON.user.id ? 'outro' : 'diferente'; abrir('nuvem');
   }
-  function usarSaveNuvem() {
-    if (!ON.nuvem) return;
-    const d = Object.assign({}, ON.nuvem, {uid:ON.user && ON.user.id});
+  function carregarDaNuvem(nv, ver) {
+    // trava contra recarregar sem parar
+    let rc = {n:0, t:0}; try { rc = JSON.parse(sessionStorage.getItem('terralia-rc')) || rc; } catch (e) {}
+    if (Date.now() - rc.t > 30000) rc = {n:0, t:Date.now()};
+    if (rc.n >= 2) { ON.pausado = true; ON.erro = 'não deu para carregar a fazenda da nuvem'; toast('☁️ Não deu para carregar a fazenda da nuvem. Tente "Salvar agora" ou saia e entre de novo.'); return; }
+    rc.n++; try { sessionStorage.setItem('terralia-rc', JSON.stringify(rc)); sessionStorage.setItem('terralia-msg', '☁️ Fazenda carregada da nuvem!'); } catch (e) {}
+    const d = Object.assign({}, nv, {uid:ON.user.id, nuvemVer:ver, salvoEm:ver});
+    ON.recarregando = true; ON.sujo = false; // a partir daqui nada mais é salvo por cima
     try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
-    ON.sujo = false; ON.recarregando = true; toast('☁️ Fazenda carregada da nuvem!', 'bom'); setTimeout(() => location.reload(), 600);
+    location.reload();
   }
-  async function enviarSave(avisar) {
-    if (!ON.user || ON.enviando || ON.recarregando) return;
-    ON.enviando = true; S.uid = ON.user.id; salvar();
-    const agora = new Date().toISOString(), p = S.perfil || {};
-    const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
-    const r2 = r1.error ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora});
+  function usarSaveNuvem() { if (ON.nuvem) carregarDaNuvem(ON.nuvem, ON.nuvemVer || 0); }
+  async function enviarSave(avisar, forcar) {
+    if (!ON.user || ON.enviando || ON.recarregando || !ON.sincronizado || (ON.pausado && !forcar)) return; // nunca envia antes de comparar com a nuvem
+    ON.enviando = true;
+    try {
+      if (!forcar && S.uid === ON.user.id) { // confere se outro aparelho salvou desde a última vez
+        const {data} = await lerNuvem('atualizado');
+        if (data && verDe(data.atualizado) !== S.nuvemVer) {
+          const r = await lerNuvem('dados, atualizado'); ON.enviando = false;
+          if (r.data) { ON.nuvem = r.data.dados; ON.nuvemVer = verDe(r.data.atualizado); ON.pausado = true; ON.motivo = 'outro'; abrir('nuvem'); }
+          return;
+        }
+      }
+      const agora = new Date().toISOString(), p = S.perfil || {};
+      S.uid = ON.user.id; S.nuvemVer = verDe(agora); salvar(); S.salvoEm = S.nuvemVer; salvar();
+      const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
+      const r2 = r1.error ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora});
+      const err = r1.error || r2.error;
+      if (err) { ON.erro = err.message; if (avisar) toast('☁️ Não deu para salvar na nuvem: ' + err.message); }
+      else { ON.sujo = false; ON.pausado = false; ON.ultimo = Date.now(); ON.erro = ''; if (avisar) toast('☁️ Fazenda salva na nuvem!', 'bom'); }
+    } catch (e) { ON.erro = 'sem internet'; }
     ON.enviando = false;
-    const err = r1.error || r2.error;
-    if (err) { ON.erro = err.message; if (avisar) toast('☁️ Não deu para salvar na nuvem: ' + err.message); }
-    else { ON.sujo = false; ON.ultimo = Date.now(); ON.erro = ''; if (avisar) toast('☁️ Fazenda salva na nuvem!', 'bom'); }
     if (janela === 'config') renderJanela();
   }
   const hora = t => t ? new Date(t).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '—';
@@ -2816,7 +2893,7 @@
     const n = ON.nuvem || {}, cart = (ic, tit, d, ac) => `<div class="card"><div class="em">${ic}</div><div class="meio"><div class="nome">${tit}</div>
       <div class="det">⭐ Nível ${d.nivel || 1} · ${moedaMini}${fmtN(d.moedas || 0)} · 🌾 ${fmtN(d.colhidos || 0)} colhidos</div><div class="det">Salvo em ${hora(d.salvoEm)}</div></div>
       <div class="botoes"><button class="btn verde" data-acao="${ac}">Usar esta</button></div></div>`;
-    return `<p class="dica">Esta conta já tem uma fazenda na nuvem, diferente da que está neste aparelho. Qual você quer continuar? A outra será substituída.</p>`
+    return `<p class="dica">${ON.motivo === 'outro' ? 'Sua fazenda foi salva em <b>outro aparelho</b> enquanto você jogava aqui.' : 'Esta conta já tem uma fazenda na nuvem, diferente da que está neste aparelho.'} Qual você quer continuar? A outra será substituída. Até você escolher, nada é enviado para a nuvem.</p>`
       + cart('☁️', 'Fazenda da nuvem', n, 'usar-nuvem') + cart('📱', 'Fazenda deste aparelho', S, 'usar-local');
   }
   async function carregarRanking() {
@@ -2859,6 +2936,12 @@
   tudo();
   requestAnimationFrame(animar);
   iniciarOnline();
+  try { const m = sessionStorage.getItem('terralia-msg'); if (m) { sessionStorage.removeItem('terralia-msg'); setTimeout(() => toast(m, 'bom'), 800); } } catch (e) {}
+  $('#jcorpo').addEventListener('wheel', e => { const v = e.target.closest('.vitrine'); if (v && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { v.scrollLeft += e.deltaY; e.preventDefault(); } }, {passive:false});
+  // ===== modo app (instalar na tela inicial) =====
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; if (janela === 'config') renderJanela(); });
+  window.addEventListener('appinstalled', () => { pedidoInstalar = null; toast('📲 Terrália instalado! Abra pelo ícone na tela inicial.', 'bom'); if (janela === 'config') renderJanela(); });
   setInterval(tickMercado, MERCADO_MS);
   setInterval(salvar, 5000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) salvar(); });
@@ -2882,5 +2965,6 @@
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
     _teste:{ irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
+      filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
       tilePos:i => { const v = posTile(i).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, heroi:() => JSON.stringify({fila:heroi.fila.map(a => a.tipo), atual:heroi.atual && {tipo:heroi.atual.tipo, fase:heroi.atual.fase, t:heroi.atual.t}, rota:heroi.rota.length, pos:heroi.g.position}), obj:id => clicarConstrucao(objPorId(id)), objs:() => S.objetos.map(o => o.id + ':' + o.tipo).join(' '), abrir:(n, x) => abrir(n, x), tile:i => clicarTile(i), ferr:f => { S.ferramenta = f; renderHotbar(); }, zona:k => comprarZona(k), cam:(x, z, d) => { controls.target.set(x, 0, z); camera.position.set(x + d * .5, d * .6, z + d * .5); }, girar90:() => girarCamera(), zonas:() => ZONAS.map(z => z.key), construir:t => { S.moedas += custoConstrucao(t); comprarConstrucao(t); }, nome:(id, ms) => mostrarNome(objPorId(id), ms), nomes:() => Object.values(obj3D).filter(r => r.rot && r.rot.visible).length + "/" + Object.values(obj3D).filter(r => r.rot).length + " ed:" + editar.ativo } };
 })();
