@@ -549,3 +549,9 @@ body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.vi
   .lateral{gap:7px}.lateral .mini{width:48px;height:48px}.lateral .mini .txt-ico{font-size:21px;line-height:24px}.lateral .mini span{width:24px;height:24px}
   .seletor-sem{bottom:calc(10px + var(--safe-b))}
 }
+
+.mats{display:inline-flex;gap:5px;font-size:12px;font-weight:800;color:#c0392b;white-space:nowrap}
+.mats .ok{color:#3f8d33}
+.tile .mats{justify-content:center;margin-top:3px}
+@media (max-height:520px) and (orientation:landscape){ .cap .mats{font-size:10.5px;gap:3px} }
+.mats-todos{display:flex;flex-wrap:wrap;gap:4px 8px;justify-content:center;font-size:15px;margin-top:4px}
