@@ -43,25 +43,42 @@
   </div>
 </div>
 
-<!-- Botões laterais -->
+<!-- Botões laterais (agrupados: tocar abre os itens do grupo) -->
 <div class="lateral">
-  <button class="mini" id="btnGirar" aria-label="Girar visão"><span class="txt-ico">⟳</span><small>Girar</small></button>
-  <button class="mini" id="btnCentro" aria-label="Centralizar"><span data-icone="alvo"></span><small>Centro</small></button>
-  <button class="mini" id="btnChamar" aria-label="Chamar animais"><span data-icone="osso"></span><small id="txtChamar">Chamar</small></button>
-  <button class="mini" id="btnEditar" aria-label="Editar fazenda"><span data-icone="lapis"></span><small>Editar</small></button>
+  <div class="grupo">
+    <button class="mini" data-grupo="visao" aria-label="Visão"><span class="txt-ico">🎥</span><small>Visão</small></button>
+    <div class="flyout" id="fly-visao">
+      <button class="mini" id="btnGirar" aria-label="Girar visão"><span class="txt-ico">⟳</span><small>Girar</small></button>
+      <button class="mini" id="btnCentro" aria-label="Centralizar"><span data-icone="alvo"></span><small>Centro</small></button>
+      <button class="mini" id="btnChamar" aria-label="Chamar animais"><span data-icone="osso"></span><small id="txtChamar">Chamar</small></button>
+    </div>
+  </div>
+  <div class="grupo">
+    <button class="mini" data-grupo="social" aria-label="Social"><span class="txt-ico">👥</span><small>Social</small><b class="badge" id="badgeSocial"></b></button>
+    <div class="flyout" id="fly-social">
+      <button class="mini" data-abrir="amigos"><span class="txt-ico">🧑‍🤝‍🧑</span><small>Amigos</small></button>
+      <button class="mini" data-abrir="coop"><span class="txt-ico">🤝</span><small>Coop</small></button>
+      <button class="mini" data-abrir="banca"><span class="txt-ico">🏪</span><small>Banca</small></button>
+      <button class="mini" data-abrir="ranking"><span class="txt-ico">🏆</span><small>Ranking</small></button>
+    </div>
+  </div>
   <button class="mini" data-abrir="pedidos" aria-label="Pedidos"><span class="txt-ico">🚚</span><small>Pedidos</small></button>
-  <button class="mini" data-abrir="amigos" aria-label="Amigos"><span class="txt-ico">👥</span><small>Amigos</small></button>
 </div>
 
 <!-- Botões de canto -->
 <div class="cantos esq">
   <button class="gbtn" data-abrir="loja"><i data-icone="loja"></i><span>Loja</span></button>
-  <button class="gbtn" data-abrir="construir"><i data-icone="martelo"></i><span>Construir</span></button>
+  <div class="grupo">
+    <button class="gbtn" data-grupo="construir"><i data-icone="martelo"></i><span>Construir</span></button>
+    <div class="flyout cima" id="fly-construir">
+      <button class="mini" data-abrir="construir"><span class="txt-ico">🏗️</span><small>Construir</small></button>
+      <button class="mini" data-abrir="decoracao"><span class="txt-ico">🌸</span><small>Enfeites</small></button>
+      <button class="mini" id="btnEditar" aria-label="Editar fazenda"><span data-icone="lapis"></span><small>Editar</small></button>
+    </div>
+  </div>
 </div>
 <div class="cantos dir">
-  <button class="gbtn" data-abrir="animais"><i data-icone="pata"></i><span>Animais</span><b class="badge" id="badgeAnimais"></b></button>
-  <button class="gbtn" data-abrir="celeiro"><i data-icone="celeiro"></i><span>Celeiro</span></button>
-  <button class="gbtn" data-abrir="armazem"><i data-icone="caixa"></i><span>Armazém</span><b class="badge" id="badgeArmazem"></b></button>
+  <button class="gbtn" data-abrir="armazem"><i data-icone="caixa"></i><span>Armazém</span><b class="badge" id="badgeArmazem"></b><b class="badge esq" id="badgeAnimais"></b></button>
 </div>
 
 <div class="dica-campo" id="dicaCampo"></div>
@@ -74,7 +91,7 @@
 <div class="maozinha" id="maozinha">👆</div>
 <div class="barra-edicao"><span>✏️ Modo edição · toque numa construção e arraste</span><button class="btn verde" data-ed="concluir">Concluir</button></div>
 <div class="ferr-edicao" id="ferrEdicao"><button data-ed="girar" title="Girar">⟳</button><button data-ed="ok" class="ok" title="Confirmar">✓</button><button data-ed="cancelar" class="nao" title="Cancelar">✕</button><button data-ed="vender" class="vend" title="Vender decoração">🗑</button></div>
-<div class="hotbar" id="hotbar"></div>
+<div class="hotbar" id="hotbar" style="display:none"></div>
 <div class="seletor-sem" id="seletorSem"></div>
 <div class="pop-venda" id="popVenda"></div>
 <div class="barra-visita" id="barraVisita"></div>

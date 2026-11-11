@@ -526,3 +526,26 @@ body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.vi
 .mural-msg{background:#fff;border:2px solid var(--borda);border-radius:12px;padding:6px 10px;margin-bottom:6px;font-size:14px}
 .mural-msg small{color:var(--suave)}
 .btn.vermelho{background:linear-gradient(180deg,#f2735b,#d4462f);color:#fff;box-shadow:0 3px 0 #8e2a1a}
+
+/* grupos de botões (abrem ao tocar) */
+.grupo{position:relative;display:flex}
+.flyout{position:absolute;right:calc(100% + 8px);top:0;display:flex;gap:8px;padding:6px;border-radius:40px;background:rgba(74,46,23,.55);opacity:0;pointer-events:none;transform:translateX(10px);transition:.15s}
+.flyout.cima{right:auto;left:0;top:auto;bottom:calc(100% + 8px);transform:translateY(10px);flex-direction:column}
+.grupo.aberto .flyout{opacity:1;pointer-events:auto;transform:none}
+.grupo.aberto > .mini, .grupo.aberto > .gbtn{filter:brightness(1.08);box-shadow:0 0 0 3px var(--ouro)}
+.badge.esq{right:auto;left:-8px;background:#e8a21a}
+/* missões: só o botão, abre ao tocar */
+.missoes{width:auto}
+.missoes.aberta{width:230px}
+/* escolha de semente ao tocar num canteiro vazio */
+.seletor-sem{bottom:calc(20px + var(--safe-b))}
+.seletor-sem:after{display:none}
+.sel-lista.pag{display:grid;grid-template-columns:repeat(6,auto);gap:6px;overflow:visible}
+.sel-pag{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;color:#ffe9b8;font-weight:800;font-size:12px}
+.sel-pag button{background:#ffe9b8;border-radius:10px;padding:2px 10px;font-weight:900;color:var(--madeira)}
+.sel-pag button:disabled{opacity:.35}
+.sel-tit .x{float:right;background:none;color:#ffe9b8;font-weight:900;padding:0 4px}
+@media (max-height:520px) and (orientation:landscape){
+  .lateral{gap:7px}.lateral .mini{width:48px;height:48px}.lateral .mini .txt-ico{font-size:21px;line-height:24px}.lateral .mini span{width:24px;height:24px}
+  .seletor-sem{bottom:calc(10px + var(--safe-b))}
+}

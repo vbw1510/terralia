@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.23'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.24'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -1729,10 +1729,7 @@
 
   // ================= REGRAS =================
   function dicaFerramenta() {
-    const f = S.ferramenta;
-    if (f === 'mao') return 'Toque numa planta pronta ✨ para colher · toque no chão para andar';
-    if (f === 'regador') return 'Toque nas plantas com 💧 para regar';
-    return `Toque num canteiro vazio para plantar ${crop(f).nome}`;
+    return 'Toque no canteiro: vazio 🌱 planta · 💧 rega · ✨ colhe — arraste para fazer vários';
   }
   function plantar(i, id) {
     const c = crop(id);
@@ -2063,31 +2060,16 @@
   const listaColheita = (i, ignorar) => areaAcao(i, pronto, livreArmazem(), ignorar);
   function clicarTile(i) {
     if (VISITA) { ajudarNaVisita(i); return; }
-    const p = S.plots[i], f = S.ferramenta;
+    const p = S.plots[i];
     if (naFila(i)) return;
+    if (!p.c) { abrirPlantio(i); return; }
+    if (p.c && !p.reg) { enfileirarGrupo('regar', i); return; }
     if (pronto(p) && livreArmazem() < 1) { avisarCheio(); return; }
     if (pronto(p)) { // com a Cesta grande colhe 2 ou 4 canteiros de uma vez
       if (livreArmazem() - colhendoNaFila() < 1) { avisarCheio(); return; }
       enfileirarGrupo('colher', i); return;
     }
-    if (f === 'regador') {
-      const lista = regavel(p) ? [i] : [];
-      if (lista.length) { enfileirarGrupo('regar', i); return; }
-      if (!lista.length) { toast(p.c ? 'Essa já está regada' : 'Nada para regar aqui'); return; }
-      enfileirar({tipo:'regar', i, lista}); return;
-    }
-    if (f === 'mao') {
-      if (!p.c) toast('Escolha um saquinho de sementes na barra de baixo');
-      else if (!p.reg) toast('Use o regador para essa planta crescer');
-      else toast(`${crop(p.c).emoji} fica pronta em ${fmtT((p.dur - (Date.now() - p.t0)) / 1000)}`);
-      return;
-    }
-    if (!p.c) {
-      if ((S.sementes[f] || 0) - semFila(f) <= 0) { toast(`Sem sementes de ${crop(f).nome}. Compre na Loja`); return; }
-      enfileirarPlantio(i, f); return;
-    }
-    if (!p.reg) toast('Agora regue com o regador');
-    else toast(`${crop(p.c).emoji} fica pronta em ${fmtT((p.dur - (Date.now() - p.t0)) / 1000)}`);
+    toast(`${crop(p.c).emoji} fica pronta em ${fmtT((p.dur - (Date.now() - p.t0)) / 1000)}`);
   }
   function mostrarNome(o, ms = 3000) { const r = obj3D[o.id]; if (r && r.rot) r.ate = Date.now() + ms; }
   function atualizarNomes() {
@@ -2295,7 +2277,7 @@
     ganharXp(m.xp); encherMissoes(); tudo();
   }
   const telaBaixa = () => window.innerHeight < 520;
-  let missoesHTML = '', missoesAbertas = !telaBaixa();
+  let missoesHTML = '', missoesAbertas = false;
   let guia = null; // mãozinha apontando o caminho de uma missão
   function apontar_(el, p3, ms = 7000) { guia = {el, p3, ate:Date.now() + ms, desde:Date.now()}; }
   function rolarAte(sel) { setTimeout(() => { const e = $(sel); if (e) e.scrollIntoView({block:'center', behavior:'smooth'}); }, 60); }
@@ -2312,7 +2294,7 @@
     switch (m.t) {
       case 'colher': case 'plantar':
         if (S.nivel < crop(k).nivel) { toast(`${crop(k).nome} libera no nível ${crop(k).nivel}`); return; }
-        if ((S.sementes[k] || 0) > 0) { fechar(); S.semSel = k; renderHotbar(); apontar_(() => $('[data-ferr=plantar]')); toast('Toque em Plantar e depois num canteiro vazio'); }
+        if ((S.sementes[k] || 0) > 0) { fechar(); S.semSel = k; toast('Toque num canteiro vazio e escolha a semente (ou arraste por vários)'); }
         else { abrir('loja', 'sementes'); rolarAte(`[data-comprar=${k}]`); apontar_(() => $(`[data-comprar=${k}][data-q="10"]`) || $(`[data-comprar=${k}]`)); }
         return;
       case 'vender': abrir('armazem'); apontar_(() => $('[data-acao=vender-tudo]')); return;
@@ -2351,7 +2333,8 @@
     encherMissoes();
     const prontas = S.missoes.ativas.filter(m => progMissao(m) >= m.n).length;
     let h = `<button class="mis-topo" data-mis="toggle">📜 Missões ${prontas ? `<b class="mis-pronta">${prontas}</b>` : ''}<span>${missoesAbertas ? '▾' : '▸'}</span></button>`;
-    const lista = missoesAbertas ? S.missoes.ativas : telaBaixa() ? S.missoes.ativas.slice(0, 1) : [];
+    const lista = missoesAbertas ? S.missoes.ativas : [];
+    $('#missoes').classList.toggle('aberta', missoesAbertas);
     lista.forEach((m, i) => {
       const p = progMissao(m), ok = p >= m.n;
       h += `<div class="mis ${ok ? 'ok' : ''}" data-guia="${i}"><div class="mis-txt">${textoMissao(m)} ${ok ? '' : '<span class="mis-ir">👉</span>'}</div>
@@ -2366,16 +2349,14 @@
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'armazem') || S.objetos.find(o => o.tipo === 'celeiro');
   const TUT = [
     {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
-    {txt:'Toque em <b>Plantar</b> aqui embaixo. (Tocando de novo você escolhe outra semente.)', el:() => $('[data-ferr=plantar]'), ok:() => S.ferramenta === 'trigo'},
-    {txt:'Agora toque num <b>canteiro vazio</b> para plantar.', p3:() => posTile(primeiro(p => !p.c)), ok:() => S.plots.some(p => p.c)},
-    {txt:'Toda planta precisa de água! Pegue o <b>regador</b>.', el:() => $('[data-ferr=regador]'), ok:() => S.ferramenta === 'regador'},
-    {txt:'Toque na plantinha com a gotinha 💧 para <b>regar</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), ok:() => S.plots.some(p => p.c && p.reg)},
+    {txt:'Toque num <b>canteiro vazio</b> e escolha o <b>trigo</b> para plantar.', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
+    {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 para <b>regar</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), ok:() => S.plots.some(p => p.c && p.reg)},
     {txt:'Muito bem! Espere crescer e toque nela quando aparecer ✨ para <b>colher</b>.', p3:() => posTile(primeiro(p => p.c)), ok:() => S.colhidos > 0},
     {txt:'A colheita foi para o <b>Armazém</b>. Toque nele para vender! (O Celeiro guarda as sementes.)', p3:() => centro(celeiroObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'armazem'},
     {txt:'Toque em <b>Vender tudo</b> para ganhar moedas.', el:() => $('[data-acao=vender-tudo]'), ok:() => S.stats.vendeu > 0},
-    {txt:'Agora vamos comprar mais sementes na <b>Loja</b>.', el:() => $('#jabas [data-abrir=loja]') || $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
+    {txt:'Agora vamos comprar mais sementes na <b>Loja</b>.', el:() => janela ? $('.fechar') : $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
     {txt:'Compre <b>10 sementes de trigo</b>.', el:() => $('[data-comprar=trigo][data-q="10"]'), ok:() => S.stats.compras > 0},
-    {txt:'Arraste a tela para passear pela fazenda e use a <b>pinça</b> (ou a rodinha) para zoom. O botão <b>⟳</b> gira a visão.', el:() => $('#btnGirar'), botao:'Entendi', entrar:() => fechar()},
+    {txt:'Arraste a tela para passear pela fazenda e use a <b>pinça</b> (ou a rodinha) para zoom. No botão <b>🎥 Visão</b> você gira e centraliza a câmera.', el:() => $('[data-grupo=visao]'), botao:'Entendi', entrar:() => fechar()},
     {txt:'Prontinho! Siga as <b>Missões</b> aqui do lado para crescer sua fazenda. Boa colheita! 🌻', el:() => $('#missoes'), botao:'Bora!'},
   ];
   const moinhoObj = () => S.objetos.find(o => o.tipo === 'moinho');
@@ -2384,7 +2365,7 @@
     {txt:'Que legal, seu primeiro galinheiro! 🐔 Agora compre uma <b>galinha</b> em Animais.', el:() => janela === 'animais' ? $('[data-animal=galinha]') : janela ? $('#jabas [data-abrir=animais]') : $('.cantos [data-abrir=animais]'), ok:() => qtdAnimal('galinha') > 0},
     {txt:'Galinhas só botam ovos depois de comer. Você ganhou rações de presente! Toque no <b>galinheiro</b> para dar ração.', entrar:() => fechar(), p3:() => centro(cercadosDe('galinha')[0]).add(V3(0, 1.5, 0)), el:() => janela ? null : undefined, ok:() => S.stats.alimentou > 0},
     {txt:'Quando a ração acabar, você faz mais no <b>Moinho</b>. A ração é feita de <b>trigo</b> 🌾. Toma 6 sementes de trigo de presente!', botao:'Oba!', entrar:() => { S.sementes.trigo = (S.sementes.trigo || 0) + 6; renderHotbar(); }},
-    {txt:'Plante <b>3 trigos</b>: toque em <b>Plantar</b>, toque de novo e escolha o <b>trigo</b>. Depois arraste pelos canteiros. Não esqueça de regar!', el:() => janela ? null : seletorAberto ? $('[data-sem=trigo]') : S.ferramenta === 'trigo' ? null : $('[data-ferr=plantar]'), ok:() => (S.stats.plantou.trigo || 0) >= 3},
+    {txt:'Plante <b>3 trigos</b>: toque num canteiro vazio e escolha o <b>trigo</b> (ou arraste por vários). Não esqueça de regar!', el:() => janela ? null : seletorAberto ? $('[data-sem=trigo]') : null, ok:() => (S.stats.plantou.trigo || 0) >= 3},
     {txt:'Agora compre um <b>Moinho</b> na loja, na aba Construções.', el:() => janela === 'loja' && subLoja === 'construcoes' ? $('[data-construir=moinho]') : janela === 'loja' ? $('[data-sub=construcoes]') : $('.cantos [data-abrir=construir]'), ok:() => nTipo('moinho') > 0},
     {txt:'Escolha o lugar do moinho e toque em <b>Concluir</b>.', el:() => editar.ativo ? $('.barra-edicao [data-ed=concluir]') : null, ok:() => !editar.ativo},
     {txt:'Colha o trigo quando ficar pronto ✨ e depois toque no <b>Moinho</b>.', p3:() => centro(moinhoObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'fabrica'},
@@ -2473,24 +2454,31 @@
     renderSeletor();
   }
   let hotbarHTML = '';
+  let alvoPlantio = null, paginaSem = 0;
+  function abrirPlantio(i) {
+    if (VISITA) return; alvoPlantio = i; seletorAberto = true;
+    const lib = CROPS.filter(c => c.nivel <= S.nivel), k = lib.findIndex(c => c.id === semAtual().id); paginaSem = Math.max(0, Math.floor(k / 6));
+    renderSeletor(); verificarTutorial();
+  }
   function renderSeletor() {
     const el = $('#seletorSem'); el.classList.toggle('on', seletorAberto); if (!seletorAberto) return;
-    const atual = semAtual().id;
-    el.innerHTML = '<div class="sel-tit">Escolha a semente</div><div class="sel-lista">' + CROPS.filter(c => c.nivel <= S.nivel).map(c => { const q = S.sementes[c.id] || 0;
-      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>';
+    const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
+    el.innerHTML = '<div class="sel-tit">🌱 O que plantar? <button class="x" data-sel="fechar">✕</button></div><div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.sementes[c.id] || 0;
+      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<div class="sel-pag"><button data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button><span>${paginaSem + 1}/${pags}</span><button data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button></div>` : '');
   }
-  function abrirSeletor(v) { seletorAberto = v; renderHotbar(); }
+  function abrirSeletor(v) { seletorAberto = v; if (!v) alvoPlantio = null; renderSeletor(); }
 
   let janela = null, zonaSel = null;
   const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
-  const ABAS = ['loja', 'armazem', 'celeiro', 'animais', 'pedidos', 'banca'];
+  const ABAS = ['armazem', 'celeiro', 'animais']; // só estas três dividem a mesma janela
   const SUBLOJA = {sementes:'🌱 Sementes', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
   let subLoja = 'sementes', vitrineChave = '';
   function abrir(nome, sub) {
     if (VISITA && nome !== 'config') { toast('Você está visitando. Volte para casa para usar isso 🏠'); return; }
     if (editar.ativo && nome !== 'config') return;
-    if (nome === 'melhorias' || nome === 'construir') { sub = nome === 'construir' ? 'construcoes' : 'melhorias'; nome = 'loja'; }
+    if (nome === 'melhorias' || nome === 'construir' || nome === 'decoracao') { sub = nome === 'construir' ? 'construcoes' : nome; nome = 'loja'; }
+    if (nome === 'coop' || nome === 'amigos') { SOC.aba = nome === 'coop' ? 'coop' : 'amigos'; nome = 'amigos'; }
     if (nome === 'ranking') ON.rank = null;
     if (nome === 'amigos') { SOC.amigos = null; COOP.meu = undefined; }
     if (nome === 'banca') { BAN.ofertas = null; }
@@ -2800,19 +2788,24 @@
 
   // arrastar o dedo pelos canteiros: planta (com saquinho), rega (com regador) ou colhe (qualquer ferramenta, se estiver pronto)
   const arrasto = {ativo:false, feitos:new Set(), modo:null};
-  function modoTile(i) {
-    const p = S.plots[i], f = S.ferramenta;
+  function modoTile(i) { // o canteiro decide o que fazer: vazio = plantar, sem água = regar, pronto = colher
+    const p = S.plots[i];
     if (pronto(p)) return 'colher';
-    if (crop(f) && !p.c) return 'plantar';
-    if (f === 'regador' && p.c && !p.reg) return 'regar';
+    if (!p.c) return 'plantar';
+    if (!p.reg) return 'regar';
     return null;
   }
   function tentarArrasto() {
     const i = pickTile(); if (i < 0 || arrasto.feitos.has(i)) return;
     arrasto.feitos.add(i);
     if (naFila(i) || modoTile(i) !== arrasto.modo) return;
-    const f = S.ferramenta;
+    const f = semAtual().id;
     if (arrasto.modo === 'plantar') {
+      if (arrasto.pendente != null) { // passou para outro canteiro: é arrasto, planta a última semente escolhida
+        const pend = arrasto.pendente; arrasto.pendente = null;
+        if ((S.sementes[f] || 0) - semFila(f) <= 0) { arrasto.ativo = false; controls.enabled = true; abrirPlantio(pend); return; }
+        if (!naFila(pend) && !S.plots[pend].c) enfileirarPlantio(pend, f);
+      }
       if ((S.sementes[f] || 0) - semFila(f) <= 0) { if (!arrasto.avisou) { arrasto.avisou = true; toast(`Acabaram as sementes de ${crop(f).nome}`); } return; }
       enfileirarPlantio(i, f);
     } else if (arrasto.modo === 'regar') { enfileirarGrupo('regar', i); }
@@ -2826,11 +2819,13 @@
     if (editar.ativo || ev.target !== canvas || ev.button === 2) return;
     apontar(ev); const i = pickTile(); if (i < 0) return;
     const m = modoTile(i); if (!m) return;
-    arrasto.ativo = true; arrasto.modo = m; arrasto.avisou = false; arrasto.feitos = new Set(); controls.enabled = false;
+    arrasto.ativo = true; arrasto.modo = m; arrasto.avisou = false; arrasto.feitos = new Set(); controls.enabled = false; arrasto.pendente = null;
+    if (VISITA) { arrasto.ativo = false; controls.enabled = true; return; }
+    if (m === 'plantar') { if (naFila(i)) return; arrasto.pendente = i; arrasto.feitos.add(i); return; } // espera: toque abre as sementes, arrasto planta
     tentarArrasto();
   }, true);
   window.addEventListener('pointermove', ev => { if (arrasto.ativo) { apontar(ev); tentarArrasto(); } });
-  window.addEventListener('pointerup', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; downPos = null; arrastoAcabou = Date.now(); } });
+  window.addEventListener('pointerup', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; downPos = null; arrastoAcabou = Date.now(); if (arrasto.pendente != null) { const pd = arrasto.pendente; arrasto.pendente = null; abrirPlantio(pd); } } });
   window.addEventListener('pointercancel', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; } });
   let arrastoAcabou = 0;
 
@@ -2882,6 +2877,11 @@
 
   let focoCam = null;
   function girarCamera() { azAlvo += Math.PI / 2; S.az = (S.az + 1) % 4; }
+  // grupos de botões: tocar abre/fecha; tocar fora fecha
+  const fecharGrupos = () => document.querySelectorAll('.grupo.aberto').forEach(g => g.classList.remove('aberto'));
+  document.querySelectorAll('[data-grupo]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); const g = b.parentElement, ab = g.classList.contains('aberto'); fecharGrupos(); if (!ab) g.classList.add('aberto'); }));
+  document.querySelectorAll('.flyout').forEach(f => f.addEventListener('click', () => setTimeout(fecharGrupos, 120)));
+  window.addEventListener('pointerdown', e => { if (!e.target.closest('.grupo')) fecharGrupos(); }, true);
   $('#btnGirar').addEventListener('click', girarCamera);
   $('#btnCentro').addEventListener('click', () => { focoCam = heroi.g.position.clone(); });
   $('#btnChamar').addEventListener('click', () => {
@@ -2904,12 +2904,17 @@
       S.ferramenta = c.id;
     } else { S.ferramenta = f; seletorAberto = false; }
     renderHotbar(); renderHUD(); salvar(); });
-  $('#seletorSem').addEventListener('click', e => { const b = e.target.closest('[data-sem]'); if (!b) return;
-    const id = b.dataset.sem;
-    if (e.target.closest('[data-comprar-sem]') || !(S.sementes[id] || 0)) { S.semSel = id; seletorAberto = false; destaqueSem = id; abrir('loja', 'sementes'); renderHotbar(); destaqueSem = null;
-      const card = $(`[data-card-sem=${id}]`); if (card) card.scrollIntoView({block:'center'}); return; }
-    S.semSel = id; S.ferramenta = id; seletorAberto = false; renderHotbar(); renderHUD(); salvar(); });
-  window.addEventListener('pointerdown', e => { if (seletorAberto && !e.target.closest('#seletorSem, #hotbar')) abrirSeletor(false); }, true);
+  $('#seletorSem').addEventListener('click', e => {
+    const sl = e.target.closest('[data-sel]'); if (sl) { const a = sl.dataset.sel; if (a === 'fechar') abrirSeletor(false); else { paginaSem += a === 'prox' ? 1 : -1; renderSeletor(); } return; }
+    const b = e.target.closest('[data-sem]'); if (!b) return;
+    const id = b.dataset.sem, alvo = alvoPlantio;
+    S.semSel = id;
+    if (e.target.closest('[data-comprar-sem]') || !(S.sementes[id] || 0)) { abrirSeletor(false); destaqueSem = id; abrir('loja', 'sementes'); destaqueSem = null;
+      const card = $(`[data-card-sem=${id}]`); if (card) card.scrollIntoView({block:'nearest', inline:'center'}); return; }
+    abrirSeletor(false);
+    if (alvo != null && !S.plots[alvo].c && !naFila(alvo) && (S.sementes[id] || 0) - semFila(id) > 0) enfileirarPlantio(alvo, id);
+    salvar(); verificarTutorial(); });
+  window.addEventListener('pointerdown', e => { if (seletorAberto && !e.target.closest('#seletorSem')) abrirSeletor(false); }, true);
   document.addEventListener('click', e => {
     const ab = e.target.closest('[data-abrir]'); if (ab) { abrir(ab.dataset.abrir); return; }
     if (!e.target.closest('#fundo')) return;
@@ -2998,11 +3003,7 @@
     if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter' && e.target.id === 'inNome') escolherNome(e.target.value); if (e.key === 'Enter' && e.target.id === 'inAmigo') pedirAmizade(e.target.value); return; }
     if (e.key === 'Escape') { if (editar.ativo) sairEdicao(); else fechar(); return; }
     if (editar.ativo) { if (e.key === 'r' || e.key === 'R') girarSel(); if (e.key === 'Enter') confirmarSel(); return; }
-    const n = parseInt(e.key, 10); if (isNaN(n)) return;
-    if (n === 1) S.ferramenta = 'mao'; else if (n === 2) S.ferramenta = 'regador';
-    else if (n === 3) { if (crop(S.ferramenta)) seletorAberto = !seletorAberto; S.ferramenta = semAtual().id; } else return;
-    if (n !== 3) seletorAberto = false;
-    renderHotbar(); renderHUD();
+    return;
   });
   document.addEventListener('gesturestart', e => e.preventDefault());
 
@@ -3742,5 +3743,5 @@
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
-      tilePos:i => { const v = posTile(i).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, heroi:() => JSON.stringify({fila:heroi.fila.map(a => a.tipo), atual:heroi.atual && {tipo:heroi.atual.tipo, fase:heroi.atual.fase, t:heroi.atual.t}, rota:heroi.rota.length, pos:heroi.g.position}), obj:id => clicarConstrucao(objPorId(id)), objs:() => S.objetos.map(o => o.id + ':' + o.tipo).join(' '), abrir:(n, x) => abrir(n, x), tile:i => clicarTile(i), ferr:f => { S.ferramenta = f; renderHotbar(); }, zona:k => comprarZona(k), cam:(x, z, d) => { controls.target.set(x, 0, z); camera.position.set(x + d * .5, d * .6, z + d * .5); }, girar90:() => girarCamera(), zonas:() => ZONAS.map(z => z.key), construir:t => { S.moedas += custoConstrucao(t); comprarConstrucao(t); }, nome:(id, ms) => mostrarNome(objPorId(id), ms), nomes:() => Object.values(obj3D).filter(r => r.rot && r.rot.visible).length + "/" + Object.values(obj3D).filter(r => r.rot).length + " ed:" + editar.ativo } };
+      tilePos:i => { const v = posTile(i).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, heroi:() => JSON.stringify({fila:heroi.fila.map(a => a.tipo), atual:heroi.atual && {tipo:heroi.atual.tipo, fase:heroi.atual.fase, t:heroi.atual.t}, rota:heroi.rota.length, pos:heroi.g.position}), obj:id => clicarConstrucao(objPorId(id)), objs:() => S.objetos.map(o => o.id + ':' + o.tipo).join(' '), abrir:(n, x) => abrir(n, x), tile:i => clicarTile(i), ferr:f => { S.ferramenta = f; }, zona:k => comprarZona(k), cam:(x, z, d) => { controls.target.set(x, 0, z); camera.position.set(x + d * .5, d * .6, z + d * .5); }, girar90:() => girarCamera(), zonas:() => ZONAS.map(z => z.key), construir:t => { S.moedas += custoConstrucao(t); comprarConstrucao(t); }, nome:(id, ms) => mostrarNome(objPorId(id), ms), nomes:() => Object.values(obj3D).filter(r => r.rot && r.rot.visible).length + "/" + Object.values(obj3D).filter(r => r.rot).length + " ed:" + editar.ativo } };
 })();
