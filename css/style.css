@@ -516,3 +516,13 @@ body.visitando .barra-visita{display:flex;position:fixed;top:calc(8px + var(--sa
 body.visitando .barra-visita .det{font-size:12px}
 body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.visitando .lateral, body.visitando #filaUI, body.visitando .topo .pill, body.visitando #dicaCampo{display:none!important}
 @media (max-height:520px) and (orientation:landscape){ body.visitando .barra-visita{padding:3px 6px 3px 10px;gap:6px;font-size:13px} body.visitando .barra-visita .btn{padding:4px 10px;font-size:12.5px} }
+
+/* banca e cooperativas */
+.mini-b{background:#fff;border:2px solid var(--borda);border-radius:9px;padding:1px 7px;font-weight:800;font-size:13px;line-height:1.3;display:inline-flex;flex-direction:column;align-items:center}
+.mini-b small{font-size:9.5px;color:var(--suave)}
+.ban-escolha{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;flex-direction:row!important;overflow-y:auto!important;max-height:40vh}
+.ban-escolha .mini-b{font-size:20px;padding:2px 5px}
+.coop-topo{display:flex;align-items:center;gap:10px;margin-bottom:8px}.coop-emb{font-size:38px}
+.mural-msg{background:#fff;border:2px solid var(--borda);border-radius:12px;padding:6px 10px;margin-bottom:6px;font-size:14px}
+.mural-msg small{color:var(--suave)}
+.btn.vermelho{background:linear-gradient(180deg,#f2735b,#d4462f);color:#fff;box-shadow:0 3px 0 #8e2a1a}

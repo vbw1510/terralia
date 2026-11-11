@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.22'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.23'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -2482,9 +2482,9 @@
   function abrirSeletor(v) { seletorAberto = v; renderHotbar(); }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
+  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
-  const ABAS = ['loja', 'armazem', 'celeiro', 'animais', 'pedidos'];
+  const ABAS = ['loja', 'armazem', 'celeiro', 'animais', 'pedidos', 'banca'];
   const SUBLOJA = {sementes:'🌱 Sementes', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
   let subLoja = 'sementes', vitrineChave = '';
   function abrir(nome, sub) {
@@ -2492,7 +2492,8 @@
     if (editar.ativo && nome !== 'config') return;
     if (nome === 'melhorias' || nome === 'construir') { sub = nome === 'construir' ? 'construcoes' : 'melhorias'; nome = 'loja'; }
     if (nome === 'ranking') ON.rank = null;
-    if (nome === 'amigos') { SOC.amigos = null; }
+    if (nome === 'amigos') { SOC.amigos = null; COOP.meu = undefined; }
+    if (nome === 'banca') { BAN.ofertas = null; }
     if (nome === 'loja') subLoja = sub || (janela === 'loja' ? subLoja : 'sementes');
     if (nome === 'nome' || nome === 'fabrica') janelaArg = sub;
     if (nome === 'moinho') { nome = 'fabrica'; janelaArg = 'moinho'; }
@@ -2503,7 +2504,7 @@
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
-    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'pedidos'].includes(janela));
+    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'pedidos', 'banca'].includes(janela));
     let h = '';
     const tile = o => `<div class="tile ${o.trava ? 'trava' : ''} ${o.cls || ''}" ${o.attr || ''}>
       ${o.selo ? `<span class="selo ${o.seloCls || ''}">${o.selo}</span>` : ''}
@@ -2691,7 +2692,8 @@
     }
     if (janela === 'ranking') h += htmlRanking();
     if (janela === 'pedidos') h += htmlPedidos();
-    if (janela === 'amigos') h += htmlAmigos();
+    if (janela === 'banca') h += htmlBanca();
+    if (janela === 'amigos') h += (ON.user ? `<div class="subabas"><button data-social="amigos" class="${SOC.aba !== 'coop' ? 'ativa' : ''}">👥 Amigos</button><button data-social="coop" class="${SOC.aba === 'coop' ? 'ativa' : ''}">🤝 Cooperativa</button></div>` : '') + (SOC.aba === 'coop' && ON.user ? htmlCoop() : htmlAmigos());
     if (janela === 'nuvem') h += htmlNuvem();
     if (janela === 'contas') h += htmlContas();
     if (janela === 'nomeRank') h += htmlNome();
@@ -2939,6 +2941,9 @@
     const cs = e.target.closest('[data-construir]'); if (cs) { comprarConstrucao(cs.dataset.construir); return; }
     const amp = e.target.closest('[data-ampliar]'); if (amp) { ampliar(amp.dataset.ampliar); return; }
     const zn = e.target.closest('[data-zona]'); if (zn) { comprarZona(zn.dataset.zona); return; }
+    const so = e.target.closest('[data-social]'); if (so) { SOC.aba = so.dataset.social; renderJanela(); return; }
+    if (janela === 'banca' && cliqueBanca(e)) return;
+    if (janela === 'amigos' && SOC.aba === 'coop' && e.target.closest('[data-emblema], [data-entrar-coop], [data-coop-sub], [data-pedir-coop], [data-doar]')) { cliqueCoop(e); return; }
     const vi = e.target.closest('[data-visitar]'); if (vi) { visitar(vi.dataset.visitar, vi.dataset.nome); return; }
     const aa = e.target.closest('[data-add-amigo]'); if (aa) { pedirAmizade(aa.dataset.addAmigo); return; }
     const am = e.target.closest('[data-amizade]'); if (am) { responderAmizade(+am.dataset.amizade, !!am.dataset.ok); return; }
@@ -2968,7 +2973,11 @@
       ON.recarregando = true; setTimeout(() => location.reload(), ON.user ? 1200 : 100);
     }
     if (ac === 'add-amigo') pedirAmizade(($('#inAmigo') || {}).value);
-    if (ac === 'atualizar-amigos') carregarSocial();
+    if (['criar-coop', 'postar-mural', 'recolher-coop', 'sair-coop'].includes(ac)) acaoCoop(ac);
+    if (ac === 'atualizar-banca') carregarBanca();
+    if (ac === 'colocar-oferta') colocarOferta();
+    if (ac === 'recolher-banca') recolherVendas();
+    if (ac === 'atualizar-amigos') { carregarSocial(); if (SOC.aba === 'coop') carregarCoop(); }
     if (ac === 'voltar-visita') voltarDaVisita();
     if (ac === 'procurar-versao') procurarVersao(true);
     if (ac === 'atualizar-ja') atualizarJogo();
@@ -3260,6 +3269,168 @@
     SOC.online.forEach(r => { const amigo = (SOC.amigos || []).some(a => a.uid === r.user_id);
       h += `<div class="card"><div class="em">🟢</div><div class="meio"><div class="nome">${esc(r.nome)}</div><div class="det">⭐ Nível ${r.nivel}</div></div><div class="botoes">${amigo ? '' : `<button class="btn" data-add-amigo="${esc(r.nome)}">➕</button>`}<button class="btn verde" data-visitar="${r.user_id}" data-nome="${esc(r.nome)}">Visitar</button></div></div>`; });
     return h + `<button class="btn" data-acao="atualizar-amigos" style="width:100%;margin-top:6px">🔄 Atualizar</button>`;
+  }
+
+  // ================= BANCA ONLINE (vender e comprar entre jogadores) =================
+  const BAN = {sub:'comprar', ofertas:null, minhas:null, carregando:false, erro:'', venda:null};
+  const precoBase = id => item(id).preco || 1;
+  async function carregarBanca() {
+    if (!ON.user) return; BAN.carregando = true; BAN.erro = ''; if (janela === 'banca') renderJanela();
+    try {
+      const me = ON.user.id;
+      const {data:ab} = await ON.sb.from('ofertas').select('id, vendedor, item, qtd, preco, criado').is('comprador', null).neq('vendedor', me).order('criado', {ascending:false}).limit(60);
+      const {data:mi} = await ON.sb.from('ofertas').select('id, item, qtd, preco, comprador, recolhido').eq('vendedor', me).eq('recolhido', false).order('criado', {ascending:false});
+      const nomes = await nomesDe([...new Set((ab || []).map(o => o.vendedor))]);
+      BAN.ofertas = (ab || []).filter(o => item(o.item)).map(o => Object.assign(o, {nome:nomes[o.vendedor] || '?'})); BAN.minhas = (mi || []).filter(o => item(o.item));
+    } catch (e) { BAN.erro = 'sem internet'; }
+    BAN.carregando = false; if (janela === 'banca') renderJanela();
+  }
+  async function comprarOferta(id) {
+    const o = (BAN.ofertas || []).find(x => x.id === id); if (!o) return;
+    if (S.moedas < o.preco) { toast('Moedas insuficientes'); return; }
+    if (livreArmazem() < o.qtd) { avisarCheio(); return; }
+    try {
+      const {data, error} = await ON.sb.rpc('comprar_oferta', {oferta:id});
+      if (error || !data || !data.length) { toast('😕 Alguém comprou primeiro!'); carregarBanca(); return; }
+      const r = data[0]; S.moedas -= r.preco; S.celeiro[r.item] = (S.celeiro[r.item] || 0) + r.qtd;
+      toast(`🛒 Comprou ${r.qtd} ${item(r.item).nome} por ${fmtN(r.preco)} moedas`, 'bom'); tudo(); enviarSave();
+    } catch (e) { toast('Sem internet'); }
+    carregarBanca();
+  }
+  async function colocarOferta() {
+    const v = BAN.venda; if (!v) return; const tem = S.celeiro[v.id] || 0;
+    if (v.qtd < 1 || v.qtd > tem) { toast('Quantidade inválida'); return; }
+    S.celeiro[v.id] = tem - v.qtd; salvar();
+    try {
+      const {error} = await ON.sb.from('ofertas').insert({vendedor:ON.user.id, item:v.id, qtd:v.qtd, preco:v.preco});
+      if (error) { S.celeiro[v.id] = (S.celeiro[v.id] || 0) + v.qtd; toast(error.message.includes('limite') ? 'Você já tem 8 ofertas na banca' : 'Não deu para colocar: ' + error.message); }
+      else { toast(`🏪 ${v.qtd} ${item(v.id).nome} à venda por ${fmtN(v.preco)}!`, 'bom'); BAN.venda = null; enviarSave(); }
+    } catch (e) { S.celeiro[v.id] = (S.celeiro[v.id] || 0) + v.qtd; toast('Sem internet'); }
+    tudo(); carregarBanca();
+  }
+  async function cancelarOferta(id) {
+    try { const {data} = await ON.sb.rpc('cancelar_oferta', {oferta:id}); if (data && data[0]) { S.celeiro[data[0].item] = (S.celeiro[data[0].item] || 0) + data[0].qtd; toast('Oferta retirada: os itens voltaram para o armazém'); tudo(); enviarSave(); } } catch (e) { toast('Sem internet'); }
+    carregarBanca();
+  }
+  async function recolherVendas() {
+    try { const {data} = await ON.sb.rpc('recolher_vendas'); const tot = (data || []).reduce((t, o) => t + o.preco, 0);
+      if (tot) { S.moedas += tot; S.stats.vendeu += tot; toast(`💰 Recolheu ${fmtN(tot)} moedas da banca!`, 'bom'); pulsar(); tudo(); enviarSave(); } } catch (e) { toast('Sem internet'); }
+    carregarBanca();
+  }
+  function htmlBanca() {
+    if (!ON.user) return '<p class="dica">A banca é online: entre com Google em ⚙️ Configurações para vender e comprar de outros fazendeiros.</p>';
+    if (BAN.ofertas == null && !BAN.carregando) setTimeout(carregarBanca, 0);
+    let h = `<div class="loja-topo"><div class="subabas"><button data-banca="comprar" class="${BAN.sub === 'comprar' ? 'ativa' : ''}">🛒 Comprar</button><button data-banca="minha" class="${BAN.sub === 'minha' ? 'ativa' : ''}">🏪 Minha banca</button><button data-acao="atualizar-banca">🔄</button></div></div>`;
+    if (BAN.carregando && BAN.ofertas == null) return h + '<p class="dica">Carregando…</p>';
+    if (BAN.erro) h += `<p class="dica">⚠️ ${esc(BAN.erro)}</p>`;
+    if (BAN.sub === 'comprar') {
+      if (!(BAN.ofertas || []).length) return h + '<p class="dica">Nenhuma oferta agora. Volte daqui a pouco ou coloque as suas! 🌻</p>';
+      h += '<div class="vitrine">' + BAN.ofertas.map(o => { const it = item(o.item), justo = o.qtd * precoBase(o.item);
+        return `<div class="tile"><span class="selo">por ${esc(o.nome)}</span><div class="t-ic"><span class="emo-g">${emojiItem(it)}</span></div><div class="t-nome">${it.nome} ×${o.qtd}</div>
+          <div class="t-info"><span class="preco-g">${moedaMini}${fmtN(o.preco)}</span><span class="${o.preco < justo ? 'sobe' : o.preco > justo * 1.2 ? 'desce' : ''}">${o.preco < justo ? 'mais barato que o normal' : o.preco > justo * 1.2 ? 'acima do normal' : 'preço normal'}</span></div>
+          <div class="t-acao"><button class="btn verde" data-comprar-oferta="${o.id}" ${S.moedas < o.preco ? 'disabled' : ''}>Comprar</button></div></div>`; }).join('') + '</div>';
+      return h;
+    }
+    const vendidas = (BAN.minhas || []).filter(o => o.comprador), abertas = (BAN.minhas || []).filter(o => !o.comprador), tot = vendidas.reduce((t, o) => t + o.preco, 0);
+    h += '<div class="vitrine">';
+    if (tot) h += `<div class="tile amigo-ok"><span class="selo max">Vendido!</span><div class="t-ic"><span class="emo-g">💰</span></div><div class="t-nome">${vendidas.length} venda(s)</div><div class="t-info"><span class="preco-g">${moedaMini}${fmtN(tot)}</span></div><div class="t-acao"><button class="btn verde" data-acao="recolher-banca">Recolher</button></div></div>`;
+    const v = BAN.venda;
+    if (v) { const it = item(v.id), b = v.qtd * precoBase(v.id), tem = S.celeiro[v.id] || 0;
+      h += `<div class="tile larga"><span class="selo">Nova oferta</span><div class="t-ic"><span class="emo-g">${emojiItem(it)}</span></div><div class="t-nome">${it.nome}</div>
+        <div class="t-info"><span>Quantidade: <button class="mini-b" data-bv="q-1">−</button> <b>${v.qtd}</b> <button class="mini-b" data-bv="q1">+</button> <small>(tem ${tem})</small></span>
+        <span>Preço: <button class="mini-b" data-bv="p-">−</button> <b>${moedaMini}${fmtN(v.preco)}</b> <button class="mini-b" data-bv="p+">+</button></span><span><small>normal: ${fmtN(b)}</small></span></div>
+        <div class="t-acao"><button class="btn verde" data-acao="colocar-oferta">Vender</button><button class="btn" data-bv="cancelar">✕</button></div></div>`; }
+    else { const tem = VENDAVEIS.filter(i => (S.celeiro[i.id] || 0) > 0);
+      h += `<div class="tile larga"><span class="selo">Vender na banca</span><div class="t-ic"><span class="emo-g">🏪</span></div><div class="t-nome">Escolha um item</div>
+        <div class="t-info ban-escolha">${tem.length ? tem.map(i => `<button class="mini-b" data-bv-item="${i.id}" title="${i.nome}">${emojiItem(i)}<small>${S.celeiro[i.id]}</small></button>`).join('') : '<span>Seu armazém está vazio</span>'}</div><div class="t-acao"></div></div>`; }
+    abertas.forEach(o => { const it = item(o.item); h += `<div class="tile"><span class="selo">À venda</span><div class="t-ic"><span class="emo-g">${emojiItem(it)}</span></div><div class="t-nome">${it.nome} ×${o.qtd}</div><div class="t-info"><span class="preco-g">${moedaMini}${fmtN(o.preco)}</span><span>esperando comprador</span></div><div class="t-acao"><button class="btn" data-cancelar-oferta="${o.id}">Retirar</button></div></div>`; });
+    return h + '</div>';
+  }
+  function cliqueBanca(e) {
+    const bs = e.target.closest('[data-banca]'); if (bs) { BAN.sub = bs.dataset.banca; renderJanela(); return true; }
+    const co = e.target.closest('[data-comprar-oferta]'); if (co) { comprarOferta(+co.dataset.comprarOferta); return true; }
+    const ca = e.target.closest('[data-cancelar-oferta]'); if (ca) { cancelarOferta(+ca.dataset.cancelarOferta); return true; }
+    const bi = e.target.closest('[data-bv-item]'); if (bi) { const id = bi.dataset.bvItem, q = Math.min(10, S.celeiro[id] || 0); BAN.venda = {id, qtd:q, preco:q * precoBase(id)}; renderJanela(); return true; }
+    const bv = e.target.closest('[data-bv]'); if (bv && BAN.venda) { const v = BAN.venda, a = bv.dataset.bv, tem = S.celeiro[v.id] || 0;
+      if (a === 'cancelar') BAN.venda = null;
+      else if (a === 'q1' || a === 'q-1') { const ant = v.qtd; v.qtd = Math.max(1, Math.min(50, tem, v.qtd + (a === 'q1' ? 1 : -1))); v.preco = Math.round(v.preco / ant * v.qtd); }
+      else { const b = v.qtd * precoBase(v.id); v.preco = Math.max(Math.ceil(b * .5), Math.min(Math.floor(b * 2), Math.round(v.preco * (a === 'p+' ? 1.1 : .9)))); }
+      renderJanela(); return true; }
+    return false;
+  }
+  // ================= COOPERATIVAS =================
+  const COOP = {meu:undefined, info:null, membros:[], mural:[], pedidos:[], lista:null, carregando:false, sub:'mural', emblema:'🌻'};
+  const EMBLEMAS = ['🌻', '🐔', '🐄', '🌾', '🍎', '🐝', '🚜', '🌈'];
+  async function carregarCoop() {
+    if (!ON.user) return; COOP.carregando = true; if (janela === 'amigos') renderJanela();
+    try {
+      const {data:m} = await ON.sb.from('coop_membros').select('coop_id, papel').eq('user_id', ON.user.id).maybeSingle();
+      COOP.meu = m ? m.coop_id : null; COOP.papel = m && m.papel;
+      if (COOP.meu) {
+        const [{data:c}, {data:mb}, {data:mu}, {data:pd}] = await Promise.all([ON.sb.from('coops').select('*').eq('id', COOP.meu).maybeSingle(), ON.sb.from('coop_membros').select('user_id, papel').eq('coop_id', COOP.meu),
+          ON.sb.from('coop_mural').select('user_id, texto, criado').eq('coop_id', COOP.meu).order('criado', {ascending:false}).limit(30), ON.sb.from('coop_pedidos').select('*').eq('coop_id', COOP.meu).order('criado', {ascending:false}).limit(40)]);
+        const nomes = await nomesDe([...new Set([...(mb || []).map(x => x.user_id), ...(mu || []).map(x => x.user_id), ...(pd || []).map(x => x.user_id)])]);
+        COOP.info = c; COOP.membros = (mb || []).map(x => Object.assign({}, nomes['_' + x.user_id] || {nome:'?'}, x)).sort((a, b) => (estaOnline(b) ? 1 : 0) - (estaOnline(a) ? 1 : 0) || (b.nivel || 0) - (a.nivel || 0));
+        COOP.mural = (mu || []).map(x => Object.assign(x, {nome:nomes[x.user_id] || '?'})); COOP.pedidos = (pd || []).filter(x => item(x.item) && (x.doado < x.qtd || x.recolhido < x.doado || x.user_id === ON.user.id && Date.now() - Date.parse(x.criado) < 864e5)).map(x => Object.assign(x, {nome:nomes[x.user_id] || '?'}));
+      } else {
+        const {data:cs} = await ON.sb.from('coops').select('id, nome, emblema, descricao').order('criado', {ascending:false}).limit(40);
+        const {data:mb} = await ON.sb.from('coop_membros').select('coop_id').in('coop_id', (cs || []).map(c => c.id));
+        const n = {}; (mb || []).forEach(x => n[x.coop_id] = (n[x.coop_id] || 0) + 1);
+        COOP.lista = (cs || []).map(c => Object.assign(c, {n:n[c.id] || 0})).sort((a, b) => b.n - a.n);
+      }
+    } catch (e) { COOP.erro = 'sem internet'; }
+    COOP.carregando = false; if (janela === 'amigos') renderJanela();
+  }
+  async function coopRpc(f, args, ok) { try { const {data, error} = await ON.sb.rpc(f, args); if (error) { toast('😕 ' + error.message); return null; } if (ok) toast(ok, 'bom'); return data; } catch (e) { toast('Sem internet'); return null; } }
+  function htmlCoop() {
+    if (COOP.meu === undefined && !COOP.carregando) setTimeout(carregarCoop, 0);
+    if (COOP.carregando && COOP.meu === undefined) return '<p class="dica">Carregando…</p>';
+    if (!COOP.meu) {
+      let h = `<p class="dica">Cooperativas são grupos de até 20 fazendeiros que se ajudam: mural de recados e pedidos de itens entre os membros. Criar custa ${moedaMini}5.000.</p>
+        <div class="campo-nome"><input id="inCoop" maxlength="24" placeholder="Nome da nova cooperativa" autocomplete="off"><button class="btn verde" data-acao="criar-coop" ${S.moedas < 5000 ? 'disabled' : ''}>Criar</button></div>
+        <div class="sug-nomes">${EMBLEMAS.map(e => `<button class="btn ${COOP.emblema === e ? 'verde' : ''}" data-emblema="${e}">${e}</button>`).join('')}</div><p class="sub">Cooperativas</p>`;
+      if (!(COOP.lista || []).length) h += '<p class="dica">Nenhuma ainda. Crie a primeira! 🌻</p>';
+      (COOP.lista || []).forEach(c => h += `<div class="card"><div class="em">${esc(c.emblema)}</div><div class="meio"><div class="nome">${esc(c.nome)}</div><div class="det">${c.n}/20 membros ${c.descricao ? '· ' + esc(c.descricao) : ''}</div></div><button class="btn verde" data-entrar-coop="${c.id}" ${c.n >= 20 ? 'disabled' : ''}>${c.n >= 20 ? 'Cheia' : 'Entrar'}</button></div>`);
+      return h;
+    }
+    const c = COOP.info || {}, me = ON.user.id;
+    let h = `<div class="coop-topo"><span class="coop-emb">${esc(c.emblema || '🌻')}</span><div><b>${esc(c.nome || '')}</b><div class="det">${COOP.membros.length}/20 membros · ${COOP.membros.filter(estaOnline).length} online</div></div></div>
+      <div class="subabas">${[['mural', '💬 Mural'], ['pedidos', '📦 Pedidos'], ['membros', '👥 Membros']].map(([k, t]) => `<button data-coop-sub="${k}" class="${COOP.sub === k ? 'ativa' : ''}">${t}</button>`).join('')}<button data-acao="atualizar-amigos">🔄</button></div>`;
+    if (COOP.sub === 'mural') {
+      h += `<div class="campo-nome"><input id="inMural" maxlength="140" placeholder="Escreva um recado para a cooperativa" autocomplete="off"><button class="btn verde" data-acao="postar-mural">Enviar</button></div>`;
+      h += COOP.mural.length ? COOP.mural.map(m => `<div class="mural-msg"><b>${esc(m.nome)}</b> <small>${hora(m.criado)}</small><div>${esc(m.texto)}</div></div>`).join('') : '<p class="dica">Nenhum recado ainda.</p>';
+    } else if (COOP.sub === 'pedidos') {
+      const meus = COOP.pedidos.filter(p => p.user_id === me), recolher = meus.reduce((t, p) => t + p.doado - p.recolhido, 0);
+      if (recolher) h += `<button class="btn verde" data-acao="recolher-coop" style="width:100%;margin-bottom:8px">📦 Recolher ${recolher} item(ns) doados</button>`;
+      h += `<p class="dica">Peça até 20 de um item; os colegas doam e ganham moedas. Você pode ter 1 pedido aberto por vez.</p>`;
+      if (!meus.some(p => p.doado < p.qtd)) h += `<div class="ban-escolha">${itensParaPedido().slice(0, 40).map(i => `<button class="mini-b" data-pedir-coop="${i.id}" title="${i.nome}">${emojiItem(i)}</button>`).join('')}</div>`;
+      COOP.pedidos.forEach(p => { const it = item(p.item), meu = p.user_id === me, tem = S.celeiro[p.item] || 0, falta = p.qtd - p.doado;
+        h += `<div class="card ${falta <= 0 ? 'amigo-ok' : ''}"><div class="em">${emojiItem(it)}</div><div class="meio"><div class="nome">${meu ? 'Você' : esc(p.nome)} pede ${p.qtd} ${it.nome}</div><div class="det">${p.doado}/${p.qtd} doados</div></div>
+          ${meu || falta <= 0 ? '' : `<div class="botoes"><button class="btn verde" data-doar="${p.id}" data-q="1" ${tem < 1 ? 'disabled' : ''}>Doar 1</button><button class="btn" data-doar="${p.id}" data-q="${Math.min(5, falta)}" ${tem < Math.min(5, falta) ? 'disabled' : ''}>Doar ${Math.min(5, falta)}</button></div>`}</div>`; });
+    } else {
+      COOP.membros.forEach(m => h += `<div class="card"><div class="em">${estaOnline(m) ? '🟢' : '⚪'}</div><div class="meio"><div class="nome">${esc(m.nome)} ${m.papel === 'lider' ? '👑' : ''}</div><div class="det">⭐ Nível ${m.nivel || 1}</div></div>${m.user_id === me ? '' : `<button class="btn verde" data-visitar="${m.user_id}" data-nome="${esc(m.nome)}">Visitar</button>`}</div>`);
+      h += `<button class="btn vermelho" data-acao="sair-coop" style="width:100%;margin-top:8px">Sair da cooperativa</button>`;
+    }
+    return h;
+  }
+  async function cliqueCoop(e) {
+    const em = e.target.closest('[data-emblema]'); if (em) { COOP.emblema = em.dataset.emblema; renderJanela(); return true; }
+    const ec = e.target.closest('[data-entrar-coop]'); if (ec) { if (await coopRpc('entrar_coop', {c:+ec.dataset.entrarCoop}, '🤝 Você entrou na cooperativa!') !== null) { COOP.meu = undefined; carregarCoop(); } return true; }
+    const cs = e.target.closest('[data-coop-sub]'); if (cs) { COOP.sub = cs.dataset.coopSub; renderJanela(); return true; }
+    const pc = e.target.closest('[data-pedir-coop]'); if (pc) { const q = crop(pc.dataset.pedirCoop) ? 10 : 3;
+      try { const {error} = await ON.sb.from('coop_pedidos').insert({coop_id:COOP.meu, user_id:ON.user.id, item:pc.dataset.pedirCoop, qtd:q}); toast(error ? 'Não deu para pedir: ' + error.message : `📦 Pedido de ${q} ${item(pc.dataset.pedirCoop).nome} enviado!`, error ? '' : 'bom'); } catch (x) { toast('Sem internet'); }
+      carregarCoop(); return true; }
+    const dd = e.target.closest('[data-doar]'); if (dd) { const p = COOP.pedidos.find(x => x.id === +dd.dataset.doar), q = +dd.dataset.q; if (!p || (S.celeiro[p.item] || 0) < q) return true;
+      const dado = await coopRpc('doar_coop', {p:p.id, q}); if (dado > 0) { S.celeiro[p.item] -= dado; S.moedas += dado * 12; ganharXp(dado * 2); toast(`💚 Doou ${dado} ${item(p.item).nome}! +${dado * 12} moedas`, 'bom'); tudo(); enviarSave(); }
+      carregarCoop(); return true; }
+    return false;
+  }
+  async function acaoCoop(ac) {
+    if (ac === 'criar-coop') { const n = ($('#inCoop') || {}).value || ''; if (n.trim().length < 3) { toast('Dê um nome com pelo menos 3 letras'); return; } if (S.moedas < 5000) return;
+      const id = await coopRpc('criar_coop', {n, e:COOP.emblema, d:''}, `🎉 Cooperativa ${n} criada!`); if (id) { S.moedas -= 5000; tudo(); enviarSave(); COOP.meu = undefined; carregarCoop(); } }
+    if (ac === 'postar-mural') { const t = (($('#inMural') || {}).value || '').trim(); if (!t) return; try { await ON.sb.from('coop_mural').insert({coop_id:COOP.meu, user_id:ON.user.id, texto:t.slice(0, 140)}); } catch (e) {} carregarCoop(); }
+    if (ac === 'recolher-coop') { const r = await coopRpc('recolher_coop', {}); let n = 0; (r || []).forEach(x => { if (item(x.item)) { S.celeiro[x.item] = (S.celeiro[x.item] || 0) + x.qtd; n += x.qtd; } }); if (n) { toast(`📦 Recebeu ${n} item(ns) da cooperativa!`, 'bom'); tudo(); enviarSave(); } carregarCoop(); }
+    if (ac === 'sair-coop') { try { await ON.sb.from('coop_membros').delete().eq('user_id', ON.user.id); toast('Você saiu da cooperativa'); } catch (e) {} COOP.meu = undefined; carregarCoop(); }
   }
 
   // ================= VENDER EM PARTES =================
