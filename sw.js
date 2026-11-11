@@ -1,5 +1,5 @@
 // Terrália: funciona offline e sempre busca a versão nova primeiro
-const CACHE = 'terralia-v7';
+const CACHE = 'terralia-v9';
 const BASE = ['./', 'index.html', 'css/style.css', 'js/game.js', 'js/icones.js', 'assets/lib/three.min.js', 'assets/lib/OrbitControls.js',
   'assets/lib/RoomEnvironment.js', 'assets/lib/supabase.js', 'assets/img/capa.jpg', 'assets/icones/icone-192.png', 'manifest.webmanifest'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).catch(() => {})); self.skipWaiting(); });

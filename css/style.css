@@ -489,3 +489,30 @@ body.editando .barra-construcao{display:flex}
 .campo-nome input{flex:1;min-width:0;font:inherit;font-weight:800;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid var(--borda);background:#fff;user-select:text;-webkit-user-select:text}
 .sug-nomes{display:flex;flex-wrap:wrap;gap:6px}
 .foto-conta{width:40px;height:40px;border-radius:50%;object-fit:cover}
+
+/* vender em partes */
+.pop-venda{position:fixed;inset:0;z-index:90;background:rgba(30,18,6,.35);display:none;align-items:center;justify-content:center;padding:10px}
+.pop-venda.on{display:flex}
+.pv-caixa{background:var(--creme);border:4px solid var(--madeira);border-radius:22px;padding:12px 14px;width:min(360px,94vw);box-shadow:0 6px 0 var(--madeira);display:flex;flex-direction:column;gap:9px;animation:abre .15s}
+.pv-topo{display:flex;align-items:center;gap:10px;position:relative}.pv-topo .fechar{position:static;transform:none;margin-left:auto}
+.pv-ic{font-size:36px;line-height:1}
+.pv-qtd{display:flex;align-items:center;justify-content:center;gap:6px}.pv-qtd b{min-width:56px;text-align:center;font-size:24px}
+.pv-qtd .btn{padding:5px 10px}
+#pvRange{width:100%;accent-color:#55c23a;touch-action:pan-x}
+.pv-atalhos{display:flex;gap:6px}.pv-atalhos .btn{flex:1;font-size:13px;padding:5px 4px}
+@media (max-height:520px) and (orientation:landscape){ .pv-caixa{gap:6px;padding:8px 12px} .pv-ic{font-size:28px} }
+
+/* pedidos */
+.ped-itens{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0 4px}
+.ped-it{display:flex;flex-direction:column;align-items:center;background:#fff4f0;border:2px solid #f2b8a8;border-radius:12px;padding:4px 7px;min-width:48px}
+.ped-it span{font-size:clamp(22px,6vh,34px);line-height:1}.ped-it b{font-size:12px;color:#c0392b}
+.ped-it.ok{background:#effbe6;border-color:#a9d98f}.ped-it.ok b{color:#3f8d33}
+.ped-it .racao-ic{width:30px;height:30px}
+
+/* visitas */
+.barra-visita{display:none}
+body.visitando .barra-visita{display:flex;position:fixed;top:calc(8px + var(--safe-t));left:50%;transform:translateX(-50%);z-index:60;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+  background:rgba(255,248,234,.96);border:3px solid var(--madeira);border-radius:18px;padding:6px 10px 6px 14px;box-shadow:0 4px 0 var(--madeira);max-width:94vw;font-weight:700}
+body.visitando .barra-visita .det{font-size:12px}
+body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.visitando .lateral, body.visitando #filaUI, body.visitando .topo .pill, body.visitando #dicaCampo{display:none!important}
+@media (max-height:520px) and (orientation:landscape){ body.visitando .barra-visita{padding:3px 6px 3px 10px;gap:6px;font-size:13px} body.visitando .barra-visita .btn{padding:4px 10px;font-size:12.5px} }
