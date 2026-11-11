@@ -12,13 +12,27 @@ window.SOM = (() => {
     gMus = ctx.createGain(); gMus.connect(master);
     gSfx = ctx.createGain(); gSfx.connect(master);
     aplicar();
+    carregarSons();
     if (musOn) tocarMusica();
+  }
+  // gravações reais (Mixkit, OpenGameArt CC0 e Pixabay — licenças livres para jogos); se não carregar, usa o som gerado
+  const VAR = {vaca:['vaca', 'vaca2'], ovelha:['ovelha', 'ovelha2'], galinha:['galinha'], porco:['porco', 'porco2'], pato:['pato'], coelho:['coelho'], abelha:['abelha'],
+    cachorro:['cachorro'], gato:['gato', 'gato2'], papagaio:['papagaio'], raposa:['raposa'], galo:['galo'], moeda:['moeda'], agua:['agua'], nivel:['nivel']};
+  const ARQ = [].concat(...Object.values(VAR));
+  const buf = {};
+  const temBuf = n => VAR[n] && VAR[n].some(a => buf[a]);
+  function carregarSons() {
+    ARQ.forEach(n => fetch('assets/sons/' + n + '.mp3').then(r => r.ok ? r.arrayBuffer() : Promise.reject()).then(a => new Promise((ok, erro) => ctx.decodeAudioData(a, ok, erro))).then(b => { buf[n] = b; }).catch(() => {}));
+  }
+  function tocarBuf(n, t) {
+    const ops = VAR[n].filter(a => buf[a]); const s = ctx.createBufferSource(); s.buffer = buf[ops[Math.random() * ops.length | 0]]; s.playbackRate.value = .94 + Math.random() * .12;
+    const g = ctx.createGain(); g.gain.value = {galo:.45, moeda:.5, agua:.45, nivel:.55}[n] || .85; s.connect(g); g.connect(gSfx); s.start(t);
   }
   function aplicar() {
     if (!ctx) return;
     const t = ctx.currentTime;
     master.gain.setTargetAtTime(cfg.mudo ? 0 : 1, t, .05);
-    gMus.gain.setTargetAtTime(cfg.musica * .55, t, .1);
+    gMus.gain.setTargetAtTime(cfg.musica * .8, t, .1);
     gSfx.gain.setTargetAtTime(cfg.efeitos * .9, t, .05);
   }
   function config(c) { Object.assign(cfg, c || {}); aplicar(); }
@@ -99,9 +113,9 @@ window.SOM = (() => {
     papagaio(t) { osc(gSfx, 'square', t, .25, [[0, 1300], [.1, 1700], [.25, 1000]], .07, {tipo: 'bandpass', f: 2000, q: 2}); chiado(gSfx, t, .2, .05, 3000, 2); },
   };
   function tocar(nome, espera = 60) {
-    if (!ctx || cfg.mudo || !cfg.efeitos || !SFX[nome]) return;
+    if (!ctx || cfg.mudo || !cfg.efeitos || !(SFX[nome] || temBuf(nome))) return;
     const agora = performance.now(); if (ult[nome] && agora - ult[nome] < espera) return; ult[nome] = agora;
-    try { SFX[nome](ctx.currentTime + .01); } catch (e) {}
+    try { if (temBuf(nome)) tocarBuf(nome, ctx.currentTime + .01); else if (SFX[nome]) SFX[nome](ctx.currentTime + .01); } catch (e) {}
   }
 
   // ---------- música de fazendinha (loop) ----------
@@ -150,18 +164,36 @@ window.SOM = (() => {
       passo++; prox += PASSO;
     }
   }
+  // música de verdade (arquivo); se falhar, toca a musiquinha gerada
+  const FAIXAS = ['musica1', 'musica2', 'musica3']; // Mixkit: Fun at the Farm, Relaxing Country, At the Barn
+  let faixa = null, faixaOk = null, nFaixa = 0;
+  function tocarFaixa() {
+    if (faixaOk === false) return false;
+    if (!faixa) {
+      faixa = new Audio(); faixa.preload = 'auto';
+      try { ctx.createMediaElementSource(faixa).connect(gMus); } catch (e) {}
+      faixa.addEventListener('error', () => { if (faixaOk) { proxFaixa(); return; } faixaOk = false; faixa = null; if (musOn) tocarMusica(); });
+      faixa.addEventListener('ended', proxFaixa);
+      faixa.src = 'assets/sons/' + FAIXAS[nFaixa] + '.mp3';
+    }
+    const p = faixa.play(); if (p && p.then) p.then(() => { faixaOk = true; }).catch(() => {});
+    return true;
+  }
+  function proxFaixa() { if (!faixa) return; nFaixa = (nFaixa + 1) % FAIXAS.length; faixa.src = 'assets/sons/' + FAIXAS[nFaixa] + '.mp3'; if (musOn && !document.hidden) faixa.play().catch(() => {}); }
   function tocarMusica() {
     musOn = true;
-    if (!ctx || timer) return;
+    if (!ctx) return;
+    if (tocarFaixa()) { if (!ult.galoInicio) { ult.galoInicio = 1; setTimeout(() => tocar('galo'), 600); } return; }
+    if (timer) return;
     prox = ctx.currentTime + .1;
     timer = setInterval(() => { if (ctx.state === 'running') agendar(); }, 40);
   }
-  function pararMusica() { musOn = false; clearInterval(timer); timer = null; }
+  function pararMusica() { musOn = false; clearInterval(timer); timer = null; if (faixa) faixa.pause(); }
 
   // destrava o áudio no 1º toque (regra dos navegadores)
   const destravar = () => iniciar();
   ['pointerdown', 'touchstart', 'keydown'].forEach(e => window.addEventListener(e, destravar, {passive: true}));
-  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) ctx.suspend(); else ctx.resume(); });
+  document.addEventListener('visibilitychange', () => { if (!ctx) return; if (document.hidden) { ctx.suspend(); if (faixa) faixa.pause(); } else { ctx.resume(); if (faixa && musOn) faixa.play().catch(() => {}); } });
 
   return {tocar, tocarMusica, pararMusica, config, iniciar, get cfg() { return cfg; }};
 })();

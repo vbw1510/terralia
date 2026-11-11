@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.26'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.27'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -112,7 +112,7 @@
     botas:    {nome:'Botas de couro',  emoji:'🥾', desc:'O fazendeiro anda 15% mais rápido por nível.', max:10, base:200, mult:2, niv:[2, 4, 6, 8, 10, 20, 35, 55, 80, 110]},
     ferram:   {nome:'Ferramentas de qualidade', emoji:'🧰', desc:'Plantar, regar e colher mais rápido a cada nível.', max:10, base:250, mult:2.1, niv:[2, 4, 6, 8, 10, 22, 38, 58, 85, 120]},
     fertil:   {nome:'Fertilizante',   emoji:'🌿', desc:'Plantas e árvores crescem 10% mais rápido a cada nível.', max:12, base:120, mult:2.1, niv:[3, 5, 7, 9, 11, 18, 28, 40, 55, 75, 100, 140]},
-    maos:     {nome:'Mãos de fazendeiro', emoji:'🧤', desc:'Plante, regue e colha vários canteiros de uma vez: 2, 4, 6 e depois 9.', max:4, base:400, mult:2.6, niv:[4, 8, 13, 18]},
+    maos:     {nome:'Mãos de fazendeiro', emoji:'🧤', desc:'Mais chance de colher em dobro: +5% a cada nível.', max:4, base:400, mult:2.6, niv:[4, 8, 13, 18]},
     moinhoVaga:{nome:'Fábricas maiores', emoji:'⚙️', desc:'+1 vaga na fila de produção do moinho e de todas as fábricas.', max:8, base:500, mult:2.2, niv:[4, 6, 8, 16, 30, 50, 80, 120]},
     adubo:    {nome:'Adubo especial', emoji:'🧪', desc:'+12% de chance de colheita dupla por nível.', max:5, base:150, mult:2.3, niv:[5, 7, 9, 11, 13]},
     aspersor: {nome:'Aspersores',     emoji:'💦', desc:'Tudo que você planta já nasce regado.', max:1, base:1200, mult:1, niv:[7]},
@@ -408,7 +408,7 @@
   scene.background = C(0xbfe6ff);
   scene.fog = new THREE.Fog(C(0xcdeeff), 70, 150);
   if (THREE.RoomEnvironment) { const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; }
-  const camera = new THREE.PerspectiveCamera(42, 1, .1, 300);
+  const camera = new THREE.PerspectiveCamera(42, 1, .1, 170);
   camera.position.set(12, 16, 16.5);
   const controls = new THREE.OrbitControls(camera, canvas);
   controls.target.set(0, 0, 0);
@@ -426,7 +426,7 @@
     azAtual += (azAlvo - azAtual) * Math.min(1, dt * 7);
     const tg = controls.target, d = camera.position.distanceTo(tg);
     const f = Math.min(1, Math.max(0, (d - controls.minDistance) / (controls.maxDistance - controls.minDistance)));
-    const polar = 1.0 - f * .32; // perto: mais deitada; longe: mais de cima
+    const polar = .72 - f * .2; // perto ~41°, longe ~30° (mais de cima, menos horizonte)
     camera.position.set(tg.x + d * Math.sin(polar) * Math.sin(azAtual), tg.y + d * Math.cos(polar), tg.z + d * Math.sin(polar) * Math.cos(azAtual));
     camera.lookAt(tg);
   }
@@ -1805,7 +1805,7 @@
 
   // ================= REGRAS =================
   function dicaFerramenta() {
-    return 'Toque no canteiro: vazio 🌱 planta · 💧 rega · ✨ colhe — arraste para fazer vários';
+    return 'Toque no canteiro e arraste a semente, o regador ou a foice por cima dos canteiros';
   }
   function plantar(i, id) {
     const c = crop(id);
@@ -1825,7 +1825,7 @@
   function colher(i, auto) {
     const p = S.plots[i], c = crop(p.c);
     if (livreArmazem() < 1) { avisarCheio(); return false; }
-    const q = Math.min(livreArmazem(), Math.random() < 0.12 * (S.upg.adubo || 0) ? 2 : 1);
+    const q = Math.min(livreArmazem(), Math.random() < 0.12 * (S.upg.adubo || 0) + 0.05 * (S.upg.maos || 0) ? 2 : 1);
     S.celeiro[c.id] = (S.celeiro[c.id] || 0) + q; S.colhidos += q; S.stats.colheu[c.id] = (S.stats.colheu[c.id] || 0) + q;
     S.plots[i] = {c:null};
     flutuar(posTile(i).add(V3(0, 1.2, 0)), `+${q} ${c.emoji}${q > 1 ? ' 🎉' : ''}`); acharMaterial(posTile(i), .045);
@@ -2068,7 +2068,7 @@
   const semFila = id => [heroi.atual, ...heroi.fila].filter(a => a && a.tipo === 'plantar' && a.id === id).reduce((n, a) => n + idsAcao(a).length, 0);
   function marcar(i, on) { if (i != null && tiles[i]) tiles[i].marca.visible = on; }
   const idsAcao = a => a.lista || (a.i != null ? [a.i] : []);
-  const areaMax = () => [1, 2, 4, 6, 9][S.upg.maos || 0]; // Mãos de fazendeiro: quantos canteiros por vez
+  const areaMax = () => 6; // o fazendeiro faz até 6 canteiros seguidos numa tarefa só
   function areaAcao(i, filtro, max, ignorar) { // o canteiro tocado + os mais perto que também servem
     const c = posTile(i);
     return [i, ...S.plots.map((q, j) => j).filter(j => j !== i && tiles[j] && filtro(S.plots[j]) && !naFila(j) && !(ignorar && ignorar.has(j)))
@@ -2149,12 +2149,8 @@
     const p = S.plots[i];
     if (naFila(i)) return;
     if (!p.c) { abrirPlantio(i); return; }
-    if (p.c && !p.reg) { enfileirarGrupo('regar', i); return; }
-    if (pronto(p) && livreArmazem() < 1) { avisarCheio(); return; }
-    if (pronto(p)) { // com a Cesta grande colhe 2 ou 4 canteiros de uma vez
-      if (livreArmazem() - colhendoNaFila() < 1) { avisarCheio(); return; }
-      enfileirarGrupo('colher', i); return;
-    }
+    if (p.c && !p.reg) { abrirFerramenta('regar', i); return; }
+    if (pronto(p)) { abrirFerramenta('colher', i); return; }
     toast(`${crop(p.c).emoji} fica pronta em ${fmtT((p.dur - (Date.now() - p.t0)) / 1000)}`);
   }
   function mostrarNome(o, ms = 3000) { const r = obj3D[o.id]; if (r && r.rot) r.ate = Date.now() + ms; }
@@ -2438,9 +2434,9 @@
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'armazem') || S.objetos.find(o => o.tipo === 'celeiro');
   const TUT = [
     {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
-    {txt:'Toque num <b>canteiro vazio</b> e escolha o <b>trigo</b> para plantar.', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
-    {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 para <b>regar</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), ok:() => S.plots.some(p => p.c && p.reg)},
-    {txt:'Muito bem! Espere crescer e toque nela quando aparecer ✨ para <b>colher</b>.', p3:() => posTile(primeiro(p => p.c)), ok:() => S.colhidos > 0},
+    {txt:'Toque num <b>canteiro vazio</b> e toque no <b>trigo</b> (ou arraste o trigo por cima de vários canteiros).', p3:() => posTile(primeiro(p => !p.c)), el:() => seletorAberto ? $('[data-sem=trigo]') : undefined, ok:() => S.plots.some(p => p.c) || heroi.fila.some(a => a.tipo === 'plantar') || (heroi.atual && heroi.atual.tipo === 'plantar')},
+    {txt:'Toda planta precisa de água! Toque na plantinha com a gotinha 💧 e use o <b>regador</b>.', p3:() => posTile(primeiro(p => p.c && !p.reg)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.plots.some(p => p.c && p.reg)},
+    {txt:'Muito bem! Espere crescer, toque nela quando aparecer ✨ e use a <b>foice</b> para colher.', p3:() => posTile(primeiro(p => p.c)), el:() => seletorAberto ? $('[data-ferr-arr]') : undefined, ok:() => S.colhidos > 0},
     {txt:'A colheita foi para o <b>Armazém</b>. Toque nele para vender! (O Celeiro guarda as sementes.)', p3:() => centro(celeiroObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'armazem'},
     {txt:'Toque em <b>Vender tudo</b> para ganhar moedas.', el:() => $('[data-acao=vender-tudo]'), ok:() => S.stats.vendeu > 0},
     {txt:'Agora vamos comprar mais sementes na <b>Loja</b>.', el:() => janela ? $('.fechar') : $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
@@ -2544,16 +2540,36 @@
   }
   let hotbarHTML = '';
   let alvoPlantio = null, paginaSem = 0;
+  let modoSel = 'sementes';
+  const FOICE = '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" stroke-linecap="round"><path d="M14 10c22-6 42 6 44 26-10-14-26-18-40-12z" fill="#dfe6ee" stroke="#3b4652" stroke-width="3.2"/><path d="M20 14c14-3 28 2 34 12" stroke="#fff" stroke-width="2.4" fill="none" opacity=".8"/><path d="M18 24l-8 34" stroke="#7a4a1c" stroke-width="7"/><path d="M18 24l-8 34" stroke="#c98640" stroke-width="3.5"/><circle cx="17" cy="25" r="4" fill="#59606a" stroke="#2c333b" stroke-width="2"/></svg>';
+  function abrirFerramenta(modo, i) {
+    if (VISITA) return; alvoPlantio = i; modoSel = modo; seletorAberto = true;
+    renderSeletor(); verificarTutorial();
+  }
+  function posicionarSeletor() {
+    const el = $('#seletorSem'); if (!seletorAberto || alvoPlantio == null || !tiles[alvoPlantio]) { el.style.cssText = ''; el.classList.remove('flutua'); return; }
+    const v = posTile(alvoPlantio).project(camera), x = (v.x + 1) / 2 * innerWidth, y = (1 - v.y) / 2 * innerHeight;
+    el.classList.add('flutua');
+    const w = el.offsetWidth, h = el.offsetHeight, emCima = y - h - 34 > 8;
+    el.style.left = Math.max(8, Math.min(innerWidth - w - 8, x - w / 2)) + 'px';
+    el.style.top = (emCima ? y - h - 34 : Math.min(innerHeight - h - 8, y + 30)) + 'px';
+  }
   function abrirPlantio(i) {
-    if (VISITA) return; alvoPlantio = i; seletorAberto = true;
+    if (VISITA) return; alvoPlantio = i; modoSel = 'sementes'; seletorAberto = true;
     const lib = CROPS.filter(c => c.nivel <= S.nivel), k = lib.findIndex(c => c.id === semAtual().id); paginaSem = Math.max(0, Math.floor(k / 6));
     renderSeletor(); verificarTutorial();
   }
   function renderSeletor() {
-    const el = $('#seletorSem'); el.classList.toggle('on', seletorAberto); if (!seletorAberto) return;
+    const el = $('#seletorSem'); el.classList.toggle('on', seletorAberto); if (!seletorAberto) { el.classList.remove('flutua', 'arrastando'); el.style.cssText = ''; return; }
+    if (modoSel !== 'sementes') {
+      const col = modoSel === 'colher';
+      el.innerHTML = `<div class="sel-tit">${col ? '✂️ Arraste a foice por cima para colher' : '💧 Arraste o regador por cima para regar'}</div><div class="sel-lista ferr"><button class="sem ferr-arr" data-ferr-arr="${modoSel}"><span class="ico">${col ? FOICE : ICO.regador}</span><small>${col ? 'Foice' : 'Regador'}</small></button></div>`;
+      posicionarSeletor(); return;
+    }
     const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
-    el.innerHTML = '<div class="sel-tit">🌱 O que plantar? <button class="x" data-sel="fechar">✕</button></div><div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.sementes[c.id] || 0;
+    el.innerHTML = '<div class="sel-tit">🌱 Arraste a semente pelos canteiros <button class="x" data-sel="fechar">✕</button></div><div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.sementes[c.id] || 0;
       return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<div class="sel-pag"><button data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button><span>${paginaSem + 1}/${pags}</span><button data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button></div>` : '');
+    posicionarSeletor();
   }
   function abrirSeletor(v) { seletorAberto = v; if (!v) alvoPlantio = null; renderSeletor(); }
 
@@ -2772,6 +2788,7 @@
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
         <div class="linha-cfg"><span>🌱 Versão ${VERSAO}<br><small class="det">${novaVersao ? `Nova versão ${esc(novaVersao)} disponível!` : 'O jogo se atualiza sozinho quando abre.'}</small></span>
           <button class="btn ${novaVersao ? 'verde' : ''}" data-acao="${novaVersao ? 'atualizar-ja' : 'procurar-versao'}">${novaVersao ? 'Atualizar agora' : 'Procurar atualização'}</button></div>
+        <p class="dica legal">🎵 Músicas e sons: Mixkit (licença livre), OpenGameArt (CC0) e Pixabay.</p>
         <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
         ${MODO_TESTE ? '<div class="linha-cfg"><span>↺ Recomeçar do zero (teste)</span><button class="btn vermelho" data-abrir="reset">Recomeçar</button></div>' : ''}`;
     }
@@ -2884,7 +2901,6 @@
   }
 
   // arrastar o dedo pelos canteiros: planta (com saquinho), rega (com regador) ou colhe (qualquer ferramenta, se estiver pronto)
-  const arrasto = {ativo:false, feitos:new Set(), modo:null};
   function modoTile(i) { // o canteiro decide o que fazer: vazio = plantar, sem água = regar, pronto = colher
     const p = S.plots[i];
     if (pronto(p)) return 'colher';
@@ -2892,38 +2908,41 @@
     if (!p.reg) return 'regar';
     return null;
   }
-  function tentarArrasto() {
-    const i = pickTile(); if (i < 0 || arrasto.feitos.has(i)) return;
-    arrasto.feitos.add(i);
-    if (naFila(i) || modoTile(i) !== arrasto.modo) return;
-    const f = semAtual().id;
-    if (arrasto.modo === 'plantar') {
-      if (arrasto.pendente != null) { // passou para outro canteiro: é arrasto, planta a última semente escolhida
-        const pend = arrasto.pendente; arrasto.pendente = null;
-        if ((S.sementes[f] || 0) - semFila(f) <= 0) { arrasto.ativo = false; controls.enabled = true; abrirPlantio(pend); return; }
-        if (!naFila(pend) && !S.plots[pend].c) enfileirarPlantio(pend, f);
-      }
-      if ((S.sementes[f] || 0) - semFila(f) <= 0) { if (!arrasto.avisou) { arrasto.avisou = true; toast(`Acabaram as sementes de ${crop(f).nome}`); } return; }
-      enfileirarPlantio(i, f);
-    } else if (arrasto.modo === 'regar') { enfileirarGrupo('regar', i); }
-    else if (arrasto.modo === 'colher') {
-      if (livreArmazem() < 1) { avisarCheio(); return; }
-      if (livreArmazem() - colhendoNaFila() < 1) { avisarCheio(); return; }
-      enfileirarGrupo('colher', i);
+  // arrastar a semente, a foice ou o regador do balão por cima dos canteiros (estilo Hay Day)
+  const arr = {ativo:false, tipo:null, id:null, x0:0, y0:0, moveu:false, feitos:new Set(), avisou:false, ate:0};
+  const fant = document.createElement('div'); fant.className = 'fantasma'; document.body.appendChild(fant);
+  function aplicarArr(i) {
+    if (i < 0 || arr.feitos.has(i) || naFila(i) || modoTile(i) !== arr.tipo) return;
+    arr.feitos.add(i);
+    if (arr.tipo === 'plantar') {
+      const f = arr.id;
+      if ((S.sementes[f] || 0) - semFila(f) <= 0) { if (!arr.avisou) { arr.avisou = true; toast(`Acabaram as sementes de ${crop(f).nome}`); } return; }
+      enfileirarPlantio(i, f); somT('pop', 40);
+    } else if (arr.tipo === 'regar') { enfileirarGrupo('regar', i); somT('agua', 120); }
+    else if (arr.tipo === 'colher') {
+      if (livreArmazem() - colhendoNaFila() < 1) { if (!arr.avisou) { arr.avisou = true; avisarCheio(); } return; }
+      enfileirarGrupo('colher', i); somT('pop', 40);
     }
   }
-  window.addEventListener('pointerdown', ev => {
-    if (editar.ativo || ev.target !== canvas || ev.button === 2) return;
-    apontar(ev); const i = pickTile(); if (i < 0) return;
-    const m = modoTile(i); if (!m) return;
-    arrasto.ativo = true; arrasto.modo = m; arrasto.avisou = false; arrasto.feitos = new Set(); controls.enabled = false; arrasto.pendente = null;
-    if (VISITA) { arrasto.ativo = false; controls.enabled = true; return; }
-    if (m === 'plantar') { if (naFila(i)) return; arrasto.pendente = i; arrasto.feitos.add(i); return; } // espera: toque abre as sementes, arrasto planta
-    tentarArrasto();
-  }, true);
-  window.addEventListener('pointermove', ev => { if (arrasto.ativo) { apontar(ev); tentarArrasto(); } });
-  window.addEventListener('pointerup', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; downPos = null; arrastoAcabou = Date.now(); if (arrasto.pendente != null) { const pd = arrasto.pendente; arrasto.pendente = null; abrirPlantio(pd); } } });
-  window.addEventListener('pointercancel', () => { if (arrasto.ativo) { arrasto.ativo = false; controls.enabled = true; } });
+  $('#seletorSem').addEventListener('pointerdown', ev => {
+    const b = ev.target.closest('[data-sem], [data-ferr-arr]'); if (!b || ev.target.closest('[data-comprar-sem]')) return;
+    let tipo, id = null;
+    if (b.dataset.sem) { id = b.dataset.sem; if (!(S.sementes[id] || 0)) return; tipo = 'plantar'; } else tipo = b.dataset.ferrArr;
+    Object.assign(arr, {ativo:true, tipo, id, x0:ev.clientX, y0:ev.clientY, moveu:false, feitos:new Set(), avisou:false});
+    fant.innerHTML = b.querySelector('.ico').outerHTML; fant.style.left = ev.clientX + 'px'; fant.style.top = ev.clientY + 'px';
+  });
+  window.addEventListener('pointermove', ev => {
+    if (!arr.ativo) return;
+    if (!arr.moveu) { if (Math.hypot(ev.clientX - arr.x0, ev.clientY - arr.y0) < 10) return; arr.moveu = true; controls.enabled = false; fant.classList.add('on'); $('#seletorSem').classList.add('arrastando'); }
+    fant.style.left = ev.clientX + 'px'; fant.style.top = ev.clientY + 'px';
+    apontar(ev); aplicarArr(pickTile());
+  });
+  const fimArr = () => {
+    if (!arr.ativo) return; arr.ativo = false; fant.classList.remove('on'); controls.enabled = true;
+    if (arr.moveu) { arr.ate = arrastoAcabou = Date.now(); downPos = null; abrirSeletor(false); salvar(); verificarTutorial(); return; }
+    if (arr.tipo !== 'plantar') { const i = alvoPlantio; arr.ate = Date.now(); abrirSeletor(false); if (i != null) aplicarArr(i); verificarTutorial(); } // toque simples: só no canteiro escolhido
+  };
+  window.addEventListener('pointerup', fimArr); window.addEventListener('pointercancel', fimArr);
   let arrastoAcabou = 0;
 
   // arrastar construção no modo edição (antes da câmera receber o toque)
@@ -3000,6 +3019,7 @@
     } else { S.ferramenta = f; seletorAberto = false; }
     renderHotbar(); renderHUD(); salvar(); });
   $('#seletorSem').addEventListener('click', e => {
+    if (Date.now() - arr.ate < 400) return;
     const sl = e.target.closest('[data-sel]'); if (sl) { const a = sl.dataset.sel; if (a === 'fechar') abrirSeletor(false); else { paginaSem += a === 'prox' ? 1 : -1; renderSeletor(); } return; }
     const b = e.target.closest('[data-sem]'); if (!b) return;
     const id = b.dataset.sem, alvo = alvoPlantio;
@@ -3329,10 +3349,15 @@
       if (amigo) { const {count} = await ON.sb.from('ajudas').select('id', {count:'exact', head:true}).eq('de', ON.user.id).eq('para', uid).gt('criado', new Date(Date.now() - 864e5).toISOString()); feitas = count || 0; }
       if (ON.sujo) await enviarSave();
       sessionStorage.setItem('terralia-visita', JSON.stringify({uid, nome:nome || data.dados.nome, amigo, ajudas:Math.max(0, 10 - feitas), dados:data.dados}));
-      ON.recarregando = true; location.reload();
+      telaCarregando(`Indo para a fazenda de ${nome || data.dados.nome || 'um amigo'}…`);
+      ON.recarregando = true; setTimeout(() => location.reload(), 350);
     } catch (e) { toast('Sem internet para visitar agora'); }
   }
-  function voltarDaVisita() { sessionStorage.removeItem('terralia-visita'); location.reload(); }
+  function voltarDaVisita() { sessionStorage.removeItem('terralia-visita'); telaCarregando('Voltando para a sua fazenda…'); setTimeout(() => location.reload(), 350); }
+  function telaCarregando(txt) { // mostra já e avisa a próxima página para continuar mostrando
+    try { sessionStorage.setItem('terralia-indo', txt); } catch (e) {}
+    if (window.mostrarCarregando) window.mostrarCarregando(txt);
+  }
   async function ajudarNaVisita(i) {
     const p = S.plots[i]; if (!p || !p.c || p.reg) return false;
     if (!VISITA.amigo) { toast('Só dá para ajudar a fazenda de amigos 🤝'); return true; }
@@ -3880,8 +3905,11 @@
   $('#chat').addEventListener('click', cliqueChat);
   document.addEventListener('click', e => { const b = e.target.closest('[data-chat-abrir]'); if (!b) return; e.stopPropagation(); if (VISITA) { toast('Volte para casa para usar o chat 🏠'); return; } if (janela) fechar(); if (CHAT.aberto && b.dataset.chatAbrir === '1') fecharChat(); else abrirChat(b.dataset.chatAbrir === 'coop' ? 'coop' : undefined); }, true);
   $('#chat').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'inChat') { e.preventDefault(); enviarChat(); } e.stopPropagation(); });
-  $('#chat').addEventListener('focusin', e => { if (e.target.id === 'inChat' && MOBILE) $('#chat').classList.add('digitando'); });
-  $('#chat').addEventListener('focusout', e => { if (e.target.id === 'inChat') setTimeout(() => $('#chat').classList.remove('digitando'), 150); });
+  // teclado do celular: o painel encolhe para caber acima do teclado
+  const ajustarChatTeclado = () => { const vv = window.visualViewport, el = $('#chat'); if (!vv || !el) return; const cheio = vv.height > innerHeight - 40;
+    el.style.height = cheio ? '' : vv.height + 'px'; el.style.top = cheio ? '' : vv.offsetTop + 'px'; el.style.bottom = cheio ? '' : 'auto';
+    const bx = $('#chatMsgs'); if (bx && !cheio) bx.scrollTop = bx.scrollHeight; };
+  if (window.visualViewport) { visualViewport.addEventListener('resize', ajustarChatTeclado); visualViewport.addEventListener('scroll', ajustarChatTeclado); }
   setInterval(contarNaoLidas, 30000); setTimeout(contarNaoLidas, 6000);
   const hora = t => t ? new Date(t).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '—';
   function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])); }
@@ -3966,7 +3994,14 @@
   setInterval(salvar, 5000);
   document.addEventListener('visibilitychange', () => { if (document.hidden) salvar(); });
 
-  $('#btnJogar').addEventListener('click', () => {
+  // terminou de montar a fazenda: tira a tela de carregamento (visitas) e pula a capa
+  if (sessionStorage.getItem('terralia-indo')) {
+    sessionStorage.removeItem('terralia-indo');
+    const sp = $('#splash'); if (sp) sp.remove();
+    aplicarAvatar();
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (window.esconderCarregando) window.esconderCarregando(); }));
+  }
+  ($('#btnJogar') || document.createElement('i')).addEventListener('click', () => {
     if (MOBILE) {
       try {
         const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;

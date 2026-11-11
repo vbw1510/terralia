@@ -19,6 +19,16 @@
 </head>
 <body>
 <canvas id="cena"></canvas>
+<div id="carregando"><div class="car-caixa"><div class="car-logo">Terrália</div><div class="car-txt"></div><div class="car-barra"><i></i></div><div class="car-dica"></div></div></div>
+<script>
+(function(){
+  var D=['Arraste a semente por cima de vários canteiros de uma vez!','Toque nos cercados para ouvir os bichinhos 🐄','Ajudar fazendas de amigos dá moedas e XP','Anuncie suas vendas da banca no chat 📢','Materiais de ampliação caem ao colher e produzir','Na cooperativa vocês pedem e doam itens entre si'];
+  var el=document.getElementById('carregando'), barra=el.querySelector('i'), p=0, t=null;
+  window.mostrarCarregando=function(txt){ el.querySelector('.car-txt').textContent=txt; el.querySelector('.car-dica').textContent='💡 '+D[Math.floor(Math.random()*D.length)]; el.classList.add('on'); clearInterval(t); t=setInterval(function(){ p+=(92-p)*.06; barra.style.width=p+'%'; },60); };
+  window.esconderCarregando=function(){ clearInterval(t); barra.style.width='100%'; setTimeout(function(){ el.classList.add('saindo'); setTimeout(function(){ el.classList.remove('on','saindo'); },450); },250); };
+  try{ var txt=sessionStorage.getItem('terralia-indo'); if(txt){ p=35; window.mostrarCarregando(txt); } }catch(e){}
+})();
+</script>
 <div id="girar"><div class="cel"></div>Gire o celular<small>Terrália é jogado na horizontal</small></div>
 
 <!-- Tela inicial -->

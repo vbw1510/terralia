@@ -591,3 +591,28 @@ body.visitando .cantos, body.visitando .hotbar, body.visitando #missoes, body.vi
 .chat-enviar input{flex:1;min-width:0;border:2px solid #d9bf94;border-radius:12px;padding:8px 10px;font-size:15px;background:#fff;color:#4a2e17}
 .chat-enviar .btn{padding:6px 16px;font-size:16px}
 @media (max-height:520px) and (orientation:landscape){ .chat{height:88vh}.cm{font-size:12px} }
+
+/* chat grudado na esquerda */
+.chat{left:0;top:0;bottom:0;height:auto;width:min(360px,48vw);transform:translateX(-105%);border-radius:0 18px 18px 0;border-left:0;
+  padding-left:var(--safe-l);transition:transform .2s ease-out,opacity .2s;opacity:1}
+.chat.aberto{transform:none}
+.chat.digitando{top:0;transform:none;height:auto}
+@media (max-height:520px) and (orientation:landscape){ .chat{height:auto} }
+/* balão de ferramenta perto do canteiro */
+.seletor-sem.flutua{bottom:auto;transform:none!important;transition:opacity .15s}
+.seletor-sem .sem,.seletor-sem [data-ferr-arr]{touch-action:none}
+.seletor-sem.arrastando{opacity:0!important;pointer-events:none}
+.sel-lista.ferr{display:flex;justify-content:center}
+.sem.ferr-arr{width:72px;height:74px}.sem.ferr-arr .ico{width:46px;height:46px}
+.fantasma{position:fixed;z-index:60;width:64px;height:64px;pointer-events:none;transform:translate(-50%,-115%);display:none;filter:drop-shadow(0 4px 4px rgba(0,0,0,.35))}
+.fantasma.on{display:block}.fantasma .ico{width:64px;height:64px;position:relative;display:block}.fantasma svg{width:100%;height:100%}
+.fantasma .emo{position:absolute;left:0;right:0;bottom:6px;text-align:center;font-size:26px;line-height:1}
+/* tela de carregamento */
+#carregando{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#8fd16a,#3f8d33 70%,#2b6a3a);transition:opacity .4s}
+#carregando.on{display:flex}#carregando.saindo{opacity:0}
+.car-caixa{text-align:center;color:#fff8ea;width:min(420px,80vw)}
+.car-logo{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:44px;line-height:1;text-shadow:0 4px 0 #2b6a3a,0 6px 14px rgba(0,0,0,.3)}
+.car-txt{font-weight:800;font-size:18px;margin:14px 0 10px}
+.car-barra{height:16px;border-radius:10px;background:rgba(0,0,0,.25);border:3px solid #fff8ea;overflow:hidden}
+.car-barra i{display:block;height:100%;width:0;background:linear-gradient(#ffd95a,#f0a92a);border-radius:6px;transition:width .2s}
+.car-dica{margin-top:12px;font-size:13px;font-weight:700;opacity:.9}
