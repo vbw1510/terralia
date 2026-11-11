@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.25'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.26'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -119,10 +119,32 @@
   };
   // materiais de ampliação: caem de vez em quando ao colher, coletar e produzir (não ocupam espaço)
   const MATERIAIS = {
-    parafuso:{nome:'Parafuso', emoji:'🔩', para:'armazem'}, tabua:{nome:'Tábua', emoji:'🪵', para:'armazem'}, fita:{nome:'Fita adesiva', emoji:'🩹', para:'armazem'},
-    prego:{nome:'Prego', emoji:'📌', para:'celeiro'}, tijolo:{nome:'Tijolo', emoji:'🧱', para:'celeiro'}, tinta:{nome:'Lata de tinta', emoji:'🪣', para:'celeiro'},
-    escritura:{nome:'Escritura', emoji:'📜', para:'ilha'}, marreta:{nome:'Marreta', emoji:'🔨', para:'ilha'}, estaca:{nome:'Estaca', emoji:'🪧', para:'ilha'},
+    parafuso:{nome:'Parafuso', emoji:'🔩', para:'armazem'}, tabua:{nome:'Tábua', emoji:'🪓', para:'armazem'}, fita:{nome:'Fita adesiva', emoji:'🎗️', para:'armazem'},
+    prego:{nome:'Prego', emoji:'📌', para:'celeiro'}, tijolo:{nome:'Tijolo', emoji:'🧱', para:'celeiro'}, tinta:{nome:'Lata de tinta', emoji:'🎨', para:'celeiro'},
+    escritura:{nome:'Escritura', emoji:'📜', para:'ilha'}, marreta:{nome:'Marreta', emoji:'🔨', para:'ilha'}, estaca:{nome:'Estaca', emoji:'📍', para:'ilha'},
   };
+  // ícones desenhados dos materiais (emoji falham em alguns celulares)
+  const MAT_SVG = (() => {
+    const s = d => `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" stroke-linecap="round">${d}</svg>`;
+    return {
+      parafuso: s(`<path d="M18 14h28l-4 9H22z" fill="#ffd76a" stroke="#7a4f0e" stroke-width="3"/><rect x="26" y="23" width="12" height="30" rx="2" fill="#e9b443" stroke="#7a4f0e" stroke-width="3"/>
+        <path d="M26 29l12-3M26 36l12-3M26 43l12-3M26 50l12-3" stroke="#7a4f0e" stroke-width="2.4"/><path d="M28 53l4 7 4-7" fill="#e9b443" stroke="#7a4f0e" stroke-width="3"/><path d="M27 15v7M37 15v7" stroke="#7a4f0e" stroke-width="2.4"/><path d="M21 16h7" stroke="#fff" stroke-width="2" opacity=".7"/>`),
+      tabua: s(`<path d="M6 30l42-14 10 8-42 15z" fill="#e0a45c" stroke="#6b3d14" stroke-width="3"/><path d="M6 30l10 9v10L6 40z" fill="#b8742e" stroke="#6b3d14" stroke-width="3"/><path d="M16 39l42-15v10L16 49z" fill="#c98640" stroke="#6b3d14" stroke-width="3"/>
+        <path d="M14 30c8-3 16-4 24-9M20 34c10-4 18-5 28-11" stroke="#9a5a1f" stroke-width="1.8" fill="none"/><circle cx="34" cy="26" r="2" fill="#9a5a1f"/><circle cx="30" cy="42" r="1.6" fill="#3b4652"/><circle cx="50" cy="35" r="1.6" fill="#3b4652"/>`),
+      fita: s(`<circle cx="30" cy="34" r="22" fill="#d9d9d9" stroke="#59606a" stroke-width="3"/><circle cx="30" cy="34" r="16" fill="#efe3b0" stroke="#a89350" stroke-width="2"/><circle cx="30" cy="34" r="9" fill="#fff" stroke="#59606a" stroke-width="3"/>
+        <path d="M44 50l16 4-2 8-17-6z" fill="#efe3b0" stroke="#a89350" stroke-width="2.4"/><path d="M58 54l2 8" stroke="#a89350" stroke-width="2"/><path d="M14 26a17 17 0 0 1 8-8" stroke="#fff" stroke-width="3" fill="none" opacity=".7"/>`),
+      prego: s(`<rect x="14" y="10" width="36" height="8" rx="3" fill="#c9d2dc" stroke="#3b4652" stroke-width="3"/><path d="M28 18h8v34l-4 9-4-9z" fill="#aab6c3" stroke="#3b4652" stroke-width="3"/><path d="M30 21v28" stroke="#fff" stroke-width="2" opacity=".7"/>`),
+      tijolo: s(`<path d="M6 28l30-10 22 8-30 11z" fill="#e8806a" stroke="#6b2a1c" stroke-width="3"/><path d="M6 28l22 9v14L6 42z" fill="#b5503b" stroke="#6b2a1c" stroke-width="3"/><path d="M28 37l30-11v14L28 51z" fill="#cf6750" stroke="#6b2a1c" stroke-width="3"/>
+        <path d="M36 37l6-2M46 33l6-2M34 46l6-2M44 42l6-2" stroke="#8a3a29" stroke-width="2"/>`),
+      tinta: s(`<path d="M12 22h40v30a6 6 0 0 1-6 6H18a6 6 0 0 1-6-6z" fill="#7aa8d8" stroke="#24476e" stroke-width="3"/><ellipse cx="32" cy="22" rx="20" ry="6" fill="#ff8a3d" stroke="#24476e" stroke-width="3"/>
+        <path d="M18 24c0 8 4 6 4 12" stroke="#ff8a3d" stroke-width="5" fill="none"/><rect x="20" y="36" width="24" height="12" rx="2" fill="#fff" stroke="#24476e" stroke-width="2"/><path d="M12 22c0-14 40-14 40 0" fill="none" stroke="#59606a" stroke-width="2.6"/>`),
+      escritura: s(`<rect x="12" y="10" width="40" height="44" rx="4" fill="#fbefc9" stroke="#7a5420" stroke-width="3"/><path d="M19 20h26M19 27h26M19 34h18" stroke="#b08a4a" stroke-width="2.6"/>
+        <circle cx="42" cy="46" r="8" fill="#d8443a" stroke="#7a1e18" stroke-width="2.6"/><path d="M38 52l-3 9 7-4 7 4-3-9" fill="#d8443a" stroke="#7a1e18" stroke-width="2.2"/>`),
+      marreta: s(`<path d="M30 30l6-6 22 30-5 5z" fill="#c98640" stroke="#6b3d14" stroke-width="3"/><path d="M6 20l14-14 18 18-14 14z" fill="#8b96a3" stroke="#2c333b" stroke-width="3"/><path d="M10 20l10-10" stroke="#c9d2dc" stroke-width="3"/>`),
+      estaca: s(`<path d="M26 8h12v40l-6 12-6-12z" fill="#e0a45c" stroke="#6b3d14" stroke-width="3"/><path d="M26 18h12v6H26z" fill="#d8443a" stroke="#6b3d14" stroke-width="2.4"/><path d="M30 28v18" stroke="#9a5a1f" stroke-width="2"/><ellipse cx="32" cy="58" rx="16" ry="3.5" fill="#7a9a4a" opacity=".6"/>`),
+    };
+  })();
+  const matIco = m => `<i class="mi">${MAT_SVG[m] || ''}</i>`;
   const matsDe = para => Object.keys(MATERIAIS).filter(k => MATERIAIS[k].para === para);
   const PETS = {
     cachorro: {nome:'Pipoca', especie:'Cachorro',      img:'cachorro.jpg', custo:2500, nivel:3, desc:'Late e avisa quando tem planta pronta, e de vez em quando cava e acha moedas ou sementes.'},
@@ -165,7 +187,7 @@
     macieira:   {nome:'Macieira',   w:1, d:1, obst:true, fruta:'maca'},
     laranjeira: {nome:'Laranjeira', w:1, d:1, obst:true, fruta:'laranja'},
     cerejeira:  {nome:'Cerejeira',  w:1, d:1, obst:true, fruta:'cereja'},
-    lago:       {nome:'Lago',       w:3, d:3, fixo:true, obst:true},
+    lago:       {nome:'Lago',       w:3, d:3, obst:true},
     // decorações (só deixam a fazenda bonita)
     flores:     {nome:'Canteiro de flores', w:1, d:1, decor:true},
     caminho:    {nome:'Caminho de pedras',  w:1, d:1, decor:true},
@@ -1790,14 +1812,14 @@
     if ((S.sementes[id] || 0) <= 0) { toast(`Sem sementes de ${c.nome}. Compre na Loja`); return false; }
     S.sementes[id]--; S.plots[i] = {c:id, reg:false}; S.stats.plantou[id] = (S.stats.plantou[id] || 0) + 1;
     if (S.upg.aspersor) regar(i, true);
-    chuva(i, 0x8a5a2b, .07);
+    chuva(i, 0x8a5a2b, .07); somT('plantar');
     return true;
   }
   function regar(i, silencioso) {
     const p = S.plots[i];
     if (!p || !p.c || p.reg) return false;
     p.reg = true; p.t0 = Date.now(); p.dur = S.tut >= 0 && S.tut <= 5 ? 4000 : crop(p.c).tempo * 1000 * velocidade(); // no tutorial a 1ª planta cresce rapidinho
-    if (!silencioso) chuva(i, 0x6cc3ee, .08);
+    if (!silencioso) { chuva(i, 0x6cc3ee, .08); somT('agua', 120); }
     return true;
   }
   function colher(i, auto) {
@@ -1807,21 +1829,22 @@
     S.celeiro[c.id] = (S.celeiro[c.id] || 0) + q; S.colhidos += q; S.stats.colheu[c.id] = (S.stats.colheu[c.id] || 0) + q;
     S.plots[i] = {c:null};
     flutuar(posTile(i).add(V3(0, 1.2, 0)), `+${q} ${c.emoji}${q > 1 ? ' 🎉' : ''}`); acharMaterial(posTile(i), .045);
-    poeira(i, 0xffe07a); ganharXp(c.xp * q);
+    poeira(i, 0xffe07a); somT('colher'); ganharXp(c.xp * q);
     if (!auto && !heroi.fila.length) heroi.pulo = 1;
     return true;
   }
+  const somT = (n, e) => { if (window.SOM) SOM.tocar(n, e); };
   function acharMaterial(pos, chance) { // de vez em quando cai um material de ampliação
     if (Math.random() > chance) return;
     const ilha = S.nivel >= 14 && Math.random() < .18, lista = ilha ? matsDe('ilha') : [...matsDe('armazem'), ...matsDe('celeiro')], m = lista[Math.random() * lista.length | 0];
     if (!S.mat) S.mat = {}; S.mat[m] = (S.mat[m] || 0) + 1;
-    setTimeout(() => { if (pos) flutuar(pos.clone().add(V3(0, 2.2, 0)), `🎁 +1 ${MATERIAIS[m].emoji}`); toast(`🎁 Achou ${MATERIAIS[m].emoji} ${MATERIAIS[m].nome}!`, 'bom'); }, 450);
+    setTimeout(() => { somT('achou'); if (pos) flutuar(pos.clone().add(V3(0, 2.2, 0)), `🎁 +1 ${MATERIAIS[m].nome}`); toast(`🎁 Achou: ${MATERIAIS[m].nome}!`, 'bom'); }, 450);
   }
   function ganharXp(x) {
     S.xp += x;
     let subiu = false;
     while (S.xp >= xpProx(S.nivel)) {
-      S.xp -= xpProx(S.nivel); S.nivel++; subiu = true;
+      S.xp -= xpProx(S.nivel); S.nivel++; subiu = true; somT('nivel', 500);
       const novos = [...CROPS.filter(c => c.nivel === S.nivel).map(c => c.emoji + ' ' + c.nome),
         ...Object.values(ANIMAIS).filter(a => a.nivel === S.nivel).map(a => a.emoji + ' ' + a.nome),
         ...Object.values(PETS).filter(a => a.nivel === S.nivel).map(a => a.nome)];
@@ -1838,7 +1861,7 @@
     if (S.ferramenta === 'mao' || !(S.sementes[S.semSel] || 0)) { S.ferramenta = id; S.semSel = id; }
     tudo();
   }
-  function vender(id, qtd) { const tem = S.celeiro[id] || 0, q = Math.min(tem, qtd == null ? tem : Math.max(0, qtd | 0)); if (!q) return 0; const v = q * precoAtual(id); S.moedas += v; S.ganho += v; S.stats.vendeu += v; S.celeiro[id] = tem - q; return v; }
+  function vender(id, qtd) { const tem = S.celeiro[id] || 0, q = Math.min(tem, qtd == null ? tem : Math.max(0, qtd | 0)); if (!q) return 0; const v = q * precoAtual(id); somT('moeda', 150); S.moedas += v; S.ganho += v; S.stats.vendeu += v; S.celeiro[id] = tem - q; return v; }
   function comprarUpg(k) {
     const u = UPG[k], l = S.upg[k] || 0, custo = custoUpg(k);
     if (l < u.max && S.nivel < u.niv[l]) { toast(`Libera no nível ${u.niv[l]}`); return; }
@@ -1884,7 +1907,7 @@
   const gastarMats = (lista, n) => lista.forEach(m => S.mat[m] -= n);
   function ampliar(k) {
     const c = custoAmpliar(k), ms = matsDe(k), n = matsAmpliar(k);
-    if (!temMats(ms, n)) { toast(`Faltam materiais: ${ms.map(m => `${MATERIAIS[m].emoji} ${(S.mat || {})[m] || 0}/${n}`).join(' · ')}. Eles caem ao colher e produzir!`); return; }
+    if (!temMats(ms, n)) { toast(`Faltam materiais: ${ms.map(m => `${MATERIAIS[m].nome} ${(S.mat || {})[m] || 0}/${n}`).join(' · ')}. Eles caem ao colher e produzir!`); return; }
     if (S.moedas < c) { toast('Moedas insuficientes'); return; }
     S.moedas -= c; gastarMats(ms, n); S.cap[k]++; toast(`📦 ${k === 'armazem' ? 'Armazém' : 'Celeiro'} ampliado: agora cabem ${k === 'armazem' ? capArmazem() : capCeleiro()}!`, 'bom'); tudo();
   }
@@ -2008,7 +2031,7 @@
     if (texto) { g.font = '800 44px "Baloo 2", sans-serif'; g.fillStyle = '#4a2e17'; g.fillText(texto, x + 76, 66); }
     b.material.map.needsUpdate = true;
   }
-  const tempoCurto = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}` : `${s}s`; };
+  const tempoCurto = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}` : s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}` : `${s}s`; };
   function atualizarBaloes() {
     for (const k in baloes) baloes[k].visible = false;
     S.objetos.forEach(o => {
@@ -2023,7 +2046,7 @@
       if (T.fruta) {
         const r = restaPomar(o), fr = frutosArv[o.id]; if (fr) fr.visible = r <= 0;
         const b = balao_(o.id, 3.6); b.position.set(c.x, 3.6, c.z);
-        if (r <= 0) desenharBalao(b, fruta(o).emoji, '×' + fruta(o).rende, '#eaffd8'); else b.visible = false;
+        if (r <= 0) desenharBalao(b, fruta(o).emoji, '×' + fruta(o).rende, '#eaffd8'); else desenharBalao(b, '⏳', tempoCurto(r));
       }
       if (T.fab && (o.tipo === 'moinho' || S.objetos.find(x => x.tipo === o.tipo) === o)) { // cada moinho tem o seu balão
         const y = o.tipo === 'moinho' ? 7 : 5, oid = o.tipo === 'moinho' ? o.id : undefined;
@@ -2141,6 +2164,7 @@
   }
   function clicarConstrucao(o) {
     const T = TIPOS[o.tipo]; mostrarNome(o);
+    if (T.animal && qtdAnimal(T.animal)) somT(T.animal, 700);
     if (VISITA) return; // visitando: só olha
     if (T.abre) { const c = centro(o), [, D] = dims(o); irPara(V3(c.x, 0, c.z + D * G / 2 + .8)); abrir(T.abre); return; }
     if (objNaFila(o.id)) return;
@@ -2214,7 +2238,7 @@
   });
   function selecionar(o) {
     if (editar.sel && editar.sel !== o) { if (editar.valido) confirmarSel(); else cancelarSel(); }
-    if (!o || TIPOS[o.tipo].fixo) return;
+    if (!o) return;
     editar.sel = o; editar.orig = {ox:o.ox, oz:o.oz, rot:o.rot};
     validarSel();
   }
@@ -2404,6 +2428,8 @@
         <div class="mis-linha"><div class="mis-barra"><i style="width:${100 * p / m.n}%"></i></div><span>${fmtN(p)}/${fmtN(m.n)}</span></div>
         ${ok ? `<button class="btn verde mis-btn" data-mis="${i}">Resgatar ${moedaMini}${fmtN(m.r)}</button>` : `<div class="mis-premio">${moedaMini}${fmtN(m.r)} · ⭐${m.xp}</div>`}</div>`;
     });
+    const nlc = typeof CHAT !== 'undefined' ? totalNaoLidas() : 0;
+    h += `<button class="mis-topo chat-btn" data-chat-abrir="1">💬 Chat ${nlc ? `<b class="mis-pronta">${nlc}</b>` : ''}</button>`;
     if (h !== missoesHTML) { missoesHTML = h; $('#missoes').innerHTML = h; }
   }
 
@@ -2590,7 +2616,7 @@
           acao:livres ? `<button class="btn" data-acao="ver-terra">Ver</button>` : ''});
         if (ANEL < MAX_ANEL) { const pode = ilhaCheia(), nv = nivelExpansao(), cx = custoExpansao();
           h += tile({trava:!pode || S.nivel < nv, selo:`Ilha ${ANEL + 1}/${MAX_ANEL + 1}`, seloCls:!pode || S.nivel < nv ? 'trava' : 'max', ic:'<span class="emo-g">🏝️</span>', nome:'Expansão da ilha',
-            info:`<span class="desc">${!pode ? 'Libere todas as terras da ilha primeiro.' : S.nivel < nv ? `Disponível no nível ${nv}.` : 'A ilha cresce para todos os lados!'}</span><span class="mats">${matsDe('ilha').map(m => `<span class="${((S.mat || {})[m] || 0) >= matsExpansao() ? 'ok' : ''}">${MATERIAIS[m].emoji}${(S.mat || {})[m] || 0}/${matsExpansao()}</span>`).join('')}</span>`,
+            info:`<span class="desc">${!pode ? 'Libere todas as terras da ilha primeiro.' : S.nivel < nv ? `Disponível no nível ${nv}.` : 'A ilha cresce para todos os lados!'}</span><span class="mats">${matsDe('ilha').map(m => `<span class="${((S.mat || {})[m] || 0) >= matsExpansao() ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}/${matsExpansao()}</span>`).join('')}</span>`,
             acao:pode && S.nivel >= nv ? `<button class="btn verde" data-acao="expandir" ${S.moedas < cx ? 'disabled' : ''}>${moedaMini}${fmtN(cx)}</button>` : `<span class="nv">${moedaMini}${fmtN(cx)} · nível ${nv}</span>`}); }
         h += tile({ic:'<span class="emo-g">✏️</span>', nome:'Modo edição', info:'<span class="desc">Mova e gire suas construções.</span>', acao:`<button class="btn" data-acao="editar">Editar</button>`});
       }
@@ -2609,7 +2635,7 @@
     }
     const barraCap = (uso, cap, k) => { const ms = matsDe(k), n = matsAmpliar(k), ok = temMats(ms, n) && S.moedas >= custoAmpliar(k);
       return `<div class="cap"><div class="cap-txt">📦 ${uso}/${cap}</div><div class="mis-barra"><i style="width:${Math.min(100, 100 * uso / cap)}%;${uso >= cap ? 'background:#e0503a' : ''}"></i></div>
-      <span class="mats">${ms.map(m => `<span class="${((S.mat || {})[m] || 0) >= n ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${MATERIAIS[m].emoji}${(S.mat || {})[m] || 0}/${n}</span>`).join('')}</span>
+      <span class="mats">${ms.map(m => `<span class="${((S.mat || {})[m] || 0) >= n ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}/${n}</span>`).join('')}</span>
       <button class="btn ${ok ? 'verde' : ''}" data-ampliar="${k}">Ampliar +30 · ${moedaMini}${fmtN(custoAmpliar(k))}</button></div>`; };
     if (janela === 'celeiro') {
       h += `<div class="loja-topo">${barraCap(usoCeleiro(), capCeleiro(), 'celeiro')}<p class="dica">Aqui ficam as suas <b>sementes</b>. Use o botão <b>Plantar</b> lá embaixo para escolher qual plantar.</p></div><div class="vitrine">`;
@@ -2635,7 +2661,7 @@
           acao:`<button class="btn" data-vender="${c.id}" ${q ? '' : 'disabled'}>Vender</button>`});
       });
       h += tile({cls:'larga', selo:'Materiais', seloCls:'max', ic:'<span class="emo-g">🧰</span>', nome:'Materiais',
-        info:`<span class="desc">Caem ao colher e produzir. Servem para ampliar e expandir.</span><span class="mats-todos">${Object.keys(MATERIAIS).map(m => `<b title="${MATERIAIS[m].nome}">${MATERIAIS[m].emoji}${(S.mat || {})[m] || 0}</b>`).join('')}</span>`, acao:''});
+        info:`<span class="desc">Caem ao colher e produzir. Servem para ampliar e expandir.</span><span class="mats-todos">${Object.keys(MATERIAIS).map(m => `<b title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}</b>`).join('')}</span>`, acao:''});
       RACOES.filter(r => S.celeiro[r.id]).forEach(r => h += tile({selo:`× ${S.celeiro[r.id]}`, seloCls:'max', ic:iconeItem(r, 'grande'), nome:r.nome,
         info:`<span>Cada porção alimenta 1 ${ANIMAIS[r.animal].nome.toLowerCase()}</span>`, acao:'<span class="ok">Para os bichos</span>'}));
       h += '</div>';
@@ -2735,7 +2761,11 @@
       <div class="acoes"><button class="btn verde" data-acao="fechar">Bora plantar!</button></div></div>`;
     }
     if (janela === 'config') {
-      h += `<div class="linha-cfg"><span>🎨 Gráficos</span><button class="btn" data-acao="qualidade">${S.leve ? 'Leve (mais rápido)' : 'Bonito'}</button></div>
+      const au = S.audio || {};
+      h += `<div class="linha-cfg"><span>🎵 Música</span><input type="range" class="vol" data-vol="musica" min="0" max="1" step="0.05" value="${au.musica ?? .5}"></div>
+        <div class="linha-cfg"><span>🔔 Efeitos e bichos</span><input type="range" class="vol" data-vol="efeitos" min="0" max="1" step="0.05" value="${au.efeitos ?? .8}"></div>
+        <div class="linha-cfg"><span>${au.mudo ? '🔇' : '🔊'} Som</span><button class="btn ${au.mudo ? 'vermelho' : ''}" data-acao="mudo">${au.mudo ? 'Desligado' : 'Ligado'}</button></div>
+        <div class="linha-cfg"><span>🎨 Gráficos</span><button class="btn" data-acao="qualidade">${S.leve ? 'Leve (mais rápido)' : 'Bonito'}</button></div>
         ${instalado() ? '' : `<div class="linha-cfg"><span>📲 Jogar como app (tela cheia, sem barra do navegador)</span>${pedidoInstalar ? '<button class="btn verde" data-acao="instalar">Instalar</button>' : '<span class="det">No Chrome: menu ⋮ → Instalar app</span>'}</div>`}
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
@@ -2929,13 +2959,13 @@
     apontar(ev);
     if (editar.ativo) { // toque no modo edição: seleciona ou leva a seleção até o ponto
       const o = pickConstrucao(true);
-      if (o && o !== editar.sel) { if (TIPOS[o.tipo].fixo) toast('O lago não pode ser movido'); else selecionar(o); return; }
+      if (o && o !== editar.sel) { selecionar(o); return; }
       if (!o && editar.sel) { const p = pontoChao(); if (p) moverSel(p); }
       return;
     }
     const i = pickTile(); if (i >= 0) { clicarTile(i); return; }
     if (heroi.atual && ray.intersectObject(heroi.g, true).length) { idsAcao(heroi.atual).forEach(j => marcar(j, false)); heroi.atual = null; heroi.acao = null; heroi.rota = []; renderFila(); toast('✋ Tarefa atual cancelada'); return; }
-    for (const k in pets) if (ray.intersectObject(pets[k].g, true).length) { const p = pets[k]; if (p.rot) { p.rot.visible = true; clearTimeout(p.rotT); p.rotT = setTimeout(() => { if (p.rot) p.rot.visible = false; }, 3000); } flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); return; }
+    for (const k in pets) if (ray.intersectObject(pets[k].g, true).length) { const p = pets[k]; if (p.rot) { p.rot.visible = true; clearTimeout(p.rotT); p.rotT = setTimeout(() => { if (p.rot) p.rot.visible = false; }, 3000); } flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); somT(k, 600); return; }
     if (tonho && ray.intersectObject(tonho, true).length) { irPara(tonho.position.clone().add(V3(.8, 0, .8))); abrir('ajuda'); return; }
     const o = pickConstrucao(false); if (clicavel(o)) { clicarConstrucao(o); return; }
     const z = pickTerra(); if (z) { const tg = terras[z]; if (tg && tg.userData.rotulo) { const r = tg.userData.rotulo; r.visible = true; clearTimeout(r.userData.t); r.userData.t = setTimeout(() => r.visible = false, 3500); } zonaSel = z; abrir('zona'); return; }
@@ -3039,7 +3069,7 @@
     }
     if (ac === 'expandir') {
       if (!ilhaCheia() || S.nivel < nivelExpansao() || S.moedas < custoExpansao() || ANEL >= MAX_ANEL) return;
-      if (!temMats(matsDe('ilha'), matsExpansao())) { toast(`Faltam materiais: ${matsDe('ilha').map(m => `${MATERIAIS[m].emoji} ${(S.mat || {})[m] || 0}/${matsExpansao()}`).join(' · ')}`); return; }
+      if (!temMats(matsDe('ilha'), matsExpansao())) { toast(`Faltam materiais: ${matsDe('ilha').map(m => `${MATERIAIS[m].nome} ${(S.mat || {})[m] || 0}/${matsExpansao()}`).join(' · ')}`); return; }
       S.moedas -= custoExpansao(); gastarMats(matsDe('ilha'), matsExpansao()); S.expansao = ANEL + 1; salvar(); if (ON.user) enviarSave();
       try { sessionStorage.setItem('terralia-msg', '🏝️ A ilha cresceu! Novas terras para liberar em volta.'); } catch (e) {}
       ON.recarregando = true; setTimeout(() => location.reload(), ON.user ? 1200 : 100);
@@ -3063,6 +3093,7 @@
     if (ac === 'mudar-nome') abrirEscolhaNome('trocar');
     if (ac === 'usar-local') { janela = 'x'; fechar(); ON.pausado = false; enviarSave(true, true); }
     if (ac.startsWith('rank-')) { ON.ordem = ac.slice(5); carregarRanking(); }
+    if (ac === 'mudo') { S.audio.mudo = !S.audio.mudo; SOM.config(S.audio); salvar(); renderJanela(); }
     if (ac === 'qualidade') { S.leve = !S.leve; aplicarQualidade(); salvar(); renderJanela(); }
     if (ac === 'vender-tudo') { let t = 0; VENDAVEIS.forEach(c => t += vender(c.id)); if (t) { toast(`Vendeu tudo por ${fmtN(t)} moedas`, 'bom'); pulsar(); } tudo(); }
     if (ac === 'reset-sim') { const leve = S.leve; S = novo(); S.leve = leve; S.viuAjuda = true; salvar(); location.reload(); }
@@ -3432,7 +3463,7 @@
     return false;
   }
   // ================= COOPERATIVAS =================
-  const COOP = {meu:undefined, info:null, membros:[], mural:[], pedidos:[], lista:null, carregando:false, sub:'mural', emblema:'🌻'};
+  const COOP = {meu:undefined, info:null, membros:[], mural:[], pedidos:[], lista:null, carregando:false, sub:'pedidos', emblema:'🌻'};
   const EMBLEMAS = ['🌻', '🐔', '🐄', '🌾', '🍎', '🐝', '🚜', '🌈'];
   async function carregarCoop() {
     if (!ON.user) return; COOP.carregando = true; if (janela === 'amigos') renderJanela();
@@ -3441,7 +3472,7 @@
       COOP.meu = m ? m.coop_id : null; COOP.papel = m && m.papel;
       if (COOP.meu) {
         const [{data:c}, {data:mb}, {data:mu}, {data:pd}] = await Promise.all([ON.sb.from('coops').select('*').eq('id', COOP.meu).maybeSingle(), ON.sb.from('coop_membros').select('user_id, papel').eq('coop_id', COOP.meu),
-          ON.sb.from('coop_mural').select('user_id, texto, criado').eq('coop_id', COOP.meu).order('criado', {ascending:false}).limit(30), ON.sb.from('coop_pedidos').select('*').eq('coop_id', COOP.meu).order('criado', {ascending:false}).limit(40)]);
+          Promise.resolve({data:[]}), ON.sb.from('coop_pedidos').select('*').eq('coop_id', COOP.meu).order('criado', {ascending:false}).limit(40)]);
         const nomes = await nomesDe([...new Set([...(mb || []).map(x => x.user_id), ...(mu || []).map(x => x.user_id), ...(pd || []).map(x => x.user_id)])]);
         COOP.info = c; COOP.membros = (mb || []).map(x => Object.assign({}, nomes['_' + x.user_id] || {nome:'?'}, x)).sort((a, b) => (estaOnline(b) ? 1 : 0) - (estaOnline(a) ? 1 : 0) || (b.nivel || 0) - (a.nivel || 0));
         COOP.mural = (mu || []).map(x => Object.assign(x, {nome:nomes[x.user_id] || '?'})); COOP.pedidos = (pd || []).filter(x => item(x.item) && (x.doado < x.qtd || x.recolhido < x.doado || x.user_id === ON.user.id && Date.now() - Date.parse(x.criado) < 864e5)).map(x => Object.assign(x, {nome:nomes[x.user_id] || '?'}));
@@ -3460,7 +3491,7 @@
     if (COOP.meu === undefined && !COOP.carregando) setTimeout(carregarCoop, 0);
     if (COOP.carregando && COOP.meu === undefined) return '<p class="dica">Carregando…</p>';
     if (!COOP.meu) {
-      let h = `<p class="dica">Cooperativas são grupos de até 20 fazendeiros que se ajudam: mural de recados e pedidos de itens entre os membros.</p>
+      let h = `<p class="dica">Cooperativas são grupos de até 20 fazendeiros que se ajudam: chat da cooperativa e pedidos de itens entre os membros.</p>
         <div class="subabas"><button data-coop-novo="procurar" class="${COOP.novo !== 'criar' ? 'ativa' : ''}">🔎 Procurar</button><button data-coop-novo="criar" class="${COOP.novo === 'criar' ? 'ativa' : ''}">➕ Criar nova</button></div>`;
       if (COOP.novo === 'criar') return h + `<div class="campo-nome"><input id="inCoop" maxlength="24" placeholder="Nome da nova cooperativa" autocomplete="off"><button class="btn verde" data-acao="criar-coop" ${S.moedas < 5000 ? 'disabled' : ''}>Criar · ${moedaMini}5.000</button></div>
         <p class="sub">Emblema</p><div class="sug-nomes">${EMBLEMAS.map(e => `<button class="btn ${COOP.emblema === e ? 'verde' : ''}" data-emblema="${e}">${e}</button>`).join('')}</div>`;
@@ -3472,8 +3503,8 @@
     }
     const c = COOP.info || {}, me = ON.user.id;
     let h = `<div class="coop-topo"><span class="coop-emb">${esc(c.emblema || '🌻')}</span><div><b>${esc(c.nome || '')}</b><div class="det">${COOP.membros.length}/20 membros · ${COOP.membros.filter(estaOnline).length} online</div></div></div>
-      <div class="subabas">${[['mural', '💬 Mural'], ['pedidos', '📦 Pedidos'], ['membros', '👥 Membros']].map(([k, t]) => `<button data-coop-sub="${k}" class="${COOP.sub === k ? 'ativa' : ''}">${t}</button>`).join('')}<button data-acao="atualizar-amigos">🔄</button></div>`;
-    if (COOP.sub === 'mural') {
+      <div class="subabas">${[['pedidos', '📦 Pedidos'], ['membros', '👥 Membros']].map(([k, t]) => `<button data-coop-sub="${k}" class="${COOP.sub === k ? 'ativa' : ''}">${t}</button>`).join('')}<button data-chat-abrir="coop">💬 Chat</button><button data-acao="atualizar-amigos">🔄</button></div>`;
+    if (COOP.sub === 'mural_antigo') {
       h += `<div class="campo-nome"><input id="inMural" maxlength="140" placeholder="Escreva um recado para a cooperativa" autocomplete="off"><button class="btn verde" data-acao="postar-mural">Enviar</button></div>`;
       h += COOP.mural.length ? COOP.mural.map(m => `<div class="mural-msg"><b>${esc(m.nome)}</b> <small>${hora(m.criado)}</small><div>${esc(m.texto)}</div></div>`).join('') : '<p class="dica">Nenhum recado ainda.</p>';
     } else if (COOP.sub === 'pedidos') {
@@ -3721,6 +3752,137 @@
     ON.enviando = false;
     if (janela === 'config') renderJanela();
   }
+
+  // ================= CHAT (global e da cooperativa) =================
+  var CHAT = {aberto:false, aba:'global', msgs:{global:[], coop:[]}, ult:{global:0, coop:0}, naoLidas:{global:0, coop:0}, escolha:null, enviando:false, t:null, erro:''};
+  try { Object.assign(CHAT.ult, JSON.parse(localStorage.getItem('terralia-chat-visto') || '{}')); } catch (e) {}
+  const canalDe = aba => aba === 'coop' ? (COOP.meu ? 'coop:' + COOP.meu : null) : 'global';
+  const horaCurta = t => new Date(t).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+  async function garantirCoop() {
+    if (COOP.meu !== undefined || !ON.user) return;
+    try { const {data:m} = await ON.sb.from('coop_membros').select('coop_id, papel').eq('user_id', ON.user.id).maybeSingle(); COOP.meu = m ? m.coop_id : null; COOP.papel = m && m.papel; } catch (e) {}
+  }
+  function abrirChat(aba) {
+    if (aba) CHAT.aba = aba;
+    CHAT.aberto = true; CHAT.escolha = null; $('#chat').classList.add('aberto');
+    renderChat(); carregarChat(true);
+    clearInterval(CHAT.t); CHAT.t = setInterval(() => carregarChat(false), 4000);
+  }
+  function fecharChat() { CHAT.aberto = false; CHAT.escolha = null; $('#chat').classList.remove('aberto', 'digitando'); clearInterval(CHAT.t); CHAT.t = null; renderMissoes(); }
+  async function carregarChat(tudoDeNovo) {
+    if (!ON.user) { renderChat(); return; }
+    await garantirCoop();
+    const aba = CHAT.aba, canal = canalDe(aba); if (!canal) { renderChat(); return; }
+    const lista = CHAT.msgs[aba], ultimo = !tudoDeNovo && lista.length ? lista[lista.length - 1].id : 0;
+    try {
+      let q = ON.sb.from('chat').select('id, user_id, nome, nivel, texto, tipo, ref, criado').eq('canal', canal);
+      q = ultimo ? q.gt('id', ultimo).order('id', {ascending:true}).limit(50) : q.order('id', {ascending:false}).limit(50);
+      const {data, error} = await q; if (error) throw error;
+      const novas = ultimo ? data : (data || []).reverse();
+      CHAT.msgs[aba] = (ultimo ? lista.concat(novas) : novas).slice(-80); CHAT.erro = '';
+      if (novas.length || tudoDeNovo) renderChatSuave();
+    } catch (e) { CHAT.erro = 'Sem conexão com o chat'; renderChat(); }
+    marcarLido();
+  }
+  function marcarLido() {
+    const l = CHAT.msgs[CHAT.aba]; if (!CHAT.aberto || !l.length) return;
+    CHAT.ult[CHAT.aba] = Math.max(CHAT.ult[CHAT.aba] || 0, l[l.length - 1].id); CHAT.naoLidas[CHAT.aba] = 0;
+    try { localStorage.setItem('terralia-chat-visto', JSON.stringify(CHAT.ult)); } catch (e) {}
+    renderMissoes();
+  }
+  async function contarNaoLidas() {
+    if (!ON.user || VISITA || document.hidden) return;
+    await garantirCoop();
+    for (const aba of ['global', 'coop']) {
+      const canal = canalDe(aba); if (!canal || (CHAT.aberto && CHAT.aba === aba)) continue;
+      try { const {count} = await ON.sb.from('chat').select('id', {count:'exact', head:true}).eq('canal', canal).neq('user_id', ON.user.id).gt('id', CHAT.ult[aba] || 0); CHAT.naoLidas[aba] = Math.min(99, count || 0); } catch (e) {}
+    }
+    renderMissoes();
+  }
+  const totalNaoLidas = () => (CHAT.naoLidas.global || 0) + (CHAT.naoLidas.coop || 0);
+  function htmlMsg(m) {
+    const eu = ON.user && m.user_id === ON.user.id, r = m.ref || {};
+    let extra = '';
+    if (m.tipo === 'venda' && r.item && item(r.item)) {
+      const it = item(r.item);
+      extra = `<div class="cm-card"><span class="cm-ic">${iconeItem(it, 'e')}</span><span><b>${r.qtd}× ${esc(it.nome)}</b><br>${moedaMini}${fmtN(r.preco)}</span>${eu ? '<small>sua oferta</small>' : `<button class="btn verde" data-chat-comprar="${+r.oferta}">Comprar</button>`}</div>`;
+    }
+    if (m.tipo === 'ajuda' && !eu) extra = `<div class="cm-card"><span>🏡 Fazenda de ${esc(m.nome)}</span><button class="btn" data-chat-visitar="${esc(m.user_id)}" data-nome="${esc(m.nome)}">Visitar e ajudar</button></div>`;
+    return `<div class="cm ${eu ? 'eu' : ''} t-${m.tipo}"><div class="cm-top"><b>${esc(m.nome || 'Fazendeiro')}</b>${m.nivel ? `<small>Nv ${m.nivel}</small>` : ''}<small>${horaCurta(m.criado)}</small></div><div class="cm-txt">${m.tipo === 'venda' ? '📢 ' : m.tipo === 'ajuda' ? '🙋 ' : ''}${esc(m.texto)}</div>${extra}</div>`;
+  }
+  function renderChat(rolar) {
+    const el = $('#chat'); if (!el || !CHAT.aberto) return;
+    const ab = CHAT.aba, nl = CHAT.naoLidas;
+    let corpo = '';
+    if (!ON.user) corpo = `<div class="chat-vazio">Entre com sua conta Google para conversar com outros fazendeiros.<br><button class="btn verde" data-chat-cfg="1">Entrar</button></div>`;
+    else if (ab === 'coop' && !COOP.meu) corpo = `<div class="chat-vazio">${COOP.meu === undefined ? 'Carregando…' : 'Você ainda não está em uma cooperativa.<br><button class="btn verde" data-chat-coops="1">🤝 Procurar cooperativa</button>'}</div>`;
+    else if (CHAT.escolha === 'venda') {
+      const minhas = (BAN.minhas || []).filter(o => !o.comprador);
+      corpo = `<div class="chat-escolha"><b>Qual oferta da sua banca você quer anunciar?</b>${BAN.minhas === null ? '<p class="dica">Carregando…</p>' : minhas.length ? `<div class="ban-escolha">${minhas.map(o => `<button class="mini-b largo" data-chat-anunciar="${o.id}">${emojiItem(item(o.item))} ${o.qtd}× · ${fmtN(o.preco)}</button>`).join('')}</div>` : '<p class="dica">Você não tem nada à venda. Coloque algo na Banca primeiro!</p><button class="btn" data-chat-banca="1">🏪 Abrir banca</button>'}<button class="btn" data-chat-voltar="1">Voltar</button></div>`;
+    } else {
+      const l = CHAT.msgs[ab];
+      corpo = `<div class="chat-msgs" id="chatMsgs">${l.length ? l.map(htmlMsg).join('') : `<div class="chat-vazio">${CHAT.erro || 'Nenhuma mensagem ainda. Diga oi! 👋'}</div>`}</div>`;
+    }
+    const pode = ON.user && (ab === 'global' || COOP.meu) && CHAT.escolha !== 'venda';
+    el.innerHTML = `<div class="chat-topo"><button data-chat-aba="global" class="${ab === 'global' ? 'ativa' : ''}">🌎 Global${ab !== 'global' && nl.global ? `<b>${nl.global}</b>` : ''}</button><button data-chat-aba="coop" class="${ab === 'coop' ? 'ativa' : ''}">🤝 Cooperativa${ab !== 'coop' && nl.coop ? `<b>${nl.coop}</b>` : ''}</button><button class="chat-x" data-chat-fechar="1">✕</button></div>
+      ${corpo}
+      ${pode ? `<div class="chat-rapido"><button data-chat-rapido="venda">📢 Anunciar venda</button><button data-chat-rapido="ajuda">🙋 Pedir ajuda</button></div>
+      <div class="chat-enviar"><input id="inChat" maxlength="200" placeholder="Escreva uma mensagem…" autocomplete="off" enterkeyhint="send"><button class="btn verde" data-chat-enviar="1">➤</button></div>` : ''}`;
+    const box = $('#chatMsgs'); if (box) box.scrollTop = box.scrollHeight;
+  }
+  function renderChatSuave() { // não apaga o que está sendo digitado nem pula a rolagem
+    const inp = $('#inChat'), txt = inp ? inp.value : '', foco = document.activeElement === inp, bx = $('#chatMsgs');
+    const noFim = !bx || bx.scrollHeight - bx.scrollTop - bx.clientHeight < 40, pos = bx ? bx.scrollTop : 0;
+    renderChat(); const n = $('#inChat'); if (n) { n.value = txt; if (foco) n.focus(); }
+    const nb = $('#chatMsgs'); if (nb && !noFim) nb.scrollTop = pos;
+  }
+  async function enviarChat(tipo = 'msg', texto, ref) {
+    if (!ON.user || CHAT.enviando) return;
+    const inp = $('#inChat'); texto = (texto != null ? texto : inp ? inp.value : '').trim().slice(0, 200); if (!texto) return;
+    if (/(https?:\/\/|www\.)/i.test(texto)) { toast('Links não são permitidos no chat'); return; }
+    const canal = canalDe(CHAT.aba); if (!canal) return;
+    CHAT.enviando = true;
+    try {
+      const {error} = await ON.sb.from('chat').insert({canal, texto, tipo, ref:ref || null});
+      if (error) toast(/Calma|Muitas|Links/.test(error.message) ? error.message : '😕 Não deu para enviar'); else if (tipo === 'msg' && inp) inp.value = '';
+    } catch (e) { toast('Sem internet'); }
+    CHAT.enviando = false; CHAT.escolha = null; await carregarChat(false); renderChatSuave();
+  }
+  async function chatComprar(id) {
+    if (!BAN.ofertas || !BAN.ofertas.some(o => o.id === id)) {
+      try { const {data} = await ON.sb.from('ofertas').select('id, vendedor, item, qtd, preco, criado').eq('id', id).is('comprador', null).maybeSingle();
+        if (!data) { toast('😕 Essa oferta já foi vendida'); return; }
+        BAN.ofertas = (BAN.ofertas || []).concat([data]); } catch (e) { toast('Sem internet'); return; }
+    }
+    comprarOferta(id);
+  }
+  function cliqueChat(e) {
+    const d = k => e.target.closest('[data-' + k + ']');
+    let b;
+    if ((b = d('chat-fechar'))) return fecharChat();
+    if ((b = d('chat-aba'))) { CHAT.aba = b.dataset.chatAba; CHAT.escolha = null; renderChat(); carregarChat(true); return; }
+    if ((b = d('chat-enviar'))) return enviarChat();
+    if ((b = d('chat-cfg'))) { fecharChat(); abrir('config'); return; }
+    if ((b = d('chat-coops'))) { fecharChat(); SOC.aba = 'coop'; abrir('amigos'); return; }
+    if ((b = d('chat-banca'))) { fecharChat(); abrir('banca'); return; }
+    if ((b = d('chat-voltar'))) { CHAT.escolha = null; renderChat(); return; }
+    if ((b = d('chat-rapido'))) {
+      if (b.dataset.chatRapido === 'ajuda') { enviarChat('ajuda', 'Alguém pode passar na minha fazenda e me dar uma ajudinha?', {uid:ON.user.id}); return; }
+      CHAT.escolha = 'venda'; renderChat(); if (BAN.minhas === null) carregarBanca().then(() => renderChat()); return;
+    }
+    if ((b = d('chat-anunciar'))) {
+      const o = (BAN.minhas || []).find(x => x.id === +b.dataset.chatAnunciar); if (!o) return;
+      enviarChat('venda', `Vendo ${o.qtd} ${item(o.item).nome} por ${fmtN(o.preco)} moedas na minha banca!`, {oferta:o.id, item:o.item, qtd:o.qtd, preco:o.preco}); return;
+    }
+    if ((b = d('chat-comprar'))) { chatComprar(+b.dataset.chatComprar); return; }
+    if ((b = d('chat-visitar'))) { fecharChat(); visitar(b.dataset.chatVisitar, b.dataset.nome); return; }
+  }
+  $('#chat').addEventListener('click', cliqueChat);
+  document.addEventListener('click', e => { const b = e.target.closest('[data-chat-abrir]'); if (!b) return; e.stopPropagation(); if (VISITA) { toast('Volte para casa para usar o chat 🏠'); return; } if (janela) fechar(); if (CHAT.aberto && b.dataset.chatAbrir === '1') fecharChat(); else abrirChat(b.dataset.chatAbrir === 'coop' ? 'coop' : undefined); }, true);
+  $('#chat').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'inChat') { e.preventDefault(); enviarChat(); } e.stopPropagation(); });
+  $('#chat').addEventListener('focusin', e => { if (e.target.id === 'inChat' && MOBILE) $('#chat').classList.add('digitando'); });
+  $('#chat').addEventListener('focusout', e => { if (e.target.id === 'inChat') setTimeout(() => $('#chat').classList.remove('digitando'), 150); });
+  setInterval(contarNaoLidas, 30000); setTimeout(contarNaoLidas, 6000);
   const hora = t => t ? new Date(t).toLocaleString('pt-BR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '—';
   function esc(t) { return String(t).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c])); }
   function htmlOnlineCfg() {
@@ -3777,6 +3939,8 @@
   });
   carregar();
   aplicarQualidade();
+  if (!S.audio) S.audio = {musica:.5, efeitos:.8, mudo:false};
+  if (window.SOM) { SOM.config(S.audio); SOM.tocarMusica(); }
   montarCeu(); montarIlha(); montarTerras(); montarNuvens(); montarObjetos(); montarPersonagens(); montarTonho();
   azAtual = azAlvo = Math.PI / 4 + (S.az || 0) * Math.PI / 2;
   redimensionar();
@@ -3790,6 +3954,9 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) procurarVersao(false); });
   $('#avisoVersao').addEventListener('click', atualizarJogo);
   try { const m = sessionStorage.getItem('terralia-msg'); if (m) { sessionStorage.removeItem('terralia-msg'); setTimeout(() => toast(m, 'bom'), 800); } } catch (e) {}
+  $('#jcorpo').addEventListener('input', e => { const r = e.target.closest('[data-vol]'); if (!r) return; S.audio[r.dataset.vol] = +r.value; SOM.config(S.audio); });
+  $('#jcorpo').addEventListener('change', e => { const r = e.target.closest('[data-vol]'); if (!r) return; salvar(); if (r.dataset.vol === 'efeitos') somT('vaca'); });
+  document.addEventListener('pointerdown', e => { if (e.target.closest('button, .tile, [data-abrir], [data-acao], .sem')) somT('clique', 40); }, true);
   $('#jcorpo').addEventListener('wheel', e => { const v = e.target.closest('.vitrine'); if (v && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { v.scrollLeft += e.deltaY; e.preventDefault(); } }, {passive:false});
   // ===== modo app (instalar na tela inicial) =====
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
@@ -3816,7 +3983,7 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+    _teste:{ matsvg:() => MAT_SVG, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
