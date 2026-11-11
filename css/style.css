@@ -479,3 +479,13 @@ body.editando .barra-construcao{display:flex}
 .tile.larga .t-ic{flex:0 1 auto;min-height:44px}
 .tile.larga .emo-g{font-size:clamp(34px,9vh,64px)}
 .tile.larga .foto-g{width:clamp(44px,12vh,90px);height:clamp(44px,12vh,90px)}
+
+.aviso-versao{position:fixed;top:calc(10px + var(--safe-t));left:50%;transform:translate(-50%,-150%);z-index:80;background:#55c23a;color:#fff;font-weight:800;font-size:14px;
+  padding:8px 16px;border-radius:16px;border:3px solid #2f8a1f;box-shadow:0 4px 0 #2f8a1f,0 8px 20px rgba(0,0,0,.25);transition:transform .3s;white-space:nowrap}
+.aviso-versao span{opacity:.9;font-weight:700;margin-left:4px;text-decoration:underline}
+.aviso-versao.on{transform:translate(-50%,0);animation:pulaV 2s ease-in-out infinite}
+@keyframes pulaV{50%{transform:translate(-50%,3px)}}
+.campo-nome{display:flex;gap:8px;margin:4px 0 10px}
+.campo-nome input{flex:1;min-width:0;font:inherit;font-weight:800;font-size:16px;padding:8px 12px;border-radius:12px;border:2px solid var(--borda);background:#fff;user-select:text;-webkit-user-select:text}
+.sug-nomes{display:flex;flex-wrap:wrap;gap:6px}
+.foto-conta{width:40px;height:40px;border-radius:50%;object-fit:cover}

@@ -7,6 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
+  const VERSAO = '0.19'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -2230,7 +2231,7 @@
   function abrirSeletor(v) { seletorAberto = v; renderHotbar(); }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?'};
+  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['loja', 'armazem', 'celeiro', 'animais'];
   const SUBLOJA = {sementes:'🌱 Sementes', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
@@ -2426,11 +2427,15 @@
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
+        <div class="linha-cfg"><span>🌱 Versão ${VERSAO}<br><small class="det">${novaVersao ? `Nova versão ${esc(novaVersao)} disponível!` : 'O jogo se atualiza sozinho quando abre.'}</small></span>
+          <button class="btn ${novaVersao ? 'verde' : ''}" data-acao="${novaVersao ? 'atualizar-ja' : 'procurar-versao'}">${novaVersao ? 'Atualizar agora' : 'Procurar atualização'}</button></div>
         <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
         ${MODO_TESTE ? '<div class="linha-cfg"><span>↺ Recomeçar do zero (teste)</span><button class="btn vermelho" data-abrir="reset">Recomeçar</button></div>' : ''}`;
     }
     if (janela === 'ranking') h += htmlRanking();
     if (janela === 'nuvem') h += htmlNuvem();
+    if (janela === 'contas') h += htmlContas();
+    if (janela === 'nomeRank') h += htmlNome();
     if (janela === 'reset') {
       h += `<div class="texto"><p>Você vai perder moedas, nível, construções, sementes, melhorias, animais e terras. Não dá para desfazer.</p>
       <div class="acoes"><button class="btn" data-acao="fechar">Cancelar</button><button class="btn vermelho" data-acao="reset-sim">Recomeçar</button></div></div>`;
@@ -2670,6 +2675,8 @@
     const cs = e.target.closest('[data-construir]'); if (cs) { comprarConstrucao(cs.dataset.construir); return; }
     const amp = e.target.closest('[data-ampliar]'); if (amp) { ampliar(amp.dataset.ampliar); return; }
     const zn = e.target.closest('[data-zona]'); if (zn) { comprarZona(zn.dataset.zona); return; }
+    const ct = e.target.closest('[data-conta]'); if (ct) { trocarConta(ct.dataset.conta); return; }
+    const nm = e.target.closest('[data-nome]'); if (nm) { escolherNome(nm.dataset.nome); return; }
     const sb = e.target.closest('[data-sub]'); if (sb) { subLoja = sb.dataset.sub; renderJanela(); $('#jcorpo').scrollTop = 0; return; }
     const a = e.target.closest('[data-acao]'); if (!a) return;
     const ac = a.dataset.acao;
@@ -2680,10 +2687,15 @@
     if (ac === 'editar') { fechar(); entrarEdicao(); toast('Toque numa construção para mover'); }
     if (ac === 'ver-terra') { fechar(); guiarTerra(); }
     if (ac === 'instalar' && pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.finally(() => { pedidoInstalar = null; renderJanela(); }); }
+    if (ac === 'procurar-versao') procurarVersao(true);
+    if (ac === 'atualizar-ja') atualizarJogo();
     if (ac === 'entrar-google') entrarGoogle();
     if (ac === 'sair-conta') sairConta();
     if (ac === 'salvar-nuvem') { if (ON.pausado && ON.nuvem) abrir('nuvem'); else enviarSave(true); }
     if (ac === 'usar-nuvem') usarSaveNuvem();
+    if (ac === 'conta-nova-fazenda') { guardarSlot(); carregarFazenda(fazendaNova(ON.user.id), '🌱 Fazenda nova para esta conta!'); }
+    if (ac === 'nome-ok') escolherNome(($('#inNome') || {}).value);
+    if (ac === 'mudar-nome') abrirEscolhaNome('trocar');
     if (ac === 'usar-local') { janela = 'x'; fechar(); ON.pausado = false; enviarSave(true, true); }
     if (ac.startsWith('rank-')) { ON.ordem = ac.slice(5); carregarRanking(); }
     if (ac === 'qualidade') { S.leve = !S.leve; aplicarQualidade(); salvar(); renderJanela(); }
@@ -2691,6 +2703,7 @@
     if (ac === 'reset-sim') { const leve = S.leve; S = novo(); S.leve = leve; S.viuAjuda = true; salvar(); location.reload(); }
   });
   document.addEventListener('keydown', e => {
+    if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter' && e.target.id === 'inNome') escolherNome(e.target.value); return; }
     if (e.key === 'Escape') { if (editar.ativo) sairEdicao(); else fechar(); return; }
     if (editar.ativo) { if (e.key === 'r' || e.key === 'R') girarSel(); if (e.key === 'Enter') confirmarSel(); return; }
     const n = parseInt(e.key, 10); if (isNaN(n)) return;
@@ -2800,6 +2813,25 @@
     renderer.render(scene, camera);
   }
 
+  // ================= ATUALIZAÇÕES (versao.json no GitHub) =================
+  let novaVersao = null;
+  async function procurarVersao(avisar) {
+    if (!/^https?:$/.test(location.protocol)) { if (avisar) toast('Só dá para procurar atualização pelo site do jogo'); return; }
+    try {
+      const r = await fetch('versao.json?t=' + Date.now(), {cache:'no-store'}); const j = await r.json();
+      if (j.versao && j.versao !== VERSAO) { novaVersao = j.versao; $('#avisoVersao').classList.add('on'); $('#avisoVersao b').textContent = j.versao; }
+      else if (avisar) toast('✅ Você já está na versão mais nova (' + VERSAO + ')', 'bom');
+    } catch (e) { if (avisar) toast('Sem internet para procurar atualização'); }
+    if (janela === 'config') renderJanela();
+  }
+  async function atualizarJogo() {
+    toast('🌱 Atualizando…'); salvar();
+    try { if (ON.user && ON.sujo) await enviarSave(); } catch (e) {}
+    try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch (e) {}
+    try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } catch (e) {}
+    location.reload();
+  }
+
   // ================= ONLINE (Supabase: login Google, save na nuvem, ranking) =================
   const SB_URL = 'https://oxnhimwkotsrfuxakazo.supabase.co', SB_KEY = 'sb_publishable_LFUz1Cn-9RouOGJbayeg1Q_YDrqcqOZ';
   const podeLogar = () => /^https?:$/.test(location.protocol) && window.top === window; // Google não deixa entrar dentro de iframe nem em arquivo local
@@ -2819,7 +2851,7 @@
   async function entrarGoogle() {
     if (!ON.sb) { toast('Sem conexão com o servidor agora'); return; }
     if (!podeLogar()) { toast('Para entrar com Google, abra o jogo pelo endereço do site (não pelo arquivo nem pela prévia)'); return; }
-    const {error} = await ON.sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:location.origin + location.pathname}});
+    const {error} = await ON.sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:location.origin + location.pathname, queryParams:{prompt:'select_account'}}});
     if (error) toast('Não deu para entrar: ' + error.message);
   }
   async function sairConta() {
@@ -2830,30 +2862,108 @@
   // Se o carimbo da nuvem mudou sem ser por este aparelho, outro aparelho salvou: carrega de lá ou pergunta, nunca sobrescreve sem querer.
   const verDe = t => Date.parse(t) || 0;
   async function lerNuvem(campos) { return ON.sb.from('saves').select(campos).eq('user_id', ON.user.id).maybeSingle(); }
-  async function sincronizarAoEntrar() {
-    if (!ON.user || ON.recarregando) return;
-    const {data, error} = await lerNuvem('dados, atualizado');
-    if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); setTimeout(sincronizarAoEntrar, 15000); return; } // tenta de novo depois; até lá não envia nada
-    if (!data) { ON.sincronizado = true; await enviarSave(true); return; } // primeira vez: sobe a fazenda deste aparelho
-    const nv = data.dados || {}, ver = verDe(data.atualizado);
-    const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
-    if (S.uid === ON.user.id && S.nuvemVer == null && Math.abs((nv.salvoEm || 0) - (S.salvoEm || 0)) < 2000) S.nuvemVer = ver; // saves antigos
-    const mudouAqui = (S.salvoEm || 0) > (S.nuvemVer || 0) + 2000; // jogou neste aparelho depois do último envio
-    if (S.uid === ON.user.id && S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo) enviarSave(); return; } // tudo em dia
-    if (S.uid === ON.user.id && !mudouAqui) { carregarDaNuvem(nv, ver); return; } // outro aparelho avançou: pega de lá
-    if (S.uid !== ON.user.id && localNovo) { carregarDaNuvem(nv, ver); return; }
-    ON.nuvem = nv; ON.nuvemVer = ver; ON.pausado = true; ON.sincronizado = true; ON.motivo = S.uid === ON.user.id ? 'outro' : 'diferente'; abrir('nuvem');
+  // ---------- várias contas no mesmo aparelho: cada uma tem a sua fazenda guardada separada ----------
+  const SLOT = id => 'terralia-conta:' + (id || 'convidado');
+  const lerSlot = id => { try { return JSON.parse(localStorage.getItem(SLOT(id))); } catch (e) { return null; } };
+  function guardarSlot() { if (!S) return; try { localStorage.setItem(SLOT(S.uid), JSON.stringify(S)); } catch (e) {} }
+  function listaContas() { try { return JSON.parse(localStorage.getItem('terralia-contas')) || []; } catch (e) { return []; } }
+  function lembrarConta(u) {
+    const md = u.user_metadata || {}, l = listaContas().filter(c => c.uid !== u.id);
+    l.unshift({uid:u.id, email:u.email || '', nome:md.full_name || md.name || u.email || 'Conta Google', foto:md.avatar_url || ''});
+    try { localStorage.setItem('terralia-contas', JSON.stringify(l.slice(0, 8))); } catch (e) {}
   }
-  function carregarDaNuvem(nv, ver) {
-    // trava contra recarregar sem parar
+  // troca a fazenda ativa e recarrega (com trava contra recarregar sem parar)
+  function carregarFazenda(d, msg) {
     let rc = {n:0, t:0}; try { rc = JSON.parse(sessionStorage.getItem('terralia-rc')) || rc; } catch (e) {}
     if (Date.now() - rc.t > 30000) rc = {n:0, t:Date.now()};
-    if (rc.n >= 2) { ON.pausado = true; ON.erro = 'não deu para carregar a fazenda da nuvem'; toast('☁️ Não deu para carregar a fazenda da nuvem. Tente "Salvar agora" ou saia e entre de novo.'); return; }
-    rc.n++; try { sessionStorage.setItem('terralia-rc', JSON.stringify(rc)); sessionStorage.setItem('terralia-msg', '☁️ Fazenda carregada da nuvem!'); } catch (e) {}
-    const d = Object.assign({}, nv, {uid:ON.user.id, nuvemVer:ver, salvoEm:ver});
+    if (rc.n >= 3) { ON.pausado = true; ON.erro = 'não deu para trocar de fazenda'; toast('☁️ Não deu para carregar a fazenda. Saia da conta e entre de novo.'); return; }
+    rc.n++; try { sessionStorage.setItem('terralia-rc', JSON.stringify(rc)); if (msg) sessionStorage.setItem('terralia-msg', msg); } catch (e) {}
     ON.recarregando = true; ON.sujo = false; // a partir daqui nada mais é salvo por cima
-    try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+    try { if (d) localStorage.setItem(KEY, JSON.stringify(d)); else localStorage.removeItem(KEY); } catch (e) {}
     location.reload();
+  }
+  function fazendaNova(uid) { const d = novo(); d.uid = uid || undefined; return d; }
+  async function sincronizarAoEntrar() {
+    if (!ON.user || ON.recarregando) return;
+    const uid = ON.user.id; lembrarConta(ON.user);
+    const {data, error} = await lerNuvem('dados, atualizado');
+    if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); setTimeout(sincronizarAoEntrar, 15000); return; } // tenta de novo depois; até lá não envia nada
+    const nv = data && (data.dados || {}), ver = data ? verDe(data.atualizado) : 0;
+    const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
+    if (S.uid && S.uid !== uid) { // a fazenda aberta é de OUTRA conta: guarda ela e abre a desta conta
+      guardarSlot();
+      const loc = lerSlot(uid);
+      if (data) carregarFazenda(loc && loc.nuvemVer === ver ? loc : Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda da conta carregada!');
+      else carregarFazenda(loc || fazendaNova(uid), loc ? '🌱 Fazenda da conta carregada!' : '🌱 Fazenda nova para esta conta!');
+      return;
+    }
+    if (!S.uid) { // jogando sem conta e acabou de entrar
+      if (data) { if (!localNovo) guardarSlot(); carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda da conta carregada!'); return; }
+      if (localNovo) { ON.sincronizado = true; await enviarSave(true); return; }
+      ON.sincronizado = true; ON.pausado = true; ON.motivo = 'levar'; abrir('nuvem'); return; // pergunta se leva a fazenda sem conta para a conta
+    }
+    // a fazenda aberta é desta conta
+    if (!data) { ON.sincronizado = true; await enviarSave(true); return; }
+    if (S.nuvemVer == null && Math.abs((nv.salvoEm || 0) - (S.salvoEm || 0)) < 2000) S.nuvemVer = ver; // saves antigos
+    const mudouAqui = (S.salvoEm || 0) > (S.nuvemVer || 0) + 2000; // jogou neste aparelho depois do último envio
+    if (S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo) enviarSave(); return; } // tudo em dia
+    if (!mudouAqui) { carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); return; } // outro aparelho avançou
+    ON.nuvem = nv; ON.nuvemVer = ver; ON.pausado = true; ON.sincronizado = true; ON.motivo = 'outro'; abrir('nuvem');
+  }
+  function carregarDaNuvem(nv, ver) { carregarFazenda(Object.assign({}, nv, {uid:ON.user.id, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); }
+  async function trocarConta(alvo) { // alvo: uid de uma conta lembrada, 'nova' (outra conta Google) ou 'convidado'
+    fechar(); toast('👥 Trocando de conta…');
+    if (ON.user && ON.sujo) { try { await enviarSave(); } catch (e) {} }
+    guardarSlot();
+    if (alvo === 'convidado') {
+      if (ON.sb && ON.user) { try { await ON.sb.auth.signOut(); } catch (e) {} }
+      carregarFazenda(lerSlot(null) || fazendaNova(null), '🌱 Jogando sem conta'); return;
+    }
+    const c = listaContas().find(x => x.uid === alvo);
+    if (!ON.sb || !podeLogar()) { toast('Para entrar com Google, abra o jogo pelo endereço do site'); return; }
+    if (ON.user) { try { await ON.sb.auth.signOut(); } catch (e) {} ON.user = null; }
+    ON.recarregando = true; // não salva nada por cima enquanto vai para o Google
+    const {error} = await ON.sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:location.origin + location.pathname, queryParams:Object.assign({prompt:'select_account'}, c && c.email ? {login_hint:c.email} : {})}});
+    if (error) { ON.recarregando = false; toast('Não deu para entrar: ' + error.message); }
+  }
+  function htmlContas() {
+    const atual = ON.user && ON.user.id, l = listaContas();
+    let h = '<p class="dica">Cada conta tem a sua própria fazenda. Ao trocar, a fazenda de agora fica salva e você pode voltar para ela quando quiser.</p>';
+    l.forEach(c => h += `<div class="card ${c.uid === atual ? 'amigo-ok' : ''}"><div class="em">${c.foto ? `<img class="foto-conta" src="${esc(c.foto)}" alt="" referrerpolicy="no-referrer">` : '👤'}</div>
+      <div class="meio"><div class="nome">${esc(c.nome)}</div><div class="det">${esc(c.email)}</div></div>
+      ${c.uid === atual ? '<span class="nv">Jogando agora</span>' : `<button class="btn verde" data-conta="${c.uid}">Usar</button>`}</div>`);
+    h += `<div class="card"><div class="em">➕</div><div class="meio"><div class="nome">Outra conta Google</div><div class="det">Entra com uma conta diferente (começa com fazenda nova se ainda não tiver)</div></div><button class="btn btn-google" data-conta="nova"><b>G</b> Entrar</button></div>`;
+    h += `<div class="card ${!atual ? 'amigo-ok' : ''}"><div class="em">📱</div><div class="meio"><div class="nome">Jogar sem conta</div><div class="det">A fazenda fica salva só neste aparelho e não entra no ranking</div></div>
+      ${!atual ? '<span class="nv">Jogando agora</span>' : '<button class="btn" data-conta="convidado">Usar</button>'}</div>`;
+    return h;
+  }
+  // ---------- nome único no ranking ----------
+  function sugestoesNome(base) {
+    base = (base || 'Fazendeiro').replace(/[^\p{L}\p{N}_ ]/gu, '').trim().slice(0, 18) || 'Fazendeiro';
+    const r = () => 10 + Math.floor(Math.random() * 89);
+    return [base, base + r(), base + '_Farm', 'Fazendeiro' + base.slice(0, 12), base + '_' + r(), base + 'Terra', base + r() + r()].map(n => n.slice(0, 24));
+  }
+  async function abrirEscolhaNome(motivo) {
+    ON.motivoNome = motivo; ON.sugestoes = null; abrir('nomeRank');
+    try { const {data} = await ON.sb.rpc('nomes_livres', {nomes:sugestoesNome(S.perfil && S.perfil.nome)}); ON.sugestoes = (data || []).filter(n => n !== (S.perfil && S.perfil.nome)).slice(0, 4); } catch (e) { ON.sugestoes = []; }
+    if (janela === 'nomeRank') renderJanela();
+  }
+  async function escolherNome(n) {
+    n = String(n || '').replace(/\s+/g, ' ').trim().slice(0, 24);
+    if (n.length < 3) { toast('O nome precisa ter pelo menos 3 letras'); return; }
+    try {
+      const {data, error} = await ON.sb.rpc('nomes_livres', {nomes:[n]});
+      if (error) throw error;
+      if (!data || !data.length) { toast(`😕 O nome "${n}" já é de outro fazendeiro. Tente outro!`); return; }
+    } catch (e) { toast('Sem internet para conferir o nome'); return; }
+    S.perfil = Object.assign({}, S.perfil || {}, {nome:n}); salvar(); aplicarAvatar && aplicarAvatar();
+    fechar(); toast(`✅ Agora você é ${n} no ranking!`, 'bom'); ON.pausado = false; enviarSave(true, true);
+  }
+  function htmlNome() {
+    const atual = (S.perfil && S.perfil.nome) || '';
+    return `<p class="dica">${ON.motivoNome === 'ocupado' ? `O nome <b>${esc(atual)}</b> já é de outro fazendeiro no ranking. Cada fazendeiro precisa de um nome só dele.` : 'Escolha o nome que vai aparecer no ranking.'}</p>
+      <div class="campo-nome"><input id="inNome" maxlength="24" value="${esc(atual)}" placeholder="Seu nome" autocomplete="off"><button class="btn verde" data-acao="nome-ok">Usar</button></div>
+      <p class="sub">Sugestões livres</p><div class="sug-nomes">${ON.sugestoes == null ? '<span class="det">Procurando…</span>' : ON.sugestoes.length ? ON.sugestoes.map(n => `<button class="btn" data-nome="${esc(n)}">${esc(n)}</button>`).join('') : '<span class="det">Digite um nome diferente.</span>'}</div>`;
   }
   function usarSaveNuvem() { if (ON.nuvem) carregarDaNuvem(ON.nuvem, ON.nuvemVer || 0); }
   async function enviarSave(avisar, forcar) {
@@ -2872,6 +2982,7 @@
       S.uid = ON.user.id; S.nuvemVer = verDe(agora); salvar(); S.salvoEm = S.nuvemVer; salvar();
       const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
       const r2 = r1.error ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora});
+      if (r2.error && r2.error.code === '23505') { ON.sujo = false; ON.ultimo = Date.now(); ON.erro = 'escolha outro nome para o ranking'; abrirEscolhaNome('ocupado'); ON.enviando = false; return; }
       const err = r1.error || r2.error;
       if (err) { ON.erro = err.message; if (avisar) toast('☁️ Não deu para salvar na nuvem: ' + err.message); }
       else { ON.sujo = false; ON.pausado = false; ON.ultimo = Date.now(); ON.erro = ''; if (avisar) toast('☁️ Fazenda salva na nuvem!', 'bom'); }
@@ -2884,15 +2995,21 @@
   function htmlOnlineCfg() {
     if (!ON.sb) return '<div class="linha-cfg"><span>☁️ Conta online</span><span class="det">indisponível agora</span></div>';
     const rank = '<div class="linha-cfg"><span>🏆 Ranking dos fazendeiros</span><button class="btn" data-abrir="ranking">Ver</button></div>';
-    if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn btn-google" data-acao="entrar-google"><b>G</b> Entrar com Google</button></div>` + rank;
+    if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn btn-google" data-acao="entrar-google"><b>G</b> Entrar com Google</button></div>`
+      + (listaContas().length ? '<div class="linha-cfg"><span>👥 Contas usadas neste aparelho</span><button class="btn" data-abrir="contas">Contas</button></div>' : '') + rank;
     const md = ON.user.user_metadata || {}, nome = md.full_name || md.name || ON.user.email || 'Conta Google';
     return `<div class="linha-cfg"><span>☁️ ${esc(nome)}<br><small class="det">${ON.erro ? '⚠️ ' + esc(ON.erro) : ON.sujo ? 'salvando em instantes…' : 'salvo na nuvem às ' + hora(ON.ultimo || S.salvoEm)}</small></span>
-      <span class="botoes-cfg"><button class="btn" data-acao="salvar-nuvem">Salvar agora</button><button class="btn" data-acao="sair-conta">Sair</button></span></div>` + rank;
+      <span class="botoes-cfg"><button class="btn" data-acao="salvar-nuvem">Salvar agora</button></span></div>
+      <div class="linha-cfg"><span>✏️ Nome no ranking: <b>${esc((S.perfil && S.perfil.nome) || 'Fazendeiro')}</b></span><button class="btn" data-acao="mudar-nome">Trocar</button></div>
+      <div class="linha-cfg"><span>👥 Trocar de conta ou jogar sem conta</span><button class="btn" data-abrir="contas">Contas</button></div>` + rank;
   }
   function htmlNuvem() {
     const n = ON.nuvem || {}, cart = (ic, tit, d, ac) => `<div class="card"><div class="em">${ic}</div><div class="meio"><div class="nome">${tit}</div>
       <div class="det">⭐ Nível ${d.nivel || 1} · ${moedaMini}${fmtN(d.moedas || 0)} · 🌾 ${fmtN(d.colhidos || 0)} colhidos</div><div class="det">Salvo em ${hora(d.salvoEm)}</div></div>
       <div class="botoes"><button class="btn verde" data-acao="${ac}">Usar esta</button></div></div>`;
+    if (ON.motivo === 'levar') return `<p class="dica">Você estava jogando <b>sem conta</b> neste aparelho. Quer levar essa fazenda para a conta Google? Assim ela fica salva na nuvem e entra no ranking.</p>`
+      + `<div class="card"><div class="em">📱</div><div class="meio"><div class="nome">Levar esta fazenda</div><div class="det">⭐ Nível ${S.nivel} · ${moedaMini}${fmtN(S.moedas)} · 🌾 ${fmtN(S.colhidos || 0)} colhidos</div></div><button class="btn verde" data-acao="usar-local">Levar</button></div>`
+      + `<div class="card"><div class="em">🌱</div><div class="meio"><div class="nome">Começar fazenda nova na conta</div><div class="det">A fazenda sem conta continua guardada neste aparelho</div></div><button class="btn" data-acao="conta-nova-fazenda">Começar</button></div>`;
     return `<p class="dica">${ON.motivo === 'outro' ? 'Sua fazenda foi salva em <b>outro aparelho</b> enquanto você jogava aqui.' : 'Esta conta já tem uma fazenda na nuvem, diferente da que está neste aparelho.'} Qual você quer continuar? A outra será substituída. Até você escolher, nada é enviado para a nuvem.</p>`
       + cart('☁️', 'Fazenda da nuvem', n, 'usar-nuvem') + cart('📱', 'Fazenda deste aparelho', S, 'usar-local');
   }
@@ -2936,6 +3053,9 @@
   tudo();
   requestAnimationFrame(animar);
   iniciarOnline();
+  setTimeout(() => procurarVersao(false), 4000); setInterval(() => procurarVersao(false), 5 * 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) procurarVersao(false); });
+  $('#avisoVersao').addEventListener('click', atualizarJogo);
   try { const m = sessionStorage.getItem('terralia-msg'); if (m) { sessionStorage.removeItem('terralia-msg'); setTimeout(() => toast(m, 'bom'), 800); } } catch (e) {}
   $('#jcorpo').addEventListener('wheel', e => { const v = e.target.closest('.vitrine'); if (v && Math.abs(e.deltaY) > Math.abs(e.deltaX)) { v.scrollLeft += e.deltaY; e.preventDefault(); } }, {passive:false});
   // ===== modo app (instalar na tela inicial) =====
