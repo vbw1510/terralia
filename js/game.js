@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.37'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.38'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -524,8 +524,12 @@
   let QUAL = 'alta'; // alta / media / leve (definida ao carregar o save)
   const segs = n => QUAL === 'alta' ? Math.round(n * 1.3) : n; // mais lados = peças mais redondas
   function aplicarQualidade() {
-    gov.max = gov.pr = Math.min(window.devicePixelRatio || 1, QUAL === 'leve' ? 1 : QUAL === 'media' ? 1.5 : 2.5);
-    gov.min = Math.min(gov.max, QUAL === 'alta' ? 1.75 : 1); // na Alta a nitidez nunca cai abaixo de 1,75×
+    // cada aparelho usa a nitidez real da própria tela; o jogo mede o desempenho e só baixa o necessário
+    const dpr = window.devicePixelRatio || 1;
+    gov.max = gov.pr = Math.min(dpr, QUAL === 'leve' ? 1 : QUAL === 'media' ? 1.75 : 3);
+    gov.min = Math.min(gov.max, QUAL === 'alta' ? 1.25 : 1);
+    gov.baixa = QUAL === 'alta' ? 1 / 27 : 1 / 38; // Alta prioriza nitidez: aceita ~30 quadros por segundo
+    gov.sobe = QUAL === 'alta' ? 1 / 40 : 1 / 52; gov.lentos = 0;
     renderer.setPixelRatio(gov.pr);
     sol.castShadow = QUAL !== 'leve';
     const ms = QUAL === 'alta' ? 2048 : 1024;
@@ -542,7 +546,7 @@
     const inv = new THREE.Matrix4().copy(raiz.matrixWorld).invert(), grupos = new Map(), remover = [];
     const ignorado = o => { for (let p = o; p && p !== raiz; p = p.parent) if (pular && pular.has(p)) return true; return false; };
     raiz.traverse(o => {
-      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material) || o.material.transparent || !o.visible || ignorado(o)) return;
+      if (!o.isMesh || o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material) || (o.material.transparent && o.material !== matSombra) || !o.visible || ignorado(o)) return;
       const g = o.geometry; if (!g || !g.attributes.position || g.morphAttributes && Object.keys(g.morphAttributes).length) return;
       const k = o.material.uuid + '|' + o.castShadow + '|' + o.receiveShadow;
       if (!grupos.has(k)) grupos.set(k, {mat:o.material, cast:o.castShadow, rec:o.receiveShadow, itens:[]});
@@ -1207,30 +1211,51 @@
   }
   const terras = {}; // decoração + placa das terras bloqueadas
   const clicaveisTerra = [];
+  // a decoração de TODAS as terras bloqueadas vira um grupo só (poucas peças para o celular desenhar);
+  // cada terra guarda só a placa de nível e a caixa invisível de toque. Sorteio fixo por terra: as árvores não mudam de lugar.
+  let decorTerras = null;
+  const sorteio = semente => { let a = semente >>> 0; return () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; };
+  function montarDecorTerras() {
+    if (decorTerras) { liberarIlha(decorTerras); decorTerras = null; }
+    const g = new THREE.Group(), mr = Math.random;
+    try {
+      for (const z of ZONAS) {
+        if (S.zonas.includes(z.key)) continue;
+        Math.random = sorteio((z.zx + 50) * 997 + (z.zz + 50) * 131);
+        const qtd = 6 + (Math.random() * 3 | 0), usadas = new Set();
+        for (let i = 0; i < qtd; i++) {
+          const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const k = cx + ',' + cz; if (usadas.has(k)) continue; usadas.add(k);
+          const r = Math.random(), o = r < .45 ? arvore(rnd(.8, 1.15), Math.random() < .15 ? 0xf5a623 : null) : r < .6 ? pinheiro(rnd(.9, 1.2)) : r < .75 ? pedra(rnd(1, 1.6)) : r < .88 ? tora(rnd(.8, 1.1)) : arbusto(rnd(.9, 1.3));
+          o.position.set(cx * G + rnd(-.4, .4), 0, cz * G + rnd(-.4, .4)); g.add(o);
+        }
+        for (let i = 0; i < 6; i++) { const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const b = arbusto(rnd(.6, .9)); b.position.set(cx * G + rnd(-.8, .8), 0, cz * G + rnd(-.8, .8)); g.add(b); }
+        const mx = z.cel.reduce((a, c) => a + c[0], 0) / z.cel.length * G, mz = z.cel.reduce((a, c) => a + c[1], 0) / z.cel.length * G;
+        const placa = new THREE.Group(); // placa de madeira
+        placa.add(cil(.07, .08, 1.3, 0x7a4b25, 0, .65, 0, 6));
+        placa.add(mesh(new THREE.BoxGeometry(1.2, .7, .08), 0, 0, 1.2, .05, true, liso(0xb07a46)));
+        placa.add(bola(.16, 0xf2c230, 0, 1.2, .14, 10));
+        placa.position.set(mx, 0, mz); g.add(placa);
+      }
+    } finally { Math.random = mr; }
+    mesclar(g); scene.add(g); congelar(g); decorTerras = g;
+    if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+  }
+  function mesclarAnimado(g) { // junta as peças paradas de cada parte que se mexe (corpo, cabeça, rabo, pernas…)
+    const A = new Set(); Object.values(g.userData).forEach(v => [].concat(v).forEach(x => { if (x && x.isObject3D) A.add(x); }));
+    [g, ...A].forEach(X => { if (!X.isMesh) mesclar(X, new Set([...A].filter(y => y !== X))); });
+  }
   function montarTerras() {
     for (const z of ZONAS) {
       if (S.zonas.includes(z.key)) continue;
       const g = new THREE.Group();
-      const qtd = 6 + (Math.random() * 3 | 0), usadas = new Set();
-      for (let i = 0; i < qtd; i++) {
-        const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const k = cx + ',' + cz; if (usadas.has(k)) continue; usadas.add(k);
-        const r = Math.random(), o = r < .45 ? arvore(rnd(.8, 1.15), Math.random() < .15 ? 0xf5a623 : null) : r < .6 ? pinheiro(rnd(.9, 1.2)) : r < .75 ? pedra(rnd(1, 1.6)) : r < .88 ? tora(rnd(.8, 1.1)) : arbusto(rnd(.9, 1.3));
-        o.position.set(cx * G + rnd(-.4, .4), 0, cz * G + rnd(-.4, .4)); g.add(o);
-      }
-      for (let i = 0; i < 6; i++) { const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const b = arbusto(rnd(.6, .9)); b.position.set(cx * G + rnd(-.8, .8), 0, cz * G + rnd(-.8, .8)); g.add(b); }
       const mx = z.cel.reduce((a, c) => a + c[0], 0) / z.cel.length * G, mz = z.cel.reduce((a, c) => a + c[1], 0) / z.cel.length * G;
-      // placa de madeira
-      const placa = new THREE.Group();
-      placa.add(cil(.07, .08, 1.3, 0x7a4b25, 0, .65, 0, 6));
-      placa.add(mesh(new THREE.BoxGeometry(1.2, .7, .08), 0, 0, 1.2, .05, true, liso(0xb07a46)));
-      placa.add(bola(.16, 0xf2c230, 0, 1.2, .14, 10));
-      placa.position.set(mx, 0, mz); g.add(placa);
       const r = rotulo(`🔒 Nível ${nivelZona()}`, '#6b4a2b'); r.position.set(mx, 2.3, mz); r.scale.multiplyScalar(.62); g.add(r);
       g.userData.rotulo = r; r.visible = false;
-      const caixa = new THREE.Mesh(new THREE.BoxGeometry(ZONA * G, .6, ZONA * G), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+      const caixa = new THREE.Mesh(new THREE.BoxGeometry(ZONA * G, .6, ZONA * G), new THREE.MeshBasicMaterial({visible:false})); // só para o toque: não é desenhada
       caixa.position.set((z.zx * ZONA - 12 + 2) * G, .3, (z.zz * ZONA - 12 + 2) * G); caixa.userData.zona = z.key; g.add(caixa); clicaveisTerra.push(caixa);
-      mesclar(g, new Set([placa])); scene.add(g); terras[z.key] = g; congelar(g);
+      scene.add(g); terras[z.key] = g; congelar(g);
     }
+    montarDecorTerras();
   }
   function atualizarPlacasTerra() {
     for (const k in terras) {
@@ -1715,7 +1740,7 @@
       while (lista.length < qtdAnimal(k)) {
         const g = ({galinha:criarGalinha, vaca:criarVaca, coelho:criarCoelho, ovelha:criarOvelha, pato:criarPato, porco:criarPorco, abelha:criarAbelha}[k] || criarGalinha)();
         const o = cercadoDoAnimal(k, lista.length); if (!o) break;
-        g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
+        mesclarAnimado(g); g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
         lista.push({g, alvo:g.position.clone(), espera:rnd(0, 3)});
       }
       while (lista.length > qtdAnimal(k)) scene.remove(lista.pop().g);
@@ -2077,6 +2102,7 @@
     S.moedas -= custo; S.zonas.push(key);
     const g = terras[key];
     if (g) { g.traverse(m => { const i = clicaveisTerra.indexOf(m); if (i >= 0) clicaveisTerra.splice(i, 1); }); scene.remove(g); delete terras[key]; }
+    montarDecorTerras();
     for (let k = 0; k < 14; k++) { const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; poeiraEm(V3(cx * G, 0, cz * G), 0x9ad46a); }
     atualizarPlacasTerra();
     toast('🌳 Terra nova liberada! Use ✏️ Editar para construir nela', 'ouro'); fechar(); tudo();
@@ -2166,28 +2192,27 @@
   }
   const coletarMoinho = () => coletarFab('moinho');
   const prontosFab = (t, oid) => Object.entries(fabEstado(t, oid).prontos).reduce((a, [id, v]) => a + v * (item(id).rende || 1), 0);
-  const baloes = {}; let escBalao = 1;
+  // balões de tempo/pronto: desenhados em HTML por cima do 3D, sempre na nitidez máxima da tela
+  const baloes = {}, camadaBal = document.createElement('div'); camadaBal.id = 'baloes'; canvas.after(camadaBal);
   function balao_(id, y) {
     let b = baloes[id];
-    if (!b) {
-      const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
-      const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = ANISO;
-      b = baloes[id] = new THREE.Sprite(new THREE.SpriteMaterial({map:tx, depthTest:false, transparent:true}));
-      b.renderOrder = 10; b.center.set(.5, .15); b.scale.set(2.2 * escBalao, 1.1 * escBalao, 1); b.userData.cv = cv; b.visible = false; scene.add(b);
-    }
+    if (!b) { const el = document.createElement('div'); el.className = 'bal3d'; el.style.display = 'none'; camadaBal.appendChild(el); b = baloes[id] = {el, position:V3(), visible:false, mostra:false, op:1, userData:{}}; }
     b.userData.y = y; return b;
   }
   function desenharBalao(b, emoji, texto, cor = '#fff8ea') {
-    const chave = emoji + '|' + texto; b.visible = true;
+    const chave = emoji + '|' + texto + '|' + cor; b.visible = true;
     if (b.userData.chave === chave) return; b.userData.chave = chave;
-    const cv = b.userData.cv, g = cv.getContext('2d'); g.setTransform(2, 0, 0, 2, 0, 0); g.clearRect(0, 0, 256, 128);
-    g.font = '800 46px "Baloo 2", sans-serif'; const w = Math.min(244, 96 + (texto ? g.measureText(texto).width : 0)), x = (256 - w) / 2;
-    g.fillStyle = cor; g.strokeStyle = '#7a4a26'; g.lineWidth = 7;
-    g.beginPath(); g.roundRect ? g.roundRect(x, 18, w, 84, 40) : g.rect(x, 18, w, 84); g.fill(); g.stroke();
-    g.beginPath(); g.moveTo(118, 101); g.lineTo(128, 120); g.lineTo(138, 101); g.fill();
-    g.font = '52px serif'; g.textBaseline = 'middle'; g.textAlign = 'left'; g.fillText(emoji, x + 14, 64);
-    if (texto) { g.font = '800 44px "Baloo 2", sans-serif'; g.fillStyle = '#4a2e17'; g.fillText(texto, x + 76, 66); }
-    b.material.map.needsUpdate = true;
+    b.el.style.background = cor; b.el.innerHTML = `<i>${emoji}</i>${texto ? `<b>${texto}</b>` : ''}`;
+  }
+  const vBal = V3();
+  function posicionarBaloes(seg) {
+    const f = Math.max(.72, Math.min(1.15, 24 / camera.position.distanceTo(controls.target))), W = innerWidth, H = innerHeight;
+    for (const id in baloes) {
+      const b = baloes[id]; let ok = b.visible;
+      if (ok) { vBal.set(b.position.x, b.userData.y + Math.sin(seg * 3) * .15, b.position.z).project(camera); ok = vBal.z < 1 && Math.abs(vBal.x) < 1.15 && Math.abs(vBal.y) < 1.15; }
+      if (ok !== b.mostra) { b.mostra = ok; b.el.style.display = ok ? '' : 'none'; }
+      if (ok) { b.el.style.transform = `translate(${((vBal.x + 1) / 2 * W).toFixed(1)}px,${((1 - vBal.y) / 2 * H).toFixed(1)}px) translate(-50%,-100%) scale(${f.toFixed(3)})`; b.el.style.opacity = b.op; }
+    }
   }
   const tempoCurto = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}` : s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}` : `${s}s`; };
   function atualizarBaloes() {
@@ -2345,7 +2370,7 @@
   function mostrarNome(o, ms = 3000) { const r = obj3D[o.id]; if (r && r.rot) r.ate = Date.now() + ms; }
   function atualizarNomes() {
     const agora = Date.now();
-    for (const id in obj3D) { const r = obj3D[id]; if (r.rot) { r.rot.visible = !!(editar.ativo || r.ate > agora || (hoverObj && hoverObj.id === id)); const b = baloes[id]; if (b) b.material.opacity = r.rot.visible ? .2 : 1; } }
+    for (const id in obj3D) { const r = obj3D[id]; if (r.rot) { r.rot.visible = !!(editar.ativo || r.ate > agora || (hoverObj && hoverObj.id === id)); const b = baloes[id]; if (b) b.op = r.rot.visible ? .2 : 1; } }
   }
   function clicarConstrucao(o) {
     if (o.tipo === 'casinhaPet' && !VISITA && !editar.ativo) { alimentarPets(); return; }
@@ -2672,7 +2697,7 @@
     {txt:'Toque em <b>Vender</b> para trocar um pouco de trigo por moedas. Guarde alguns para plantar de novo!', el:() => $('[data-vender=trigo]') || $('#popVenda .btn.verde'), ok:() => S.stats.vendeu > 0},
     {txt:'Para plantar algo novo, compre na <b>Loja</b>.', el:() => janela ? $('.fechar') : $('.cantos [data-abrir=loja]'), ok:() => janela === 'loja'},
     {txt:'Toque em <b>Comprar</b> no trigo, escolha a quantidade e confirme. Depois é só plantar o que você colhe!', el:() => $('#popVenda.on [data-pv=ok]') || $('[data-compra="planta:trigo"]'), ok:() => S.stats.compras > 0},
-    {txt:'Arraste a tela para passear pela fazenda e use a <b>pinça</b> (ou a rodinha) para zoom. No botão <b>🎥 Visão</b> você gira e centraliza a câmera.', el:() => $('[data-grupo=visao]'), botao:'Entendi', entrar:() => fechar()},
+    {txt:'Arraste a tela para passear pela fazenda e use a <b>pinça</b> (ou a rodinha) para zoom. No botão <b>🎥 Câmera</b> você gira e trava/destrava a câmera.', el:() => $('[data-grupo=visao]'), botao:'Entendi', entrar:() => fechar()},
     {txt:'Prontinho! Siga as <b>Missões</b> aqui do lado para crescer sua fazenda. Boa colheita! 🌻', el:() => $('#missoes'), botao:'Bora!'},
   ];
   const moinhoObj = () => S.objetos.find(o => o.tipo === 'moinho');
@@ -3048,10 +3073,8 @@
       h += `<div class="linha-cfg"><span>🎵 Música</span><input type="range" class="vol" data-vol="musica" min="0" max="1" step="0.05" value="${au.musica ?? .5}"></div>
         <div class="linha-cfg"><span>🔔 Efeitos e bichos</span><input type="range" class="vol" data-vol="efeitos" min="0" max="1" step="0.05" value="${au.efeitos ?? .8}"></div>
         <div class="linha-cfg"><span>${au.mudo ? '🔇' : '🔊'} Som</span><button class="btn ${au.mudo ? 'vermelho' : ''}" data-acao="mudo">${au.mudo ? 'Desligado' : 'Ligado'}</button></div>
-        <div class="linha-cfg"><span>🎥 Câmera</span><span class="botoes-cfg"><button class="btn ${S.camLivre ? '' : 'verde'}" data-cam="travada">🔒 Travada</button><button class="btn ${S.camLivre ? 'verde' : ''}" data-cam="livre">🔓 Livre</button></span></div>
-        <p class="dica cfg-dica">${S.camLivre ? 'Dois dedos: pinça dá zoom, girar os dedos gira a fazenda e arrastar para cima/baixo inclina.' : 'Ângulo fixo: dois dedos só dão zoom. O botão Visão gira de 90° em 90°.'}</p>
         <div class="linha-cfg"><span>🎨 Gráficos</span><span class="botoes-cfg">${[['alta', 'Alta'], ['media', 'Média'], ['leve', 'Leve']].map(([k, n]) => `<button class="btn ${S.qual === k ? 'verde' : ''}" data-qual="${k}">${n}</button>`).join('')}</span></div>
-        <p class="dica cfg-dica">Nitidez agora: <b>${String(gov.pr.toFixed(2)).replace(/\.?0+$/, '').replace('.', ',')}×</b> (tela ${String(+(window.devicePixelRatio || 1).toFixed(2)).replace('.', ',')}×). ${S.qual === 'alta' ? 'Na Alta ela nunca cai abaixo de 1,75×.' : 'Se travar, o jogo baixa um pouco sozinho.'}</p>
+        <p class="dica cfg-dica">Nitidez agora: <b>${String(gov.pr.toFixed(2)).replace(/\.?0+$/, '').replace('.', ',')}×</b> (tela ${String(+(window.devicePixelRatio || 1).toFixed(2)).replace('.', ',')}×). ${S.qual === 'alta' ? 'Na Alta o jogo usa a nitidez máxima que este aparelho aguenta.' : 'Se travar, o jogo baixa um pouco sozinho.'}</p>
         ${instalado() ? '' : `<div class="linha-cfg"><span>📲 Jogar como app (tela cheia, sem barra do navegador)</span>${pedidoInstalar ? '<button class="btn verde" data-acao="instalar">Instalar</button>' : '<span class="det">No Chrome: menu ⋮ → Instalar app</span>'}</div>`}
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
@@ -3308,7 +3331,15 @@
   document.querySelectorAll('.flyout').forEach(f => f.addEventListener('click', () => setTimeout(fecharGrupos, 120)));
   window.addEventListener('pointerdown', e => { if (!e.target.closest('.grupo')) fecharGrupos(); }, true);
   $('#btnGirar').addEventListener('click', girarCamera);
-  $('#btnCentro').addEventListener('click', () => { focoCam = heroi.g.position.clone(); });
+  function pintarTrava() { const b = $('#btnTrava'); if (!b) return; const livre = !!(S && S.camLivre);
+    b.classList.toggle('travada', !livre); b.classList.toggle('livre', livre);
+    b.querySelector('.txt-ico').textContent = livre ? '🔓' : '🔒'; b.querySelector('small').textContent = livre ? 'Livre' : 'Travada'; }
+  function definirCamLivre(livre) {
+    S.camLivre = livre;
+    if (!livre) { const base = Math.PI / 4 + (S.az || 0) * Math.PI / 2; azAlvo = base + 2 * Math.PI * Math.round((azAlvo - base) / (2 * Math.PI)); inclina = 0; S.azLivre = null; S.inclina = 0; }
+    salvar(); pintarTrava(); toast(livre ? '🔓 Câmera livre: gire e incline com dois dedos' : '🔒 Câmera travada no ângulo clássico');
+  }
+  $('#btnTrava').addEventListener('click', () => definirCamLivre(!S.camLivre));
 
   
   document.addEventListener('click', e => {
@@ -3381,10 +3412,7 @@
     const pd = e.target.closest('[data-pedido]'); if (pd) { entregarPedido(+pd.dataset.pedido); return; }
     const tp = e.target.closest('[data-trocar-pedido]'); if (tp) { trocarPedido(+tp.dataset.trocarPedido); return; }
     const ct = e.target.closest('[data-conta]'); if (ct) { trocarConta(ct.dataset.conta); return; }
-    const cb = e.target.closest('[data-cam]'); if (cb) { S.camLivre = cb.dataset.cam === 'livre';
-      if (!S.camLivre) { const base = Math.PI / 4 + (S.az || 0) * Math.PI / 2; azAlvo = base + 2 * Math.PI * Math.round((azAlvo - base) / (2 * Math.PI)); inclina = 0; S.azLivre = null; S.inclina = 0; }
-      salvar(); renderJanela(); toast(S.camLivre ? '🔓 Câmera livre: gire e incline com dois dedos' : '🔒 Câmera travada no ângulo clássico'); return; }
-    const qb = e.target.closest('[data-qual]'); if (qb) { if (S.qual !== qb.dataset.qual) { S.qual = qb.dataset.qual; S.leve = S.qual === 'leve'; salvar(); toast('🎨 Aplicando os gráficos…'); setTimeout(() => location.reload(), 500); } return; }
+    const qb = e.target.closest('[data-qual]'); if (qb) { if (S.qual !== qb.dataset.qual) { S.qual = qb.dataset.qual; S.qualManual = true; S.leve = S.qual === 'leve'; salvar(); toast('🎨 Aplicando os gráficos…'); setTimeout(() => location.reload(), 500); } return; }
     const nm = e.target.closest('[data-nome]'); if (nm) { escolherNome(nm.dataset.nome); return; }
     const sb = e.target.closest('[data-sub]'); if (sb) { subLoja = sb.dataset.sub; renderJanela(); $('#jcorpo').scrollTop = 0; return; }
     const a = e.target.closest('[data-acao]'); if (!a) return;
@@ -3501,13 +3529,10 @@
       if (tl.pop > 0) { tl.pop = Math.max(0, tl.pop - dt * 3); const s = 1 + Math.sin(tl.pop * Math.PI) * .35; tl.planta.scale.set(s, s, s); }
       if (tl.icone.visible) tl.icone.position.y = 1.9 + Math.sin(seg * 3 + i) * .15;
     });
-    for (const k in baloes) if (baloes[k].visible) baloes[k].position.y = baloes[k].userData.y + Math.sin(seg * 3) * .15;
     if (hoverI >= 0) {
       const p = posTile(hoverI); destaque.position.set(p.x, .15, p.z); destaque.rotation.y = tiles[hoverI].g.parent.rotation.y; destaque.visible = true;
       area.visible = false;
     } else { destaque.visible = false; area.visible = false; }
-    { const kz = Math.min(1.6, Math.max(1, camera.position.distanceTo(controls.target) / 24)); // de longe os balões crescem um pouco para continuar legíveis
-      for (const id in baloes) { const b = baloes[id]; if (b.visible && b.userData.k !== kz) { b.userData.k = kz; b.scale.set(2.2 * kz, 1.1 * kz, 1); } } }
     if (molduraSel && molduraSel.visible) molduraSel.scale.setScalar(1 + Math.sin(performance.now() / 180) * .03);
     if (sombraNuvens) { sombraNuvens.material.map.offset.x += dt * .006; sombraNuvens.material.map.offset.y += dt * .0035; }
     borboletas.forEach(b => {
@@ -3558,15 +3583,19 @@
     desloc.set(Math.max(-lim, Math.min(lim, tg.x)) - tg.x, -tg.y, Math.max(-lim, Math.min(lim, tg.z)) - tg.z);
     if (desloc.lengthSq()) { tg.add(desloc); camera.position.add(desloc); }
     ajustarCamera(dt);
-    { const kb = Math.round(Math.max(1, camera.position.distanceTo(controls.target) / 21) * 20) / 20; // longe: balões crescem para continuar legíveis
-      if (kb !== escBalao) { escBalao = kb; for (const k in baloes) baloes[k].scale.set(2.2 * kb, 1.1 * kb, 1); } }
+    posicionarBaloes(performance.now() / 1000);
     quadro++; renderer.shadowMap.needsUpdate = quadro % 3 === 0;
     // qualidade automática: se estiver travando, baixa um pouco a resolução; quando melhorar, volta
     gov.soma += dt; gov.n++;
     if (gov.soma > 2.5) {
       const med = gov.soma / gov.n; gov.soma = gov.n = 0;
-      if (med > 1 / 38 && gov.pr > (gov.min || 1)) { gov.pr = Math.max(gov.min || 1, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
-      else if (med < 1 / 56 && gov.pr < gov.max) { if (++gov.bons >= 2) { gov.pr = Math.min(gov.max, gov.pr + .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); } }
+      if (med > gov.baixa && gov.pr > gov.min) { gov.pr = Math.max(gov.min, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
+      else if (med > 1 / 20 && gov.pr <= gov.min && !document.hidden && jogoIniciado) { // no mínimo e ainda muito lento: aparelho fraco
+        if (++gov.lentos >= 3 && !S.qualManual && QUAL !== 'leve') { const nq = QUAL === 'alta' ? 'media' : 'leve'; S.qual = nq; S.leve = nq === 'leve'; salvar(); gov.lentos = 0;
+          QUAL = nq; const m = gov.max; aplicarQualidade(); gov.max = Math.min(gov.max, m);
+          toast(`🎨 Gráficos ajustados para ${nq === 'media' ? 'Média' : 'Leve'} para o jogo ficar mais leve neste aparelho (dá para mudar em Configurações)`); }
+      }
+      else if (med < gov.sobe && gov.pr < gov.max) { if (++gov.bons >= 2) { gov.pr = Math.min(gov.max, gov.pr + .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); } }
       else gov.bons = 0;
     }
     renderer.render(scene, camera);
@@ -4438,7 +4467,7 @@
   if (!S.audio) S.audio = {musica:.5, efeitos:.8, mudo:false};
   if (window.SOM) { SOM.config(S.audio); SOM.tocarMusica(); }
   montarCeu(); montarIlha(); montarTerras(); montarNuvens(); montarObjetos(); montarPersonagens(); montarTonho();
-  azAtual = azAlvo = S.camLivre && S.azLivre != null ? S.azLivre : Math.PI / 4 + (S.az || 0) * Math.PI / 2; inclina = S.camLivre ? S.inclina || 0 : 0;
+  azAtual = azAlvo = S.camLivre && S.azLivre != null ? S.azLivre : Math.PI / 4 + (S.az || 0) * Math.PI / 2; inclina = S.camLivre ? S.inclina || 0 : 0; pintarTrava();
   redimensionar();
   atualizarProducao();
   tudo();

@@ -810,3 +810,14 @@ body.seletor-aberto .faixa-conta{opacity:0;pointer-events:none}
 #telaExpulso p{margin:0 0 14px;font-size:14px;color:#7a5a3a}
 #telaExpulso .exp-bt{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 .cfg-dica{margin:-2px 4px 8px;font-size:12px}
+/* v0.38 — balões em HTML (nítidos em qualquer tela) */
+#baloes{position:fixed;inset:0;pointer-events:none;z-index:2;overflow:hidden}
+.bal3d{position:absolute;left:0;top:0;transform-origin:50% 100%;display:flex;align-items:center;gap:3px;padding:2px 10px 2px 6px;border:2.5px solid #7a4a26;border-radius:999px;font-weight:800;font-size:15px;line-height:22px;color:#4a2e17;white-space:nowrap;box-shadow:0 2px 0 rgba(90,53,25,.35);will-change:transform}
+.bal3d::after{content:'';position:absolute;left:50%;bottom:-8px;transform:translateX(-50%);border:6px solid transparent;border-top:7px solid #7a4a26}
+.bal3d i{font-style:normal;font-size:17px}
+.bal3d i img{width:20px;height:20px;vertical-align:-4px}
+body.editando #baloes{opacity:.35}
+#btnTrava.travada{background:radial-gradient(circle at 50% 35%,#ffe1dc,#ff8a7a);border-color:#b23a2a;box-shadow:0 4px 0 #b23a2a}
+#btnTrava.travada small{color:#8a2016}
+#btnTrava.livre{background:radial-gradient(circle at 50% 35%,#eaffdc,#9be07a);border-color:#3d8a2a;box-shadow:0 4px 0 #3d8a2a}
+#btnTrava.livre small{color:#2a6a1a}
