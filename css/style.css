@@ -730,3 +730,19 @@ body.visitando .marca-jogo,body.editando .marca-jogo,body.em-tutorial .marca-jog
 .faixa-conta.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
 .faixa-conta b{color:#2f8a1c;text-decoration:underline;margin-left:4px}
 .fc-x{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-weight:900;color:#a08a6a;padding:4px}
+/* conta na tela inicial */
+.conta-splash{position:absolute;top:calc(10px + var(--safe-t));right:calc(10px + var(--safe-r, 0px));z-index:3}
+.cs-chip{display:flex;align-items:center;gap:8px;background:rgba(255,248,234,.95);border:3px solid #8a5a2b;border-radius:30px;padding:4px 12px 4px 4px;box-shadow:0 4px 10px rgba(0,0,0,.3);max-width:min(300px,60vw)}
+.cs-chip img,.cs-av{width:34px;height:34px;border-radius:50%;flex:0 0 auto;object-fit:cover;background:#6aa43a;color:#fff;font-weight:900;font-size:17px;display:flex;align-items:center;justify-content:center}
+.cs-txt{display:flex;flex-direction:column;align-items:flex-start;line-height:1.05;min-width:0}
+.cs-txt small{font-size:10px;font-weight:700;color:#8a6a4a}.cs-txt b{font-size:14px;color:#4a2e17;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px}
+.cs-seta{color:#8a5a2b;font-weight:900}
+.cs-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);width:270px;background:#fff8ea;border:3px solid #8a5a2b;border-radius:16px;padding:6px;box-shadow:0 8px 20px rgba(0,0,0,.35)}
+.conta-splash.aberto .cs-menu{display:block}
+.cs-atual{display:flex;align-items:center;gap:8px;padding:8px;border-radius:10px;background:#e4f6d6;font-size:13px;font-weight:700;color:#4a2e17;margin-bottom:4px}
+.cs-atual span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cs-atual em{font-style:normal;font-size:10px;color:#2f8a1c;font-weight:800}
+.cs-op{display:flex;align-items:center;gap:8px;width:100%;padding:8px;border-radius:10px;font-size:13px;font-weight:700;color:#5a3519;text-align:left;background:none}
+.cs-op span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cs-op:active,.cs-op:hover{background:#f3e2c0}.cs-op.sair{color:#c0392b}
+.lg-g.mini,.lg-f.mini{width:20px;height:20px;font-size:12px}.lg-f.mini{font-size:15px}
+.cs-op .lg-g,.cs-op .lg-f,.cs-atual .lg-g,.cs-atual .lg-f{flex:0 0 20px}

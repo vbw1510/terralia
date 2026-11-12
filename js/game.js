@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.32'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.33'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -3844,6 +3844,7 @@
       const u = sess && sess.user, novo = u && (!ON.user || ON.user.id !== u.id);
       if (u && !jogoIniciado && ev !== 'PASSWORD_RECOVERY') { let q = null; try { q = sessionStorage.getItem('terralia-entrar'); } catch (e) {} if (q) setTimeout(() => { if (!jogoIniciado) { $('#telaLogin').classList.add('on'); esperarSincronizar(); } }, 50); }
       if (u) $('#faixaConta').classList.remove('on');
+      setTimeout(renderContaSplash, 0);
       ON.user = u || null;
       if (novo) { ON.sincronizado = false; setTimeout(sincronizarAoEntrar, 0); }
       if (janela === 'config' || janela === 'ranking') renderJanela();
@@ -3873,7 +3874,7 @@
   function listaContas() { try { return JSON.parse(localStorage.getItem('terralia-contas')) || []; } catch (e) { return []; } }
   function lembrarConta(u) {
     const md = u.user_metadata || {}, l = listaContas().filter(c => c.uid !== u.id);
-    l.unshift({uid:u.id, email:u.email || '', nome:md.full_name || md.name || u.email || 'Conta Google', foto:md.avatar_url || ''});
+    l.unshift({uid:u.id, email:u.email || '', nome:md.full_name || md.name || u.email || 'Sua conta', foto:md.avatar_url || md.picture || '', prov:(u.app_metadata && u.app_metadata.provider) || 'google'});
     try { localStorage.setItem('terralia-contas', JSON.stringify(l.slice(0, 8))); } catch (e) {}
   }
   // troca a fazenda ativa e recarrega (com trava contra recarregar sem parar)
@@ -3925,10 +3926,12 @@
       carregarFazenda(lerSlot(null) || fazendaNova(null), '🌱 Jogando sem conta'); return;
     }
     const c = listaContas().find(x => x.uid === alvo);
-    if (!ON.sb || !podeLogar()) { toast('Para entrar com Google, abra o jogo pelo endereço do site'); return; }
+    if (!ON.sb || !podeLogar()) { toast('Para entrar, abra o jogo pelo endereço do site'); return; }
     if (ON.user) { try { await ON.sb.auth.signOut(); } catch (e) {} ON.user = null; }
+    if (alvo === 'nova' || (c && c.prov === 'email')) { LG.email = c ? c.email : ''; abrirLogin(c ? 'email' : 'inicio'); return; } // e-mail: pede a senha aqui mesmo
+    try { if (!jogoIniciado) sessionStorage.setItem('terralia-entrar', '1'); } catch (e) {}
     ON.recarregando = true; // não salva nada por cima enquanto vai para o Google
-    const {error} = await ON.sb.auth.signInWithOAuth({provider:'google', options:{redirectTo:location.origin + location.pathname, queryParams:Object.assign({prompt:'select_account'}, c && c.email ? {login_hint:c.email} : {})}});
+    const {error} = await ON.sb.auth.signInWithOAuth({provider:c && c.prov === 'facebook' ? 'facebook' : 'google', options:{redirectTo:location.origin + location.pathname, queryParams:c && c.prov === 'facebook' ? undefined : Object.assign({prompt:'select_account'}, c && c.email ? {login_hint:c.email} : {})}});
     if (error) { ON.recarregando = false; toast('Não deu para entrar: ' + error.message); }
   }
   function htmlContas() {
@@ -4347,12 +4350,43 @@
   $('#telaLogin').addEventListener('click', e => {
     const b = e.target.closest('[data-lg]'); if (!b) return; const a = b.dataset.lg;
     if (a === 'google' || a === 'facebook') { if (!podeLogar()) { toast('Abra o jogo pelo endereço do site para entrar'); return; } entrarOAuth(a); return; }
-    if (a === 'convidado') { if (jogoIniciado) { $('#telaLogin').classList.remove('on'); return; } iniciarJogo(true); return; }
+    if (a === 'convidado') {
+      if (S.uid && !ON.user) { guardarSlot(); try { sessionStorage.setItem('terralia-entrar-conv', '1'); } catch (er) {} carregarFazenda(lerSlot(null) || fazendaNova(null), '🌱 Jogando sem conta'); return; } // a fazenda aberta é de uma conta: abre a do convidado
+      if (jogoIniciado) { $('#telaLogin').classList.remove('on'); return; } iniciarJogo(true); return; }
     if (a === 'fechar') { $('#telaLogin').classList.remove('on'); if (!jogoIniciado) iniciarJogo(true); return; }
     LG.modo = a; LG.msg = ''; renderLogin(); const i = $('#lgEmail'); if (i && !MOBILE) i.focus();
   });
   $('#telaLogin').addEventListener('submit', enviarLogin);
   $('#telaLogin').addEventListener('keydown', e => e.stopPropagation());
+  // conta na tela inicial: mostra com quem está conectado e deixa trocar
+  function renderContaSplash() {
+    const el = $('#contaSplash'); if (!el || jogoIniciado) return;
+    if (!ON.sb || !podeLogar()) { el.innerHTML = ''; return; }
+    const u = ON.user, md = (u && u.user_metadata) || {}, nome = u ? (md.full_name || md.name || u.email || 'Sua conta') : 'Convidado', foto = md.avatar_url || md.picture || '';
+    const prov = u && u.app_metadata ? u.app_metadata.provider : '', ic = {google:'<span class="lg-g mini">G</span>', facebook:'<span class="lg-f mini">f</span>', email:'✉️'}[prov] || '👤';
+    const outras = listaContas().filter(c => !u || c.uid !== u.id);
+    el.innerHTML = `<button class="cs-chip" data-cs="menu">${foto ? `<img src="${esc(foto)}" alt="" referrerpolicy="no-referrer">` : `<span class="cs-av">${u ? esc(nome[0].toUpperCase()) : '👤'}</span>`}
+        <span class="cs-txt"><small>${u ? 'Conectado como' : 'Sem conta'}</small><b>${esc(nome)}</b></span><span class="cs-seta">▾</span></button>
+      <div class="cs-menu">
+        ${u ? `<div class="cs-atual">${ic} <span>${esc(u.email || nome)}</span><em>conectado</em></div>` : '<div class="cs-atual">👤 <span>Jogando como convidado</span><em>só neste aparelho</em></div>'}
+        ${outras.map(c => `<button class="cs-op" data-cs-conta="${c.uid}">${{google:'<span class="lg-g mini">G</span>', facebook:'<span class="lg-f mini">f</span>', email:'✉️'}[c.prov || 'google'] || '👤'} <span>${esc(c.email || c.nome)}</span></button>`).join('')}
+        <button class="cs-op" data-cs="outra">➕ ${u ? 'Entrar com outra conta' : 'Entrar / criar conta'}</button>
+        ${u ? '<button class="cs-op" data-cs="convidado">👤 Jogar como convidado</button><button class="cs-op sair" data-cs="sair">🚪 Sair desta conta</button>' : ''}
+      </div>`;
+  }
+  $('#contaSplash').addEventListener('click', async e => {
+    e.stopPropagation(); const el = $('#contaSplash'), b = e.target.closest('[data-cs], [data-cs-conta]'); if (!b) return;
+    if (b.dataset.cs === 'menu') { el.classList.toggle('aberto'); return; }
+    el.classList.remove('aberto');
+    if (b.dataset.csConta) { trocarConta(b.dataset.csConta); return; }
+    const a = b.dataset.cs;
+    if (a === 'outra') { if (ON.user) { try { if (ON.sujo) await enviarSave(); guardarSlot(); await ON.sb.auth.signOut(); } catch (er) {} ON.user = null; renderContaSplash(); } LG.email = ''; abrirLogin('inicio'); return; }
+    if (a === 'sair') { try { if (ON.sujo) await enviarSave(); guardarSlot(); await ON.sb.auth.signOut(); } catch (er) {} ON.user = null; carregarFazenda(lerSlot(null) || fazendaNova(null), '🚪 Você saiu da conta'); return; }
+    if (a === 'convidado') { trocarConta('convidado'); return; }
+  });
+  document.addEventListener('click', () => { const el = $('#contaSplash'); if (el) el.classList.remove('aberto'); });
+  setTimeout(renderContaSplash, 0);
+  try { if (sessionStorage.getItem('terralia-entrar-conv')) { sessionStorage.removeItem('terralia-entrar-conv'); setTimeout(() => iniciarJogo(false), 300); } } catch (e) {}
   // lembrete para quem joga sem conta
   let ultLembrete = 0;
   function lembrarConvidado(forcar) {
