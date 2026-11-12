@@ -698,3 +698,35 @@ body.editando .vinheta{display:none}
 .marca-jogo b{color:#fff3c4}
 body.visitando .marca-jogo,body.editando .marca-jogo,body.em-tutorial .marca-jogo{display:none}
 @media (max-height:520px) and (orientation:landscape){ .marca-jogo{font-size:14px;padding:4px 11px 2px} }
+/* tela de entrar */
+.tela-login{position:fixed;inset:0;z-index:150;display:none;align-items:center;justify-content:center;padding:10px;background:rgba(20,40,12,.6)}
+.tela-login.on{display:flex}
+.lg-caixa{width:min(400px,94vw);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#fff8ea,#f6e6c4);border:4px solid #8a5a2b;border-radius:22px;padding:12px 18px 14px;box-shadow:0 12px 30px rgba(0,0,0,.4);color:#4a2e17;text-align:center}
+.lg-logo{font-weight:800;font-size:30px;line-height:1;color:#ffd447;text-shadow:0 3px 0 #6b3d17,0 0 2px #6b3d17;margin-bottom:6px}
+.lg-logo span{color:#6aa43a;text-shadow:0 2px 0 #2f5c18}
+.lg-sub{font-size:14px;font-weight:700;margin:4px 0 10px;color:#6b4a2a}
+.lg-bt{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin:7px 0;padding:10px 12px 7px;border-radius:14px;font-size:16px;font-weight:800;border:3px solid rgba(0,0,0,.18);box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.lg-bt:active{transform:translateY(2px);box-shadow:none}
+.lg-bt.google{background:#fff;color:#3c4043}
+.lg-g{width:24px;height:24px;border-radius:50%;background:conic-gradient(#ea4335 0 25%,#fbbc05 0 50%,#34a853 0 75%,#4285f4 0);color:#fff;font-weight:900;font-size:15px;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+.lg-bt.facebook{background:#1877f2;color:#fff}
+.lg-f{width:24px;height:24px;border-radius:50%;background:#fff;color:#1877f2;font-weight:900;font-size:19px;display:inline-flex;align-items:flex-end;justify-content:center;line-height:1}
+.lg-bt.email{background:#ffe9b8;color:#5a3519}
+.lg-bt.conv{background:#efe4cf;color:#6b4a2a;font-size:15px}
+.lg-bt.verde{background:linear-gradient(180deg,#7fd04b,#4fa52b);color:#fff;text-shadow:0 2px 0 #2f6e1c}
+.lg-bt:disabled{opacity:.6}
+.lg-ou{display:flex;align-items:center;gap:8px;color:#a08a6a;font-weight:800;font-size:12px;margin:4px 0}.lg-ou::before,.lg-ou::after{content:'';flex:1;height:2px;background:#e0cda8}
+.lg-aviso{display:block;font-size:12px;color:#8a6a4a;font-weight:600;margin-top:4px}
+.lg-abas{display:flex;gap:6px;margin-bottom:8px}.lg-abas button{flex:1;padding:7px;border-radius:12px;font-weight:800;background:#efe4cf;color:#8a6a4a}.lg-abas button.ativa{background:#8a5a2b;color:#fff8ea}
+#lgForm input{width:100%;margin:5px 0;padding:10px 12px;border:2px solid #d9bf94;border-radius:12px;font-size:16px;background:#fff;color:#4a2e17;font-family:inherit;user-select:text;-webkit-user-select:text}
+.lg-link{background:none;color:#8a5a2b;font-weight:800;font-size:13px;text-decoration:underline;margin-top:6px;padding:4px}
+.lg-msg{font-size:13px;font-weight:700;color:#c0392b;min-height:4px;margin-top:4px}
+.lg-carregando{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 0}
+.lg-roda{width:42px;height:42px;border-radius:50%;border:5px solid #e0cda8;border-top-color:#5cc23f;animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+@media (max-height:520px) and (orientation:landscape){ .lg-caixa{padding:8px 14px 10px}.lg-logo{font-size:22px}.lg-bt{padding:7px 10px 5px;margin:5px 0;font-size:15px}.lg-sub{font-size:12px;margin:2px 0 6px} }
+/* faixa de lembrete para convidado */
+.faixa-conta{position:fixed;top:calc(40px + var(--safe-t));left:50%;transform:translate(-50%,-150%);z-index:59;background:#fff3c4;border:3px solid #e0a83a;border-radius:16px;padding:6px 36px 4px 14px;font-weight:700;font-size:14px;color:#5a3519;box-shadow:0 5px 14px rgba(0,0,0,.3);transition:transform .35s,opacity .35s;white-space:nowrap;cursor:pointer;opacity:0;pointer-events:none}
+.faixa-conta.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.faixa-conta b{color:#2f8a1c;text-decoration:underline;margin-left:4px}
+.fc-x{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-weight:900;color:#a08a6a;padding:4px}

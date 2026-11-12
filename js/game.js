@@ -7,7 +7,7 @@
   const ON = {sb:null, user:null, sujo:false, enviando:false, recarregando:false, ultimo:0, erro:'', nuvem:null, ordem:'nivel', rank:null, rankErro:'', carregandoRank:false}; // estado online
   let pedidoInstalar = null; // pedido de instalação do app (Chrome)
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
-  const VERSAO = '0.31'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.32'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -1930,7 +1930,7 @@
         ...Object.values(PETS).filter(a => a.nivel === S.nivel).map(a => a.nome)];
       toast(`⭐ Nível ${S.nivel}!${novos.length ? ' Liberou: ' + novos.join(', ') : ''}`, 'ouro');
     }
-    if (subiu) atualizarPlacasTerra();
+    if (subiu) { atualizarPlacasTerra(); setTimeout(() => lembrarConvidado(true), 3000); }
   }
   function comprarSemente(id, q) {
     const c = crop(id), custo = c.semente * q;
@@ -2642,8 +2642,7 @@
   let modoSel = 'sementes';
   const FOICE = '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" stroke-linejoin="round" stroke-linecap="round"><path d="M14 10c22-6 42 6 44 26-10-14-26-18-40-12z" fill="#dfe6ee" stroke="#3b4652" stroke-width="3.2"/><path d="M20 14c14-3 28 2 34 12" stroke="#fff" stroke-width="2.4" fill="none" opacity=".8"/><path d="M18 24l-8 34" stroke="#7a4a1c" stroke-width="7"/><path d="M18 24l-8 34" stroke="#c98640" stroke-width="3.5"/><circle cx="17" cy="25" r="4" fill="#59606a" stroke="#2c333b" stroke-width="2"/></svg>';
   function abrirFerramenta(modo, i) {
-    if (VISITA) return; alvoPlantio = i; modoSel = modo; seletorAberto = true;
-    renderSeletor(); verificarTutorial();
+    if (VISITA) return; alvoPlantio = i; modoSel = modo; abrirSeletor(true); verificarTutorial();
   }
   function posicionarSeletor() {
     const el = $('#seletorSem'); if (!seletorAberto || alvoPlantio == null || !tiles[alvoPlantio]) { el.style.cssText = ''; el.classList.remove('flutua'); return; }
@@ -2656,7 +2655,7 @@
   function abrirPlantio(i) {
     if (VISITA) return; alvoPlantio = i; modoSel = 'sementes'; seletorAberto = true;
     const lib = CROPS.filter(c => c.nivel <= S.nivel), k = lib.findIndex(c => c.id === semAtual().id); paginaSem = Math.max(0, Math.floor(k / 6));
-    renderSeletor(); verificarTutorial();
+    abrirSeletor(true); verificarTutorial();
   }
   function renderSeletor() {
     const el = $('#seletorSem'); el.classList.toggle('on', seletorAberto); if (!seletorAberto) { el.classList.remove('flutua', 'arrastando'); el.style.cssText = ''; return; }
@@ -2680,7 +2679,16 @@
       return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<button class="pg" data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button>` : '') + '</div>';
     posicionarSeletor();
   }
-  function abrirSeletor(v) { seletorAberto = v; if (!v) alvoPlantio = null; renderSeletor(); }
+  let molduraSel = null; // moldura amarela no canteiro tocado
+  function abrirSeletor(v) {
+    seletorAberto = v; if (!v) alvoPlantio = null;
+    if (!molduraSel) { const g = new THREE.Group(), m = new THREE.MeshBasicMaterial({color:C(0xffd23f), transparent:true, opacity:.95, depthWrite:false}), L = G * .94, e = .2;
+      [[0, -L / 2, L + e, e], [0, L / 2, L + e, e], [-L / 2, 0, e, L], [L / 2, 0, e, L]].forEach(([x, z, w, d]) => { const b = new THREE.Mesh(new THREE.BoxGeometry(w, .06, d), m); b.position.set(x, 0, z); g.add(b); });
+      g.renderOrder = 3; scene.add(g); molduraSel = g; }
+    molduraSel.visible = v && alvoPlantio != null;
+    if (molduraSel.visible) { molduraSel.position.copy(posTile(alvoPlantio)); molduraSel.position.y += .32; }
+    renderSeletor();
+  }
 
   let janela = null, zonaSel = null;
   const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
@@ -3029,6 +3037,7 @@
   const arr = {ativo:false, tipo:null, id:null, x0:0, y0:0, moveu:false, feitos:new Set(), avisou:false, ate:0};
   const fant = document.createElement('div'); fant.className = 'fantasma'; document.body.appendChild(fant);
   function aplicarArr(i) {
+    if (!arr.comecou) { if (i !== alvoPlantio) return; arr.comecou = true; } // só começa no canteiro que você tocou
     if (i < 0 || arr.feitos.has(i) || naFila(i)) return;
     const pq = S.plots[i];
     if (!(arr.tipo === 'insumo' ? insumoServe(arr.id, pq) : arr.tipo === 'catar' ? temPraga(pq) : modoTile(i) === arr.tipo)) return;
@@ -3051,7 +3060,7 @@
     if (b.dataset.sem) { id = b.dataset.sem; if (!(S.sementes[id] || 0)) return; tipo = 'plantar'; S.semSel = id; }
     else if (b.dataset.ins) { id = b.dataset.ins; if (!qtdIns(id)) { abrirSeletor(false); abrir('loja', 'insumos'); return; } tipo = 'insumo'; }
     else tipo = b.dataset.ferrArr;
-    Object.assign(arr, {ativo:true, tipo, id, x0:ev.clientX, y0:ev.clientY, moveu:false, feitos:new Set(), avisou:false});
+    Object.assign(arr, {ativo:true, tipo, id, x0:ev.clientX, y0:ev.clientY, moveu:false, feitos:new Set(), avisou:false, comecou:alvoPlantio == null});
     fant.innerHTML = b.querySelector('.ico').outerHTML; fant.style.left = ev.clientX + 'px'; fant.style.top = ev.clientY + 'px';
   });
   window.addEventListener('pointermove', ev => {
@@ -3259,7 +3268,7 @@
     if (ac === 'voltar-visita') voltarDaVisita();
     if (ac === 'procurar-versao') procurarVersao(true);
     if (ac === 'atualizar-ja') atualizarJogo();
-    if (ac === 'entrar-google') entrarGoogle();
+    if (ac === 'entrar-google') { fechar(); abrirLogin('inicio'); }
     if (ac === 'sair-conta') sairConta();
     if (ac === 'salvar-nuvem') { if (ON.pausado && ON.nuvem) abrir('nuvem'); else enviarSave(true); }
     if (ac === 'usar-nuvem') usarSaveNuvem();
@@ -3343,6 +3352,7 @@
     } else { destaque.visible = false; area.visible = false; }
     { const kz = Math.min(1.6, Math.max(1, camera.position.distanceTo(controls.target) / 24)); // de longe os balões crescem um pouco para continuar legíveis
       for (const id in baloes) { const b = baloes[id]; if (b.visible && b.userData.k !== kz) { b.userData.k = kz; b.scale.set(2.2 * kz, 1.1 * kz, 1); } } }
+    if (molduraSel && molduraSel.visible) molduraSel.scale.setScalar(1 + Math.sin(performance.now() / 180) * .03);
     if (sombraNuvens) { sombraNuvens.material.map.offset.x += dt * .006; sombraNuvens.material.map.offset.y += dt * .0035; }
     borboletas.forEach(b => {
       b.fase += dt * 18; const ab = Math.sin(b.fase) * 1.1; b.a1.rotation.y = ab; b.a2.rotation.y = Math.PI - ab;
@@ -3830,7 +3840,10 @@
     if (!window.supabase || !window.supabase.createClient) return;
     try { ON.sb = window.supabase.createClient(SB_URL, SB_KEY, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:'pkce'}}); } catch (e) { console.warn(e); return; }
     ON.sb.auth.onAuthStateChange((ev, sess) => {
+      if (ev === 'PASSWORD_RECOVERY') setTimeout(() => abrirLogin('novaSenha'), 300);
       const u = sess && sess.user, novo = u && (!ON.user || ON.user.id !== u.id);
+      if (u && !jogoIniciado && ev !== 'PASSWORD_RECOVERY') { let q = null; try { q = sessionStorage.getItem('terralia-entrar'); } catch (e) {} if (q) setTimeout(() => { if (!jogoIniciado) { $('#telaLogin').classList.add('on'); esperarSincronizar(); } }, 50); }
+      if (u) $('#faixaConta').classList.remove('on');
       ON.user = u || null;
       if (novo) { ON.sincronizado = false; setTimeout(sincronizarAoEntrar, 0); }
       if (janela === 'config' || janela === 'ranking') renderJanela();
@@ -4122,9 +4135,9 @@
   function htmlOnlineCfg() {
     if (!ON.sb) return '<div class="linha-cfg"><span>☁️ Conta online</span><span class="det">indisponível agora</span></div>';
     const rank = '<div class="linha-cfg"><span>🏆 Ranking dos fazendeiros</span><button class="btn" data-abrir="ranking">Ver</button></div>';
-    if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn btn-google" data-acao="entrar-google"><b>G</b> Entrar com Google</button></div>`
+    if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn verde" data-acao="entrar-google">Entrar / criar conta</button></div>`
       + (listaContas().length ? '<div class="linha-cfg"><span>👥 Contas usadas neste aparelho</span><button class="btn" data-abrir="contas">Contas</button></div>' : '') + rank;
-    const md = ON.user.user_metadata || {}, nome = md.full_name || md.name || ON.user.email || 'Conta Google';
+    const md = ON.user.user_metadata || {}, nome = md.full_name || md.name || ON.user.email || 'Sua conta';
     return `<div class="linha-cfg"><span>☁️ ${esc(nome)}<br><small class="det">${ON.erro ? '⚠️ ' + esc(ON.erro) : ON.sujo ? 'salvando em instantes…' : 'salvo na nuvem às ' + hora(ON.ultimo || S.salvoEm)}</small></span>
       <span class="botoes-cfg"><button class="btn" data-acao="salvar-nuvem">Salvar agora</button></span></div>
       <div class="linha-cfg"><span>✏️ Nome no ranking: <b>${esc((S.perfil && S.perfil.nome) || 'Fazendeiro')}</b></span><button class="btn" data-acao="mudar-nome">Trocar</button></div>
@@ -4134,7 +4147,7 @@
     const n = ON.nuvem || {}, cart = (ic, tit, d, ac) => `<div class="card"><div class="em">${ic}</div><div class="meio"><div class="nome">${tit}</div>
       <div class="det">⭐ Nível ${d.nivel || 1} · ${moedaMini}${fmtN(d.moedas || 0)} · 🌾 ${fmtN(d.colhidos || 0)} colhidos</div><div class="det">Salvo em ${hora(d.salvoEm)}</div></div>
       <div class="botoes"><button class="btn verde" data-acao="${ac}">Usar esta</button></div></div>`;
-    if (ON.motivo === 'levar') return `<p class="dica">Você estava jogando <b>sem conta</b> neste aparelho. Quer levar essa fazenda para a conta Google? Assim ela fica salva na nuvem e entra no ranking.</p>`
+    if (ON.motivo === 'levar') return `<p class="dica">Você estava jogando <b>sem conta</b> neste aparelho. Quer levar essa fazenda para a sua conta? Assim ela fica salva na nuvem e entra no ranking.</p>`
       + `<div class="card"><div class="em">📱</div><div class="meio"><div class="nome">Levar esta fazenda</div><div class="det">⭐ Nível ${S.nivel} · ${moedaMini}${fmtN(S.moedas)} · 🌾 ${fmtN(S.colhidos || 0)} colhidos</div></div><button class="btn verde" data-acao="usar-local">Levar</button></div>`
       + `<div class="card"><div class="em">🌱</div><div class="meio"><div class="nome">Começar fazenda nova na conta</div><div class="det">A fazenda sem conta continua guardada neste aparelho</div></div><button class="btn" data-acao="conta-nova-fazenda">Começar</button></div>`;
     return `<p class="dica">${ON.motivo === 'outro' ? 'Sua fazenda foi salva em <b>outro aparelho</b> enquanto você jogava aqui.' : 'Esta conta já tem uma fazenda na nuvem, diferente da que está neste aparelho.'} Qual você quer continuar? A outra será substituída. Até você escolher, nada é enviado para a nuvem.</p>`
@@ -4227,8 +4240,12 @@
     aplicarAvatar();
     requestAnimationFrame(() => requestAnimationFrame(() => { if (window.esconderCarregando) window.esconderCarregando(); }));
   }
-  ($('#btnJogar') || document.createElement('i')).addEventListener('click', () => {
-    if (MOBILE) {
+  let jogoIniciado = false;
+  function iniciarJogo(comGesto) {
+    if (jogoIniciado) return; jogoIniciado = true;
+    try { sessionStorage.removeItem('terralia-entrar'); } catch (e) {}
+    $('#telaLogin').classList.remove('on');
+    if (MOBILE && comGesto) {
       try {
         const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
         const p = fs && fs.call(el, {navigationUI:'hide'});
@@ -4240,6 +4257,115 @@
     setTimeout(() => $('#splash').remove(), 500);
     aplicarAvatar();
     if (!S.perfil) setTimeout(() => abrir('perfil'), 400); else setTimeout(mostrarTutorial, 400);
+    if (!ON.user) setTimeout(() => lembrarConvidado(true), 2500);
+  }
+  // ---------- tela de entrar (antes do jogo) ----------
+  const LG = {modo:'inicio', ocupado:false, provs:null, msg:''};
+  const iosApp = () => /iPhone|iPad|iPod/i.test(navigator.userAgent) && instalado();
+  async function provedores() {
+    if (LG.provs) return LG.provs;
+    try { const r = await fetch(SB_URL + '/auth/v1/settings', {headers:{apikey:SB_KEY}}); const j = await r.json(); LG.provs = Object.assign({}, j.external || {}, {autoconfirm:!!j.mailer_autoconfirm}); }
+    catch (e) { LG.provs = {google:true, email:true}; }
+    return LG.provs;
+  }
+  function renderLogin() {
+    const el = $('#lgCorpo'), pv = LG.provs || {google:true, email:true}, m = LG.modo;
+    let h = '';
+    if (m === 'carregando') h = `<div class="lg-carregando"><div class="lg-roda"></div><b>☁️ Carregando sua fazenda…</b><small>${LG.msg || ''}</small></div>`;
+    else if (m === 'inicio') {
+      h = `<p class="lg-sub">Entre com uma conta para salvar sua fazenda na nuvem e jogar em qualquer aparelho.</p>
+        ${iosApp() ? `<button class="lg-bt email" data-lg="email">✉️ Entrar com e-mail e senha</button>` : ''}
+        ${pv.google !== false ? `<button class="lg-bt google" data-lg="google"><span class="lg-g">G</span> Continuar com Google</button>` : ''}
+        ${pv.facebook ? `<button class="lg-bt facebook" data-lg="facebook"><span class="lg-f">f</span> Continuar com Facebook</button>` : ''}
+        ${!iosApp() ? `<button class="lg-bt email" data-lg="email">✉️ Entrar com e-mail e senha</button>` : ''}
+        <div class="lg-ou"><span>ou</span></div>
+        <button class="lg-bt conv" data-lg="convidado">👤 Jogar como convidado</button>
+        <small class="lg-aviso">Como convidado, a fazenda fica salva só neste aparelho.</small>
+        ${iosApp() ? '<small class="lg-aviso">No iPhone com o jogo instalado, use o <b>e-mail</b>: o Google e o Facebook podem não voltar para o app.</small>' : ''}`;
+    } else if (m === 'email' || m === 'criar') {
+      const cr = m === 'criar';
+      h = `<div class="lg-abas"><button class="${cr ? '' : 'ativa'}" data-lg="email">Entrar</button><button class="${cr ? 'ativa' : ''}" data-lg="criar">Criar conta</button></div>
+        <form id="lgForm" autocomplete="on">
+          <input id="lgEmail" type="email" placeholder="Seu e-mail" autocomplete="email" required value="${esc(LG.email || '')}">
+          <input id="lgSenha" type="password" placeholder="${cr ? 'Crie uma senha (mínimo 6)' : 'Sua senha'}" autocomplete="${cr ? 'new-password' : 'current-password'}" minlength="6" required>
+          ${cr ? '<input id="lgSenha2" type="password" placeholder="Repita a senha" autocomplete="new-password" minlength="6" required>' : ''}
+          <button class="lg-bt verde" type="submit">${cr ? '🌱 Criar conta e jogar' : '▶ Entrar e jogar'}</button>
+        </form>
+        ${cr ? '<small class="lg-aviso">Pode usar qualquer e-mail, inclusive o do iCloud.</small>' : '<button class="lg-link" data-lg="esqueci">Esqueci minha senha</button>'}
+        <div class="lg-msg">${LG.msg || ''}</div>
+        <button class="lg-link" data-lg="inicio">◀ Outras formas de entrar</button>`;
+    } else if (m === 'esqueci') {
+      h = `<p class="lg-sub">Digite seu e-mail. Vamos mandar um link para você criar uma senha nova.</p>
+        <form id="lgForm"><input id="lgEmail" type="email" placeholder="Seu e-mail" autocomplete="email" required value="${esc(LG.email || '')}"><button class="lg-bt verde" type="submit">Mandar link</button></form>
+        <div class="lg-msg">${LG.msg || ''}</div><button class="lg-link" data-lg="email">◀ Voltar</button>`;
+    } else if (m === 'novaSenha') {
+      h = `<p class="lg-sub">Crie sua senha nova:</p>
+        <form id="lgForm"><input id="lgSenha" type="password" placeholder="Senha nova (mínimo 6)" autocomplete="new-password" minlength="6" required><button class="lg-bt verde" type="submit">Salvar senha e jogar</button></form>
+        <div class="lg-msg">${LG.msg || ''}</div>`;
+    }
+    el.innerHTML = h;
+  }
+  function abrirLogin(modo) { LG.modo = modo || 'inicio'; LG.msg = ''; $('#telaLogin').classList.add('on'); renderLogin(); provedores().then(() => { if (LG.modo === 'inicio') renderLogin(); }); }
+  function esperarSincronizar() { // depois de entrar: espera a fazenda da conta chegar antes de abrir o jogo
+    LG.modo = 'carregando'; renderLogin();
+    try { sessionStorage.setItem('terralia-entrar', '1'); } catch (e) {}
+    const t0 = Date.now(), iv = setInterval(() => {
+      if (ON.recarregando) { clearInterval(iv); return; } // vai recarregar com a fazenda da conta e entrar sozinho
+      if (ON.sincronizado || ON.pausado || Date.now() - t0 > 9000) { clearInterval(iv); iniciarJogo(false); }
+    }, 200);
+  }
+  const msgErro = e => { const m = (e && e.message || '') + ''; return /Invalid login/i.test(m) ? 'E-mail ou senha incorretos.' : /already registered|already been registered/i.test(m) ? 'Esse e-mail já tem conta. Use a aba Entrar.' : /Password should be/i.test(m) ? 'A senha precisa ter pelo menos 6 caracteres.' : /rate limit|too many/i.test(m) ? 'Muitas tentativas. Espere alguns minutos.' : /not confirmed/i.test(m) ? 'Confirme seu e-mail pelo link que mandamos e tente de novo.' : /network|fetch/i.test(m) ? 'Sem internet agora.' : 'Não deu: ' + m; };
+  async function enviarLogin(ev) {
+    ev.preventDefault(); if (LG.ocupado || !ON.sb) return; const m = LG.modo;
+    const email = ($('#lgEmail') || {}).value, senha = ($('#lgSenha') || {}).value;
+    if (email) LG.email = email;
+    LG.ocupado = true; const bt = $('#lgForm button'); if (bt) bt.disabled = true;
+    try {
+      if (m === 'criar') {
+        if (senha !== $('#lgSenha2').value) throw {message:'As senhas não são iguais.'};
+        const {data, error} = await ON.sb.auth.signUp({email, password:senha, options:{emailRedirectTo:location.origin + location.pathname}}); if (error) throw error;
+        if (!data.session) { LG.msg = '📧 Conta criada! Abra o link que mandamos para o seu e-mail e depois entre aqui.'; LG.modo = 'email'; }
+        else esperarSincronizar();
+      } else if (m === 'email') {
+        const {error} = await ON.sb.auth.signInWithPassword({email, password:senha}); if (error) throw error; esperarSincronizar();
+      } else if (m === 'esqueci') {
+        const {error} = await ON.sb.auth.resetPasswordForEmail(email, {redirectTo:location.origin + location.pathname}); if (error) throw error;
+        LG.msg = '📧 Pronto! Veja seu e-mail (e a caixa de spam).';
+      } else if (m === 'novaSenha') {
+        const {error} = await ON.sb.auth.updateUser({password:senha}); if (error) throw error; esperarSincronizar();
+      }
+    } catch (e) { LG.msg = '⚠️ ' + (e.message && !e.status && !e.code && !e.name ? e.message : msgErro(e)); }
+    LG.ocupado = false; if (LG.modo !== 'carregando') renderLogin();
+  }
+  async function entrarOAuth(prov) {
+    if (!ON.sb) { LG.msg = 'Sem conexão com o servidor agora'; return; }
+    try { sessionStorage.setItem('terralia-entrar', '1'); } catch (e) {}
+    ON.recarregando = true; LG.modo = 'carregando'; LG.msg = 'Abrindo ' + (prov === 'google' ? 'o Google' : 'o Facebook') + '…'; renderLogin();
+    const {error} = await ON.sb.auth.signInWithOAuth({provider:prov, options:{redirectTo:location.origin + location.pathname, queryParams:prov === 'google' ? {prompt:'select_account'} : undefined}});
+    if (error) { ON.recarregando = false; LG.modo = 'inicio'; renderLogin(); toast('Não deu para entrar: ' + error.message); }
+  }
+  $('#telaLogin').addEventListener('click', e => {
+    const b = e.target.closest('[data-lg]'); if (!b) return; const a = b.dataset.lg;
+    if (a === 'google' || a === 'facebook') { if (!podeLogar()) { toast('Abra o jogo pelo endereço do site para entrar'); return; } entrarOAuth(a); return; }
+    if (a === 'convidado') { if (jogoIniciado) { $('#telaLogin').classList.remove('on'); return; } iniciarJogo(true); return; }
+    if (a === 'fechar') { $('#telaLogin').classList.remove('on'); if (!jogoIniciado) iniciarJogo(true); return; }
+    LG.modo = a; LG.msg = ''; renderLogin(); const i = $('#lgEmail'); if (i && !MOBILE) i.focus();
+  });
+  $('#telaLogin').addEventListener('submit', enviarLogin);
+  $('#telaLogin').addEventListener('keydown', e => e.stopPropagation());
+  // lembrete para quem joga sem conta
+  let ultLembrete = 0;
+  function lembrarConvidado(forcar) {
+    if (ON.user || VISITA || !jogoIniciado || (!forcar && Date.now() - ultLembrete < 15 * 60000)) return;
+    ultLembrete = Date.now(); const f = $('#faixaConta'); f.classList.add('on'); clearTimeout(f._t); f._t = setTimeout(() => f.classList.remove('on'), 12000);
+  }
+  setInterval(() => lembrarConvidado(false), 60000);
+  $('#faixaConta').addEventListener('click', e => { $('#faixaConta').classList.remove('on'); if (!e.target.closest('.fc-x')) abrirLogin('inicio'); });
+  ($('#btnJogar') || document.createElement('i')).addEventListener('click', async () => {
+    if (ON.user) { iniciarJogo(true); return; }
+    if (ON.sb) { try { const {data} = await ON.sb.auth.getSession(); if (data && data.session) { iniciarJogo(true); return; } } catch (e) {} }
+    if (!ON.sb || !podeLogar()) { iniciarJogo(true); return; } // sem servidor (arquivo local/prévia): joga direto
+    abrirLogin('inicio');
   });
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
