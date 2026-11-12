@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.36'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.37'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -492,7 +492,7 @@
   canvas.addEventListener('pointerdown', e => { if (e.pointerType !== 'touch') return; dedos2.set(e.pointerId, {x:e.clientX, y:e.clientY}); gesto = null; });
   canvas.addEventListener('pointermove', e => {
     if (!dedos2.has(e.pointerId)) return; dedos2.set(e.pointerId, {x:e.clientX, y:e.clientY});
-    if (dedos2.size !== 2 || editar.arrastando) return;
+    if (dedos2.size !== 2 || editar.arrastando || !(S && S.camLivre)) return; // câmera travada: 2 dedos só dão zoom
     const [a, b] = [...dedos2.values()], ang = Math.atan2(b.y - a.y, b.x - a.x), my = (a.y + b.y) / 2;
     if (!gesto) { gesto = {ang, my}; return; }
     let da = ang - gesto.ang; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
@@ -524,7 +524,8 @@
   let QUAL = 'alta'; // alta / media / leve (definida ao carregar o save)
   const segs = n => QUAL === 'alta' ? Math.round(n * 1.3) : n; // mais lados = peças mais redondas
   function aplicarQualidade() {
-    gov.max = gov.pr = Math.min(window.devicePixelRatio || 1, QUAL === 'leve' ? 1 : QUAL === 'media' ? 1.5 : 2);
+    gov.max = gov.pr = Math.min(window.devicePixelRatio || 1, QUAL === 'leve' ? 1 : QUAL === 'media' ? 1.5 : 2.5);
+    gov.min = Math.min(gov.max, QUAL === 'alta' ? 1.75 : 1); // na Alta a nitidez nunca cai abaixo de 1,75×
     renderer.setPixelRatio(gov.pr);
     sol.castShadow = QUAL !== 'leve';
     const ms = QUAL === 'alta' ? 2048 : 1024;
@@ -2165,14 +2166,14 @@
   }
   const coletarMoinho = () => coletarFab('moinho');
   const prontosFab = (t, oid) => Object.entries(fabEstado(t, oid).prontos).reduce((a, [id, v]) => a + v * (item(id).rende || 1), 0);
-  const baloes = {};
+  const baloes = {}; let escBalao = 1;
   function balao_(id, y) {
     let b = baloes[id];
     if (!b) {
       const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256;
       const tx = new THREE.CanvasTexture(cv); tx.encoding = THREE.sRGBEncoding; tx.anisotropy = ANISO;
       b = baloes[id] = new THREE.Sprite(new THREE.SpriteMaterial({map:tx, depthTest:false, transparent:true}));
-      b.renderOrder = 10; b.scale.set(2.2, 1.1, 1); b.userData.cv = cv; b.visible = false; scene.add(b);
+      b.renderOrder = 10; b.center.set(.5, .15); b.scale.set(2.2 * escBalao, 1.1 * escBalao, 1); b.userData.cv = cv; b.visible = false; scene.add(b);
     }
     b.userData.y = y; return b;
   }
@@ -3047,7 +3048,10 @@
       h += `<div class="linha-cfg"><span>🎵 Música</span><input type="range" class="vol" data-vol="musica" min="0" max="1" step="0.05" value="${au.musica ?? .5}"></div>
         <div class="linha-cfg"><span>🔔 Efeitos e bichos</span><input type="range" class="vol" data-vol="efeitos" min="0" max="1" step="0.05" value="${au.efeitos ?? .8}"></div>
         <div class="linha-cfg"><span>${au.mudo ? '🔇' : '🔊'} Som</span><button class="btn ${au.mudo ? 'vermelho' : ''}" data-acao="mudo">${au.mudo ? 'Desligado' : 'Ligado'}</button></div>
+        <div class="linha-cfg"><span>🎥 Câmera</span><span class="botoes-cfg"><button class="btn ${S.camLivre ? '' : 'verde'}" data-cam="travada">🔒 Travada</button><button class="btn ${S.camLivre ? 'verde' : ''}" data-cam="livre">🔓 Livre</button></span></div>
+        <p class="dica cfg-dica">${S.camLivre ? 'Dois dedos: pinça dá zoom, girar os dedos gira a fazenda e arrastar para cima/baixo inclina.' : 'Ângulo fixo: dois dedos só dão zoom. O botão Visão gira de 90° em 90°.'}</p>
         <div class="linha-cfg"><span>🎨 Gráficos</span><span class="botoes-cfg">${[['alta', 'Alta'], ['media', 'Média'], ['leve', 'Leve']].map(([k, n]) => `<button class="btn ${S.qual === k ? 'verde' : ''}" data-qual="${k}">${n}</button>`).join('')}</span></div>
+        <p class="dica cfg-dica">Nitidez agora: <b>${String(gov.pr.toFixed(2)).replace(/\.?0+$/, '').replace('.', ',')}×</b> (tela ${String(+(window.devicePixelRatio || 1).toFixed(2)).replace('.', ',')}×). ${S.qual === 'alta' ? 'Na Alta ela nunca cai abaixo de 1,75×.' : 'Se travar, o jogo baixa um pouco sozinho.'}</p>
         ${instalado() ? '' : `<div class="linha-cfg"><span>📲 Jogar como app (tela cheia, sem barra do navegador)</span>${pedidoInstalar ? '<button class="btn verde" data-acao="instalar">Instalar</button>' : '<span class="det">No Chrome: menu ⋮ → Instalar app</span>'}</div>`}
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
@@ -3377,6 +3381,9 @@
     const pd = e.target.closest('[data-pedido]'); if (pd) { entregarPedido(+pd.dataset.pedido); return; }
     const tp = e.target.closest('[data-trocar-pedido]'); if (tp) { trocarPedido(+tp.dataset.trocarPedido); return; }
     const ct = e.target.closest('[data-conta]'); if (ct) { trocarConta(ct.dataset.conta); return; }
+    const cb = e.target.closest('[data-cam]'); if (cb) { S.camLivre = cb.dataset.cam === 'livre';
+      if (!S.camLivre) { const base = Math.PI / 4 + (S.az || 0) * Math.PI / 2; azAlvo = base + 2 * Math.PI * Math.round((azAlvo - base) / (2 * Math.PI)); inclina = 0; S.azLivre = null; S.inclina = 0; }
+      salvar(); renderJanela(); toast(S.camLivre ? '🔓 Câmera livre: gire e incline com dois dedos' : '🔒 Câmera travada no ângulo clássico'); return; }
     const qb = e.target.closest('[data-qual]'); if (qb) { if (S.qual !== qb.dataset.qual) { S.qual = qb.dataset.qual; S.leve = S.qual === 'leve'; salvar(); toast('🎨 Aplicando os gráficos…'); setTimeout(() => location.reload(), 500); } return; }
     const nm = e.target.closest('[data-nome]'); if (nm) { escolherNome(nm.dataset.nome); return; }
     const sb = e.target.closest('[data-sub]'); if (sb) { subLoja = sb.dataset.sub; renderJanela(); $('#jcorpo').scrollTop = 0; return; }
@@ -3551,12 +3558,14 @@
     desloc.set(Math.max(-lim, Math.min(lim, tg.x)) - tg.x, -tg.y, Math.max(-lim, Math.min(lim, tg.z)) - tg.z);
     if (desloc.lengthSq()) { tg.add(desloc); camera.position.add(desloc); }
     ajustarCamera(dt);
+    { const kb = Math.round(Math.max(1, camera.position.distanceTo(controls.target) / 21) * 20) / 20; // longe: balões crescem para continuar legíveis
+      if (kb !== escBalao) { escBalao = kb; for (const k in baloes) baloes[k].scale.set(2.2 * kb, 1.1 * kb, 1); } }
     quadro++; renderer.shadowMap.needsUpdate = quadro % 3 === 0;
     // qualidade automática: se estiver travando, baixa um pouco a resolução; quando melhorar, volta
     gov.soma += dt; gov.n++;
     if (gov.soma > 2.5) {
       const med = gov.soma / gov.n; gov.soma = gov.n = 0;
-      if (med > 1 / 38 && gov.pr > 1) { gov.pr = Math.max(1, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
+      if (med > 1 / 38 && gov.pr > (gov.min || 1)) { gov.pr = Math.max(gov.min || 1, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
       else if (med < 1 / 56 && gov.pr < gov.max) { if (++gov.bons >= 2) { gov.pr = Math.min(gov.max, gov.pr + .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); } }
       else gov.bons = 0;
     }
@@ -4017,13 +4026,15 @@
       if (u && !jogoIniciado && ev !== 'PASSWORD_RECOVERY') { let q = null; try { q = sessionStorage.getItem('terralia-entrar'); } catch (e) {} if (q) setTimeout(() => { if (!jogoIniciado) { $('#telaLogin').classList.add('on'); esperarSincronizar(); } }, 50); }
       if (u) $('#faixaConta').classList.remove('on');
       setTimeout(renderContaSplash, 0);
-      ON.user = u || null;
+      ON.user = u || null; ON.token = sess ? sess.access_token : null;
       if (novo) { ON.sincronizado = false; setTimeout(sincronizarAoEntrar, 0); }
       if (janela === 'config' || janela === 'ranking') renderJanela();
     });
-    setInterval(() => { if (ON.user && ON.sujo && Date.now() - ON.ultimo > 30000) enviarSave(); }, 5000);
+    setInterval(() => { if (ON.user && ON.sujo && Date.now() - (ON.tentou || 0) > 3500) enviarSave(); }, 1500); // salva na nuvem ~3 s depois de qualquer mudança
+    setInterval(() => { if (!document.hidden && ON.user && ON.sincronizado && !ON.expulso) conferirSessao(); }, 8000);
     setInterval(batida, 60000); setTimeout(batida, 8000);
-    document.addEventListener('visibilitychange', () => { if (document.hidden && ON.user && ON.sujo) enviarSave(); });
+    document.addEventListener('visibilitychange', () => { if (document.hidden) salvarAoFechar(); else if (ON.user && ON.sincronizado && !ON.expulso) conferirSessao(); });
+    addEventListener('pagehide', salvarAoFechar);
   }
   async function entrarGoogle() {
     if (!ON.sb) { toast('Sem conexão com o servidor agora'); return; }
@@ -4076,6 +4087,7 @@
     const uid = ON.user.id; lembrarConta(ON.user);
     const {data, error} = await lerNuvem('dados, atualizado');
     if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); setTimeout(sincronizarAoEntrar, 15000); return; } // tenta de novo depois; até lá não envia nada
+    await assumirSessao(); // entrou aqui: o outro aparelho que estiver com a conta é desconectado
     const nv = data && (data.dados || {}), ver = data ? verDe(data.atualizado) : 0;
     const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
     if (S.uid && S.uid !== uid) { // a fazenda aberta é de OUTRA conta: guarda ela e abre a desta conta
@@ -4168,8 +4180,10 @@
   function usarSaveNuvem() { if (ON.nuvem) carregarDaNuvem(ON.nuvem, ON.nuvemVer || 0); }
   async function enviarSave(avisar, forcar) {
     if (!ON.user || ON.enviando || ON.recarregando || !ON.sincronizado || (ON.pausado && !forcar)) return; // nunca envia antes de comparar com a nuvem
-    ON.enviando = true;
+    if (ON.expulso) return;
+    ON.enviando = true; ON.tentou = Date.now();
     try {
+      if (!(await conferirSessao())) { ON.enviando = false; return; } // a conta foi aberta em outro aparelho: não sobrescreve
       if (!forcar && S.uid === ON.user.id) { // confere se outro aparelho salvou desde a última vez
         const {data} = await lerNuvem('atualizado');
         if (data && verDe(data.atualizado) !== S.nuvemVer) {
@@ -4181,8 +4195,9 @@
       const agora = new Date().toISOString(), p = S.perfil || {};
       S.uid = ON.user.id; S.nuvemVer = verDe(agora); salvar(); S.salvoEm = S.nuvemVer; salvar();
       const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
-      const r2 = r1.error ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora, visto_em:agora});
-      if (!r1.error) ON.sb.from('fazendas_publicas').upsert({user_id:ON.user.id, dados:fotoFazenda(), atualizado:agora}).then(() => {}, () => {});
+      const rank = !r1.error && (avisar || Date.now() - (ON.ultRank || 0) > 60000); if (rank) ON.ultRank = Date.now(); // ranking e foto pública: no máximo 1 vez por minuto
+      const r2 = !rank ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora, visto_em:agora});
+      if (rank) ON.sb.from('fazendas_publicas').upsert({user_id:ON.user.id, dados:fotoFazenda(), atualizado:agora}).then(() => {}, () => {});
       if (r2.error && r2.error.code === '23505') { ON.sujo = false; ON.ultimo = Date.now(); ON.erro = 'escolha outro nome para o ranking'; abrirEscolhaNome('ocupado'); ON.enviando = false; return; }
       const err = r1.error || r2.error;
       if (err) { ON.erro = err.message; if (avisar) toast('☁️ Não deu para salvar na nuvem: ' + err.message); }
@@ -4190,6 +4205,43 @@
     } catch (e) { ON.erro = 'sem internet'; }
     ON.enviando = false;
     if (janela === 'config') renderJanela();
+  }
+
+  // ---------- uma conta = um aparelho por vez ----------
+  const APARELHO = (() => { try { let a = localStorage.getItem('terralia-aparelho'); if (!a) { a = Date.now().toString(36) + Math.random().toString(36).slice(2, 10); localStorage.setItem('terralia-aparelho', a); } return a; } catch (e) { return 'x' + Math.random().toString(36).slice(2); } })();
+  async function assumirSessao() {
+    if (!ON.user || VISITA) return;
+    try { await ON.sb.from('sessao_ativa').upsert({user_id:ON.user.id, aparelho:APARELHO, desde:new Date().toISOString()}); ON.expulso = false; } catch (e) {}
+  }
+  async function conferirSessao() { // true = este aparelho continua com a conta
+    if (!ON.user || VISITA) return true; if (ON.expulso) return false;
+    try {
+      const {data, error} = await ON.sb.from('sessao_ativa').select('aparelho').eq('user_id', ON.user.id).maybeSingle();
+      if (error) return true; // sem internet: segue jogando, confere de novo depois
+      if (!data) { await assumirSessao(); return true; }
+      if (data.aparelho !== APARELHO) { expulsar(); return false; }
+    } catch (e) {}
+    return true;
+  }
+  function expulsar() {
+    if (ON.expulso) return; ON.expulso = true; ON.pausado = true; fechar();
+    let el = $('#telaExpulso');
+    if (!el) { el = document.createElement('div'); el.id = 'telaExpulso'; document.body.appendChild(el);
+      el.addEventListener('click', async e => { const b = e.target.closest('[data-exp]'); if (!b) return;
+        el.querySelectorAll('button').forEach(x => x.disabled = true);
+        if (b.dataset.exp === 'aqui') { await assumirSessao(); const {data} = await lerNuvem('dados, atualizado'); if (data) carregarDaNuvem(data.dados, verDe(data.atualizado)); else location.reload(); }
+        else { ON.sujo = false; sairDaConta(); }
+      }); }
+    el.innerHTML = `<div class="exp-caixa"><div class="exp-ic">📱</div><h3>Sua conta foi aberta em outro aparelho</h3><p>Para não perder nada, a fazenda só pode ficar aberta em um lugar por vez. O progresso de lá está salvo na nuvem.</p>
+      <div class="exp-bt"><button class="btn verde grande" data-exp="aqui">Jogar aqui</button><button class="btn" data-exp="sair">Sair da conta</button></div></div>`;
+    el.classList.add('on');
+  }
+  function salvarAoFechar() { // ao fechar/minimizar: envio que o navegador termina mesmo com a página fechando
+    salvar(); if (!ON.user || !ON.sujo || !ON.sincronizado || ON.pausado || ON.expulso || ON.recarregando || !ON.token || S.uid !== ON.user.id) return;
+    const agora = new Date().toISOString(); S.nuvemVer = verDe(agora); S.salvoEm = S.nuvemVer; salvar();
+    const corpo = JSON.stringify({user_id:ON.user.id, dados:S, atualizado:agora});
+    if (corpo.length > 60000) { enviarSave(); return; } // grande demais para o envio especial
+    try { fetch(SB_URL + '/rest/v1/saves?on_conflict=user_id', {method:'POST', keepalive:true, headers:{apikey:SB_KEY, Authorization:'Bearer ' + ON.token, 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=minimal'}, body:corpo}); ON.sujo = false; ON.ultimo = Date.now(); } catch (e) { enviarSave(); }
   }
 
   // ================= CHAT (global e da cooperativa) =================
@@ -4386,7 +4438,7 @@
   if (!S.audio) S.audio = {musica:.5, efeitos:.8, mudo:false};
   if (window.SOM) { SOM.config(S.audio); SOM.tocarMusica(); }
   montarCeu(); montarIlha(); montarTerras(); montarNuvens(); montarObjetos(); montarPersonagens(); montarTonho();
-  azAtual = azAlvo = S.azLivre != null ? S.azLivre : Math.PI / 4 + (S.az || 0) * Math.PI / 2; inclina = S.inclina || 0;
+  azAtual = azAlvo = S.camLivre && S.azLivre != null ? S.azLivre : Math.PI / 4 + (S.az || 0) * Math.PI / 2; inclina = S.camLivre ? S.inclina || 0 : 0;
   redimensionar();
   atualizarProducao();
   tudo();
@@ -4621,7 +4673,7 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+    _teste:{ expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),

@@ -801,3 +801,12 @@ body.seletor-aberto .faixa-conta{opacity:0;pointer-events:none}
 }
 .gbtn i.emo-gbtn{font-style:normal;font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .loja-topo .subabas .editar-sub{margin-left:auto;background:#ffe9a8;border-color:#c89a2c;white-space:nowrap}
+/* v0.37 — conta aberta em outro aparelho */
+#telaExpulso{position:fixed;inset:0;z-index:300;background:rgba(40,25,10,.72);display:none;align-items:center;justify-content:center;padding:16px}
+#telaExpulso.on{display:flex}
+#telaExpulso .exp-caixa{background:var(--creme);border:4px solid var(--madeira);border-radius:24px;box-shadow:0 8px 0 var(--madeira);max-width:420px;width:100%;padding:18px 20px;text-align:center}
+#telaExpulso .exp-ic{font-size:44px;line-height:1}
+#telaExpulso h3{margin:8px 0 6px;font-size:19px;color:var(--texto)}
+#telaExpulso p{margin:0 0 14px;font-size:14px;color:#7a5a3a}
+#telaExpulso .exp-bt{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.cfg-dica{margin:-2px 4px 8px;font-size:12px}
