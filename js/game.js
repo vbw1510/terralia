@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.35'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.36'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -17,21 +17,21 @@
   // ================= DADOS =================
   const CROPS = [
     // trigo, milho e cenoura: os 3 primeiros (baratos e usados na ração dos bichos); alface vem depois
-    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:30,  preco:7,   xp:1,  nivel:1},
-    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:5,   tempo:45,  preco:15,  xp:2,  nivel:1},
-    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:60,  preco:26,  xp:4,  nivel:1},
-    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:20,  tempo:90,  preco:50,  xp:7,  nivel:2},
-    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:120,  preco:84,  xp:11, nivel:3},
-    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:180, preco:148, xp:17, nivel:4},
-    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:270, preco:285, xp:28, nivel:5},
+    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:60,  preco:7,   xp:1,  nivel:1},
+    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:5,   tempo:90,  preco:15,  xp:2,  nivel:1},
+    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:120,  preco:26,  xp:4,  nivel:1},
+    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:20,  tempo:180,  preco:50,  xp:7,  nivel:2},
+    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:240,  preco:84,  xp:11, nivel:3},
+    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:360, preco:148, xp:17, nivel:4},
+    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:720, preco:285, xp:28, nivel:5},
     {id:'batata',  nome:'Batata',  emoji:'🥔', semente:45,  tempo:300, preco:118, xp:18, nivel:7},
-    {id:'girassol',nome:'Girassol',emoji:'🌻', semente:70,  tempo:420, preco:178, xp:26, nivel:9},
-    {id:'cana',    nome:'Cana',    emoji:'🎋', semente:65,  tempo:480, preco:172, xp:28, nivel:11},
-    {id:'algodao', nome:'Algodão', emoji:'🤍', semente:110, tempo:600, preco:285, xp:38, nivel:13},
-    {id:'pimentao',nome:'Pimentão',emoji:'🫑', semente:95,  tempo:540, preco:250, xp:35, nivel:15},
-    {id:'melancia',nome:'Melancia',emoji:'🍉', semente:190, tempo:900, preco:520, xp:60, nivel:18},
-    {id:'cafe',    nome:'Café',    emoji:'🫘', semente:280, tempo:1200,preco:780, xp:85, nivel:22},
-    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:390, preco:590, xp:45, nivel:6},
+    {id:'girassol',nome:'Girassol',emoji:'🌻', semente:70,  tempo:480, preco:178, xp:26, nivel:9},
+    {id:'cana',    nome:'Cana',    emoji:'🎋', semente:65,  tempo:420, preco:172, xp:28, nivel:11},
+    {id:'algodao', nome:'Algodão', emoji:'🤍', semente:110, tempo:780, preco:285, xp:38, nivel:13},
+    {id:'pimentao',nome:'Pimentão',emoji:'🫑', semente:95,  tempo:600, preco:250, xp:35, nivel:15},
+    {id:'melancia',nome:'Melancia',emoji:'🍉', semente:190, tempo:1080, preco:520, xp:60, nivel:18},
+    {id:'cafe',    nome:'Café',    emoji:'🫘', semente:280, tempo:1500,preco:780, xp:85, nivel:22},
+    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:1200, preco:590, xp:45, nivel:6},
   ];
   const EXTRAS = [
     {id:'ovo',   nome:'Ovo',   emoji:'🥚', preco:18, animal:'galinha'},
@@ -232,19 +232,21 @@
   const G = 2.15;                 // tamanho de uma célula
   // expansões: cada anel aumenta a ilha em 5 células para cada lado (lido antes de montar o mapa; comprar uma expansão recarrega o jogo)
   const VISITA = (() => { try { return JSON.parse(sessionStorage.getItem('terralia-visita')); } catch (e) { return null; } })(); // visitando a fazenda de outro jogador
-  const ANEL = (() => { try { return Math.max(0, Math.min(6, (VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1'))).expansao | 0)); } catch (e) { return 0; } })();
+  let ANEL = (() => { try { return Math.max(0, Math.min(6, (VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1'))).expansao | 0)); } catch (e) { return 0; } })();
   const MAX_ANEL = 6;
-  const OFF = 12 + 5 * ANEL, ZONA = 5, NZ = 5 + 2 * ANEL; // células de -OFF a OFF, terras de 5×5 células
-  const MEIA = (OFF + .5) * G + 1.6; // metade do lado da ilha quadrada
+  const ZONA = 5; let OFF = 12 + 5 * ANEL, NZ = 5 + 2 * ANEL; // células de -OFF a OFF, terras de 5×5 células
+  let MEIA = (OFF + .5) * G + 1.6; // metade do lado da ilha quadrada
   const zonaDe = (cx, cz) => [Math.floor((cx + 12) / ZONA), Math.floor((cz + 12) / ZONA)]; // chaves das terras não mudam quando a ilha cresce
   const zKey = (zx, zz) => zx + ',' + zz;
   const celulaUtil = (cx, cz) => Math.abs(cx) <= OFF && Math.abs(cz) <= OFF;
   const ZONAS = []; // terras que existem (com espaço suficiente dentro da ilha)
+  function calcZonas() { ZONAS.length = 0;
   for (let zx = -ANEL; zx < 5 + ANEL; zx++) for (let zz = -ANEL; zz < 5 + ANEL; zz++) {
     const cel = [];
     for (let i = 0; i < ZONA; i++) for (let j = 0; j < ZONA; j++) { const cx = zx * ZONA - 12 + i, cz = zz * ZONA - 12 + j; if (celulaUtil(cx, cz)) cel.push([cx, cz]); }
     if (cel.length >= 6) ZONAS.push({key:zKey(zx, zz), zx, zz, cel, anel:Math.max(-zx, -zz, zx - 4, zz - 4, 0), inicial:zx >= 1 && zx <= 3 && zz >= 1 && zz <= 3});
-  }
+  } }
+  calcZonas();
   const zonaLiberada = (cx, cz) => { const [zx, zz] = zonaDe(cx, cz); return S.zonas.includes(zKey(zx, zz)); };
   const dims = o => o.rot % 2 ? [TIPOS[o.tipo].d, TIPOS[o.tipo].w] : [TIPOS[o.tipo].w, TIPOS[o.tipo].d];
   const centro = o => { const [W, D] = dims(o); return V3((o.ox + (W - 1) / 2) * G, 0, (o.oz + (D - 1) / 2) * G); };
@@ -513,7 +515,8 @@
   const sol = new THREE.DirectionalLight(C(0xffd9a0), 2.35);
   sol.position.set(24, 22, 9); sol.castShadow = true;
   sol.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
-  { const L = Math.min(52, MEIA + 4); Object.assign(sol.shadow.camera, {left:-L, right:L, top:L, bottom:-L, near:1, far:90 + 2 * L}); }
+  const ajustarSombraSol = () => { const L = Math.min(52, MEIA + 4); Object.assign(sol.shadow.camera, {left:-L, right:L, top:L, bottom:-L, near:1, far:90 + 2 * L}); sol.shadow.camera.updateProjectionMatrix(); };
+  ajustarSombraSol();
   sol.shadow.bias = -0.0005; sol.shadow.normalBias = .02;
   scene.add(sol);
   renderer.shadowMap.autoUpdate = false; // a sombra é recalculada a cada 3 quadros (a ilha quase não se mexe)
@@ -1117,7 +1120,9 @@
     g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
   let sombraNuvens = null; const borboletas = [];
+  let ilhaObjs = [];
   function montarIlha() {
+    const antes = new Set(scene.children);
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
     aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(0x56b4e6), roughness:.3, metalness:.05}));
     aguaMar.position.y = -1.55; scene.add(aguaMar);
@@ -1197,6 +1202,7 @@
       [-1.6, 1.6].forEach(x => { const f = arbusto(.55); f.position.set(x, 0, .15); placa.add(f); });
       placa.position.set(MEIA - .3, -.05, MEIA - .3); placa.rotation.y = Math.PI / 4; placa.scale.setScalar(1.5); scene.add(placa);
       if (document.fonts) document.fonts.ready.then(() => { desenhar(); tx.needsUpdate = true; }); }
+    ilhaObjs = scene.children.filter(o => !antes.has(o));
   }
   const terras = {}; // decoração + placa das terras bloqueadas
   const clicaveisTerra = [];
@@ -2390,8 +2396,38 @@
 
   // ================= MODO EDIÇÃO =================
   const editar = {ativo:false, sel:null, orig:null, arrastando:false, valido:true};
-  const grade = new THREE.GridHelper((2 * OFF + 1) * G, 2 * OFF + 1, 0xffffff, 0xffffff);
-  grade.material.transparent = true; grade.material.opacity = .28; grade.position.y = .04; grade.visible = false; scene.add(grade);
+  let grade;
+  const montarGrade = () => { if (grade) { scene.remove(grade); grade.geometry.dispose(); }
+    grade = new THREE.GridHelper((2 * OFF + 1) * G, 2 * OFF + 1, 0xffffff, 0xffffff);
+    grade.material.transparent = true; grade.material.opacity = .28; grade.position.y = .04; grade.visible = !!(typeof editar !== 'undefined' && editar.ativo); scene.add(grade); };
+  montarGrade();
+  // a ilha cresce na hora, sem recarregar o jogo
+  function liberarIlha(obj) { scene.remove(obj); obj.traverse(m => { if (m.geometry) m.geometry.dispose(); }); }
+  function reconstruirIlha(novoAnel) {
+    tirarPreviaIlha();
+    ilhaObjs.forEach(liberarIlha); ilhaObjs = []; borboletas.length = 0;
+    for (const k in terras) { liberarIlha(terras[k]); delete terras[k]; } clicaveisTerra.length = 0;
+    ANEL = novoAnel; OFF = 12 + 5 * ANEL; NZ = 5 + 2 * ANEL; MEIA = (OFF + .5) * G + 1.6;
+    calcZonas(); montarIlha(); montarTerras(); montarGrade(); ajustarSombraSol();
+    if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+  }
+  // prévia em cinza de como a ilha fica depois de crescer
+  let previaIlha = null, previaTimer = 0, previaDist = 0;
+  function tirarPreviaIlha() { if (!previaIlha) return; liberarIlha(previaIlha); previaIlha = null; if (previaDist) { controls.maxDistance = previaDist; previaDist = 0; } clearTimeout(previaTimer); document.body.classList.remove('previa-ilha'); }
+  function mostrarPreviaIlha() {
+    tirarPreviaIlha(); fechar();
+    const M2 = (12 + 5 * (ANEL + 1) + .5) * G + 1.6, g = new THREE.Group();
+    const sh = formaQuadrada(M2, 4); sh.holes.push(formaQuadrada(MEIA + 2.4, 6));
+    const anel = new THREE.Mesh(new THREE.ShapeGeometry(sh, 12), new THREE.MeshBasicMaterial({color:0x9a9a9a, transparent:true, opacity:.72, depthWrite:false}));
+    anel.rotation.x = -Math.PI / 2; anel.position.y = .08; anel.renderOrder = 6; g.add(anel);
+    const borda = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(formaQuadrada(M2, 4).getPoints(12).map(p => V3(p.x, 0, -p.y))), new THREE.LineBasicMaterial({color:0xffffff}));
+    borda.position.y = .12; g.add(borda);
+    scene.add(g); previaIlha = g; document.body.classList.add('previa-ilha');
+    { const d = camera.position.clone().sub(controls.target); previaDist = controls.maxDistance; controls.maxDistance = 72; d.setLength(66); focar(V3(0, 0, 0)); camera.position.copy(controls.target).add(d); controls.update(); }
+    toast('🏝️ A área cinza é o tamanho novo da ilha. Toque em qualquer lugar para fechar a prévia');
+    previaTimer = setTimeout(tirarPreviaIlha, 12000);
+    setTimeout(() => addEventListener('pointerdown', tirarPreviaIlha, {once:true}), 400);
+  }
   const pegada = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:C(0x5cd65c), transparent:true, opacity:.45, depthWrite:false}));
   pegada.material.depthTest = false; pegada.rotation.x = -Math.PI / 2; pegada.position.y = .4; pegada.visible = false; pegada.renderOrder = 8; scene.add(pegada);
   const ferrEd = $('#ferrEdicao');
@@ -2645,7 +2681,7 @@
     {txt:'Galinhas só botam ovos depois de comer. Você ganhou rações de presente! Toque no <b>galinheiro</b> para dar ração.', entrar:() => fechar(), p3:() => centro(cercadosDe('galinha')[0]).add(V3(0, 1.5, 0)), el:() => janela ? null : undefined, ok:() => S.stats.alimentou > 0},
     {txt:'Quando a ração acabar, você faz mais no <b>Moinho</b>. A ração é feita de <b>trigo</b> 🌾. Toma 6 trigos de presente!', botao:'Oba!', entrar:() => { S.celeiro.trigo = (S.celeiro.trigo || 0) + 6; renderHotbar(); }},
     {txt:'Plante <b>3 trigos</b>: toque num canteiro vazio e escolha o <b>trigo</b> (ou arraste por vários). Não esqueça de regar!', el:() => janela ? null : seletorAberto ? $('[data-sem=trigo]') : null, ok:() => (S.stats.plantou.trigo || 0) >= 3},
-    {txt:'Agora compre um <b>Moinho</b> na loja, na aba Construções.', el:() => janela === 'loja' && subLoja === 'construcoes' ? $('[data-construir=moinho]') : janela === 'loja' ? $('[data-sub=construcoes]') : $('.cantos [data-abrir=construir]'), ok:() => nTipo('moinho') > 0},
+    {txt:'Agora compre um <b>Moinho</b> na loja, na aba Construções.', el:() => janela === 'loja' && subLoja === 'construcoes' ? $('[data-construir=moinho]') : janela === 'loja' ? $('[data-sub=construcoes]') : $('.cantos [data-abrir=loja]'), ok:() => nTipo('moinho') > 0},
     {txt:'Escolha o lugar do moinho e toque em <b>Concluir</b>.', el:() => editar.ativo ? $('.barra-edicao [data-ed=concluir]') : null, ok:() => !editar.ativo},
     {txt:'Colha o trigo quando ficar pronto ✨ e depois toque no <b>Moinho</b>.', p3:() => centro(moinhoObj()).add(V3(0, 3, 0)), el:() => janela ? null : undefined, ok:() => janela === 'fabrica'},
     {txt:'Toque em <b>Produzir</b> na Ração de galinha (precisa de 3 trigos no armazém; rende 3 porções).', el:() => $('[data-receita=racaoG]'), ok:() => listaMoinhos().some(o => fabEstado('moinho', o.id).fila.length > 0) || (S.stats.fez.racaoG || 0) > 0},
@@ -2788,8 +2824,8 @@
   let janela = null, zonaSel = null;
   const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
-  const ABAS = ['armazem', 'celeiro', 'animais', 'galpao']; // só estas três dividem a mesma janela
-  const SUBLOJA = {sementes:'🌱 Plantas', insumos:'🧪 Adubos', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias'};
+  const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
+  const SUBLOJA = {sementes:'🌱 Plantas', insumos:'🧪 Adubos', construcoes:'🏗️ Construções', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', materiais:'🧰 Materiais'};
   let subLoja = 'sementes', vitrineChave = '';
   function abrir(nome, sub) {
     if (VISITA && nome !== 'config') { toast('Você está visitando. Volte para casa para usar isso 🏠'); return; }
@@ -2809,7 +2845,8 @@
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
-    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'pedidos', 'banca'].includes(janela));
+    $('.janela').classList.toggle('ani', janela === 'animais');
+    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca'].includes(janela));
     let h = '';
     const tile = o => `<div class="tile ${o.trava ? 'trava' : ''} ${o.cls || ''}" ${o.attr || ''}>
       ${o.selo ? `<span class="selo ${o.seloCls || ''}">${o.selo}</span>` : ''}
@@ -2819,8 +2856,8 @@
     if (janela === 'loja') {
       // loja em "vitrine": cartões grandes lado a lado, rolando para o lado
       const DICAS = {sementes:'Compre algumas para começar. Depois é só plantar o que você colhe: cada colheita rende 2!', insumos:'Toque numa planta crescendo e arraste o adubo ou o spray por cima dela.', construcoes:'Depois de comprar, arraste para onde quiser e toque ✓.',
-        decoracao:'Só deixam a fazenda mais bonita. Dá para vender pela metade no modo edição.', melhorias:'Fazem você ganhar mais e trabalhar mais rápido.'};
-      h += `<div class="loja-topo"><div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}</div>
+        decoracao:'Só deixam a fazenda mais bonita. Dá para vender pela metade no modo edição.', melhorias:'Fazem você ganhar mais e trabalhar mais rápido.', materiais:'Só para testes: materiais pelo dobro do preço de venda.'};
+      h += `<div class="loja-topo"><div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}${subLoja === 'construcoes' ? '<button class="editar-sub" data-acao="editar">✏️ Editar fazenda</button>' : ''}</div>
         <p class="dica">${DICAS[subLoja]}</p></div><div class="vitrine">`;
       if (subLoja === 'sementes') CROPS.forEach(c => {
         const trava = S.nivel < c.nivel, t = c.tempo * velocidade(), q = S.celeiro[c.id] || 0;
@@ -2829,6 +2866,11 @@
           ic:`<span class="emo-card">${c.emoji}</span>`, nome:c.nome,
           info:`<span>⏱ ${fmtT(t)}</span><span>Colhe 2 · vende ${moedaMini}${c.preco} cada</span>`,
           acao:trava ? '' : `<button class="btn verde" data-compra="planta:${c.id}" ${S.moedas < precoPlanta(c) ? 'disabled' : ''}>Comprar · ${moedaMini}${precoPlanta(c)}</button>`});
+      });
+      if (subLoja === 'materiais') Object.keys(MATERIAIS).forEach(k => {
+        const m = MATERIAIS[k], pr = MAT_PRECO[k] * 2, q = (S.mat || {})[k] || 0;
+        h += tile({selo:q ? `Você tem ${q}` : '', ic:`<span class="mat-card">${matIco(k)}</span>`, nome:m.nome, info:`<span>Usado para ampliar ${m.para === 'ilha' ? 'a ilha' : m.para === 'celeiro' ? 'o celeiro' : 'o armazém'}</span>`,
+          acao:`<button class="btn verde" data-compra="mat:${k}" ${S.moedas < pr ? 'disabled' : ''}>Comprar · ${moedaMini}${pr}</button>`});
       });
       if (subLoja === 'insumos') Object.entries(INSUMOS).forEach(([k, n]) => {
         const trava = S.nivel < n.nivel, q = qtdIns(k);
@@ -2850,7 +2892,7 @@
         if (ANEL < MAX_ANEL) { const pode = ilhaCheia(), nv = nivelExpansao(), cx = custoExpansao();
           h += tile({trava:!pode || S.nivel < nv, selo:`Ilha ${ANEL + 1}/${MAX_ANEL + 1}`, seloCls:!pode || S.nivel < nv ? 'trava' : 'max', ic:'<span class="emo-g">🏝️</span>', nome:'Expansão da ilha',
             info:`<span class="desc">${!pode ? 'Libere todas as terras da ilha primeiro.' : S.nivel < nv ? `Disponível no nível ${nv}.` : 'A ilha cresce para todos os lados!'}</span><span class="mats">${matsDe('ilha').map(m => `<span class="${((S.mat || {})[m] || 0) >= matsExpansao() ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}/${matsExpansao()}</span>`).join('')}</span>`,
-            acao:pode && S.nivel >= nv ? `<button class="btn verde" data-acao="expandir" ${S.moedas < cx ? 'disabled' : ''}>${moedaMini}${fmtN(cx)}</button>` : `<span class="nv">${moedaMini}${fmtN(cx)} · nível ${nv}</span>`}); }
+            acao:`<div class="t-col">${pode && S.nivel >= nv ? `<button class="btn verde" data-acao="expandir" ${S.moedas < cx ? 'disabled' : ''}>${moedaMini}${fmtN(cx)}</button>` : `<span class="nv">${moedaMini}${fmtN(cx)} · nível ${nv}</span>`}<button class="btn" data-acao="previa-ilha">👁️ Ver como fica</button></div>`}); }
         h += tile({ic:'<span class="emo-g">✏️</span>', nome:'Modo edição', info:'<span class="desc">Mova e gire suas construções.</span>', acao:`<button class="btn" data-acao="editar">Editar</button>`});
       }
       if (subLoja === 'decoracao') DECOR.forEach(c => {
@@ -2870,72 +2912,68 @@
       return `<div class="cap"><div class="cap-txt">📦 ${uso}/${cap}</div><div class="mis-barra"><i style="width:${Math.min(100, 100 * uso / cap)}%;${uso >= cap ? 'background:#e0503a' : ''}"></i></div>
       <span class="mats">${ms.map(m => `<span class="${((S.mat || {})[m] || 0) >= n ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}/${n}</span>`).join('')}</span>
       <button class="btn ${ok ? 'verde' : ''}" data-ampliar="${k}">Ampliar +30 · ${moedaMini}${fmtN(custoAmpliar(k))}</button></div>`; };
-    if (janela === 'galpao') {
-      h += `<div class="loja-topo"><p class="dica">🧰 Aqui ficam as <b>ferramentas e materiais</b>. Eles <b>não ocupam espaço</b>, caem ao colher e produzir, e servem para ampliar o celeiro, o armazém e a ilha. Dá para vender aqui ou na <b>Banca</b>.</p></div><div class="vitrine">`;
-      Object.keys(MATERIAIS).forEach(m => { const q = (S.mat || {})[m] || 0, M = MATERIAIS[m];
-        h += tile({cls:q ? '' : 'vazio', selo:`× ${q}`, seloCls:q ? '' : 'trava', ic:`<span class="mat-card">${matIco(m)}</span>`, nome:M.nome,
-          info:`<span class="preco-g">${moedaMini}${MAT_PRECO[m]}</span><span>${{armazem:'amplia o Armazém', celeiro:'amplia o Celeiro', ilha:'expande a ilha'}[M.para]}</span>`,
-          acao:`<button class="btn" data-vender-mat="${m}" ${q ? '' : 'disabled'}>Vender</button>`}); });
+    // Armazém, Celeiro e Galpão: mesmo desenho (barra de cima igual, cards iguais, só o que você tem)
+    const topoEstoque = (cap, total, acao, dica) => `<div class="loja-topo estoque"><div class="topo-linha">${cap}<button class="btn verde vender-tudo" data-acao="${acao}" ${total ? '' : 'disabled'}>Vender tudo · ${moedaMini}${fmtN(total)}</button></div><p class="dica">${dica}</p></div><div class="vitrine estoque">`;
+    const cardItem = (id, q, ic, nome, pr, extra, acao) => { const td = S.tend[id] || 0, seta = td > 0 ? '<b class="sobe">▲</b>' : td < 0 ? '<b class="desce">▼</b>' : '';
+      return tile({selo:`× ${q}`, ic, nome, info:`<span class="preco-g">${moedaMini}${pr} ${pr && !MATERIAIS[id] ? seta : ''}</span><span>${extra}</span>`, acao}); };
+    const vazio = txt => `<div class="vazio-msg">${txt}</div>`;
+    if (janela === 'armazem') {
+      const lista = VENDAVEIS.filter(c => !ehPlanta(c.id) && (S.celeiro[c.id] || 0) > 0), racs = RACOES.filter(r => S.celeiro[r.id] > 0);
+      let total = 0; lista.forEach(c => total += S.celeiro[c.id] * precoAtual(c.id));
+      h += topoEstoque(barraCap(usoArmazem(), capArmazem(), 'armazem'), total, 'vender-tudo', 'Itens de <b>produção</b>: leite, ovos, pães, rações… O "Vender tudo" não vende as rações.');
+      if (!lista.length && !racs.length) h += vazio('O armazém está vazio. Cuide dos animais e use as fábricas para produzir 🥛🥚');
+      lista.forEach(c => h += cardItem(c.id, S.celeiro[c.id], `<span class="emo-g">${c.emoji}</span>`, c.nome, precoAtual(c.id), 'cada', `<button class="btn" data-vender="${c.id}">Vender</button>`));
+      racs.forEach(r => h += cardItem(r.id, S.celeiro[r.id], iconeItem(r, 'grande'), r.nome, 0, r.pet ? 'para os pets' : 'para ' + ANIMAIS[r.animal].plural.toLowerCase(), `<button class="btn" disabled>Ração</button>`));
       h += '</div>';
     }
     if (janela === 'celeiro') {
       const pls = CROPS.concat(FRUTAS).filter(c => (S.celeiro[c.id] || 0) > 0);
-      let sobra = 0; pls.forEach(c => sobra += Math.max(0, (S.celeiro[c.id] || 0) - 2) * precoAtual(c.id));
-      h += `<div class="loja-topo">${barraCap(usoCeleiro(), capCeleiro(), 'celeiro')}<button class="btn verde" data-acao="vender-celeiro" ${sobra ? '' : 'disabled'} title="Vende tudo, mas deixa 2 de cada para replantar">Vender tudo · ${moedaMini}${fmtN(sobra)}</button></div>
-        <p class="dica">Aqui ficam os seus <b>grãos e frutas</b>. Cada um planta um canteiro, e cada colheita rende <b>2</b>. O "Vender tudo" deixa 2 de cada para você replantar.</p><div class="vitrine">`;
-      if (!pls.length) h += `<div class="vazio-msg">O celeiro está vazio. Compre plantas na <b>Loja</b> para começar 🌱</div>`;
-      pls.forEach(c => {
-        const q = S.celeiro[c.id] || 0, pr = precoAtual(c.id), td = S.tend[c.id] || 0, cr = crop(c.id), seta = td > 0 ? '<b class="sobe">▲</b>' : td < 0 ? '<b class="desce">▼</b>' : '';
-        h += tile({selo:`× ${q}`, ic:`<span class="emo-g">${c.emoji}</span>`, nome:c.nome,
-          info:`<span class="preco-g">${moedaMini}${pr} ${seta}</span><span>${cr ? '⏱ ' + fmtT(cr.tempo * velocidade()) : 'fruta do pomar'}</span>`,
-          acao:`<button class="btn" data-vender="${c.id}">Vender</button>`});
-      });
+      let total = 0; pls.forEach(c => total += Math.max(0, S.celeiro[c.id] - 3) * precoAtual(c.id));
+      h += topoEstoque(barraCap(usoCeleiro(), capCeleiro(), 'celeiro'), total, 'vender-celeiro', 'Seus <b>grãos e frutas</b>. Cada um planta um canteiro e cada colheita rende <b>2</b>. O "Vender tudo" deixa 3 de cada.');
+      if (!pls.length) h += vazio('O celeiro está vazio. Compre plantas na <b>Loja</b> para começar 🌱');
+      pls.forEach(c => { const cr = crop(c.id); h += cardItem(c.id, S.celeiro[c.id], `<span class="emo-g">${c.emoji}</span>`, c.nome, precoAtual(c.id), cr ? '⏱ ' + fmtT(cr.tempo * velocidade()) : 'fruta do pomar', `<button class="btn" data-vender="${c.id}">Vender</button>`); });
       h += '</div>';
     }
-    if (janela === 'armazem') {
-      const ev = eventoAtivo();
-      let total = 0; VENDAVEIS.filter(c => !ehPlanta(c.id)).forEach(c => total += (S.celeiro[c.id] || 0) * precoAtual(c.id));
-      h += `<div class="loja-topo"><div class="topo-linha">${barraCap(usoArmazem(), capArmazem(), 'armazem')}<button class="btn verde" data-acao="vender-tudo" ${total ? '' : 'disabled'}>Vender tudo · ${moedaMini}${fmtN(total)}</button></div>
-        <p class="dica">Aqui ficam os itens de <b>produção</b>: leite, ovos, pães, rações… As plantas ficam no <b>Celeiro</b>.</p></div><div class="vitrine">`;
-      const lista = VENDAVEIS.filter(c => !ehPlanta(c.id) && ((c.nivel ? c.nivel <= S.nivel : qtdAnimal(c.animal)) || S.celeiro[c.id])).sort((a, b) => (S.celeiro[b.id] ? 1 : 0) - (S.celeiro[a.id] ? 1 : 0));
-      lista.forEach(c => {
-        const q = S.celeiro[c.id] || 0, pr = precoAtual(c.id), td = S.tend[c.id] || 0;
-        const seta = td > 0 ? '<b class="sobe">▲</b>' : td < 0 ? '<b class="desce">▼</b>' : '';
-        h += tile({cls:q ? '' : 'vazio', selo:`× ${q}`, seloCls:q ? '' : 'trava', ic:`<span class="emo-g">${c.emoji}</span>`, nome:c.nome,
-          info:`<span class="preco-g">${moedaMini}${pr} ${seta}</span><span>cada</span>`,
-          acao:`<button class="btn" data-vender="${c.id}" ${q ? '' : 'disabled'}>Vender</button>`});
-      });
-      RACOES.filter(r => S.celeiro[r.id]).forEach(r => h += tile({selo:`× ${S.celeiro[r.id]}`, seloCls:'max', ic:iconeItem(r, 'grande'), nome:r.nome,
-        info:`<span>${r.pet ? 'Alimenta os pets por 6 horas' : 'Cada porção alimenta 1 ' + ANIMAIS[r.animal].nome.toLowerCase()}</span>`, acao:`<span class="ok">${r.pet ? 'Para os pets' : 'Para os bichos'}</span>`}));
+    if (janela === 'galpao') {
+      const ms = Object.keys(MATERIAIS).filter(m => ((S.mat || {})[m] || 0) > 0);
+      let total = 0; ms.forEach(m => total += Math.max(0, S.mat[m] - 3) * MAT_PRECO[m]);
+      h += topoEstoque('<div class="cap"><div class="cap-txt">🧰 Não ocupa espaço</div></div>', total, 'vender-galpao', '<b>Ferramentas e materiais</b>: caem ao colher e produzir e servem para ampliar e expandir. O "Vender tudo" deixa 3 de cada.');
+      if (!ms.length) h += vazio('O galpão está vazio. Os materiais caem de vez em quando ao colher e produzir 🔩');
+      ms.forEach(m => h += cardItem(m, S.mat[m], `<span class="mat-card">${matIco(m)}</span>`, MATERIAIS[m].nome, MAT_PRECO[m], {armazem:'amplia o Armazém', celeiro:'amplia o Celeiro', ilha:'expande a ilha'}[MATERIAIS[m].para], `<button class="btn" data-vender-mat="${m}">Vender</button>`));
       h += '</div>';
     }
     if (janela === 'animais') {
       atualizarProducao();
-      h += `<div class="loja-topo"><div class="topo-linha"><p class="dica" style="flex:1;white-space:normal">Cada animal come <b>1 ração</b> para produzir. O fazendeiro coleta o que estiver pronto e dá ração para quem tiver fome.</p><button class="btn verde" data-acao="cuidar-todos">🐾 Cuidar de todos</button>${Object.keys(pets).length ? `<button class="btn" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine">`;
+      h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Cada animal come <b>1 ração</b> e produz. O fazendeiro coleta e alimenta.</p><button class="btn verde mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos</button>${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
       for (const k in ANIMAIS) {
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
         const ic = a.img ? `<span class="foto-g"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`;
-        if (trava) { h += tile({trava:true, selo:`🔒 Nível ${Math.max(a.nivel, nvC)}`, seloCls:'trava', ic, nome:a.plural, info:`<span>Dão ${it.emoji} ${it.nome.toLowerCase()}</span>`, acao:''}); continue; }
-        if (!nTipo(a.cercado)) {
-          h += tile({selo:'0', ic, nome:a.plural, info:`<span class="desc">Primeiro construa ${TIPOS[a.cercado].fem ? 'uma' : 'um'} ${nomeC}.</span>`,
-            acao:`<button class="btn verde" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>${moedaMini}${fmtN(cc)}</button>`});
-          continue;
+        let status, principal, extras = '';
+        if (trava) { status = `🔒 Nível ${Math.max(a.nivel, nvC)} · dão ${it.emoji}`; principal = `<button class="btn" disabled>Bloqueado</button>`; }
+        else if (!nTipo(a.cercado)) { status = `Precisa ${TIPOS[a.cercado].fem ? 'de uma' : 'de um'} ${nomeC}`; principal = `<button class="btn verde" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>Construir · ${moedaMini}${fmtN(cc)}</button>`; }
+        else {
+          let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
+          const temR = (S.celeiro[r.id] || 0) > 0;
+          status = n ? ([pr ? `${it.emoji} ${pr} pronto(s)` : '', fome ? `🍽️ ${fome} com fome` : '', prod ? `⏳ ${prod} produzindo` : ''].filter(Boolean).join(' · ') || 'Tudo certo') : 'Nenhum animal ainda';
+          status += ` · ${iconeItem(r, 'mini-ic')}${S.celeiro[r.id] || 0}`;
+          if (!n) principal = `<button class="btn verde" data-animal="${k}" ${S.moedas < custoAnimal(k) ? 'disabled' : ''}>Comprar ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}</button>`;
+          else if (cercadosDe(k).some(o => objNaFila(o.id))) principal = '<button class="btn" disabled>🚶 A caminho…</button>';
+          else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">Coletar ${pr} ${it.emoji}</button>`;
+          else if (fome && temR) principal = `<button class="btn verde" data-ir-cercado="${k}">Dar ração 🥣</button>`;
+          else if (fome) principal = `<button class="btn" data-ir-moinho="1">Fazer ração</button>`;
+          else principal = `<button class="btn" data-ir-cercado="${k}">Ver ${nomeC}</button>`;
+          if (n) extras = `<div class="ani-mini"><button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio<small>precisa + cercado</small>' : `+1 ${a.emoji}<small>${moedaMini}${fmtN(custoAnimal(k))}</small>`}</button>${S.nivel < nvProx ? `<button class="btn" disabled>+ ${nomeC}<small>nível ${nvProx}</small></button>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>+ ${nomeC}<small>${moedaMini}${fmtN(cc)}</small></button>`}</div>`;
         }
-        let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
-        const est = n ? [prod ? `⏳ ${prod} produzindo` : '', fome ? `🍽️ ${fome} com fome` : '', pr ? `${it.emoji} ${pr} pronto(s)` : ''].filter(Boolean).join(' · ') : 'Nenhum ainda';
-        h += tile({cls:'larga', selo:`${n}/${mx}`, ic, nome:a.plural,
-          info:`<span>${iconeItem(r, 'mini-ic')} ${S.celeiro[r.id] || 0} · 1 = ${a.porRacao} ${it.emoji} · ${fmtT(a.tempo)}</span><span>${est}</span>`,
-          acao:`<div class="t-col">${n && cercadosDe(k).some(o => objNaFila(o.id)) ? '<button class="btn" disabled>🚶 A caminho…</button>' : n ? `<button class="btn verde" data-ir-cercado="${k}">${pr ? `Coletar ${pr} ${it.emoji}` : fome ? (S.celeiro[r.id] > 0 ? 'Dar ração 🥣' : 'Sem ração') : (TIPOS[a.cercado].fem ? 'Ir à ' : 'Ir ao ') + nomeC}</button>` : ''}
-            ${fome && !(S.celeiro[r.id] > 0) ? `<button class="btn" data-ir-moinho="1">Fazer ração</button>` : ''}
-            <button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio' : `+1 ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}`}</button>
-            ${S.nivel < nvProx ? `<span class="nv">Novo ${nomeC} no nível ${nvProx}</span>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>➕ ${TIPOS[a.cercado].nome} · ${moedaMini}${fmtN(cc)}</button>`}</div>`});
+        h += `<div class="ani-card ${trava ? 'trava' : ''}"><div class="ani-ic">${ic}</div><div class="ani-meio"><div class="ani-nome"><span>${a.plural}</span><span class="ani-n">${n}/${mx}</span></div><div class="ani-st">${status}</div></div><div class="ani-acoes">${principal}${extras}</div></div>`;
       }
+      h += `</div><h4 class="ani-sec">🐶 Bichinhos de estimação</h4><div class="vitrine ani-lista">`;
       for (const k in PETS) {
         const a = PETS[k], tem = S.amigos[k], trava = S.nivel < a.nivel;
-        h += tile({trava:trava && !tem, cls:tem ? 'amigo-ok' : '', selo:tem ? 'Na fazenda' : trava ? `🔒 Nível ${a.nivel}` : 'Bichinho', seloCls:tem ? 'max' : trava ? 'trava' : '',
-          ic:a.img ? `<span class="foto-g"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`, nome:tem ? `${nomePet(k)} <button class="lapis" data-renomear="${k}">✏️</button>` : a.especie,
-          info:`<span class="desc">${a.desc}</span>${tem ? (petsComFome() ? '<span class="desce">🦴 Com fome: sem habilidade. Toque na casinha com ração de pet</span>' : `<span class="ok">🦴 Alimentado · ${fmtT((FOME_PET - (Date.now() - S.petComeu)) / 1000)}</span>`) : ''}`, acao:tem || trava ? '' : `<button class="btn verde" data-adotar="${k}" ${S.moedas < a.custo ? 'disabled' : ''}>${moedaMini}${fmtN(a.custo)}</button>`});
+        const ic = a.img ? `<span class="foto-g"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`;
+        const st = tem ? (petsComFome() ? '🦴 Com fome: toque na casinha com ração de pet' : `🦴 Alimentado · ${fmtT((FOME_PET - (Date.now() - S.petComeu)) / 1000)}`) : trava ? `🔒 Nível ${a.nivel}` : a.desc;
+        const ac = tem ? `<button class="btn" data-renomear="${k}">✏️ Renomear</button>` : `<button class="btn verde" data-adotar="${k}" ${trava || S.moedas < a.custo ? 'disabled' : ''}>Adotar · ${moedaMini}${fmtN(a.custo)}</button>`;
+        h += `<div class="ani-card ${trava && !tem ? 'trava' : ''}"><div class="ani-ic">${ic}</div><div class="ani-meio"><div class="ani-nome"><span>${tem ? nomePet(k) : a.especie}</span></div><div class="ani-st">${st}</div></div><div class="ani-acoes">${ac}</div></div>`;
       }
       h += '</div>';
     }
@@ -3268,7 +3306,7 @@
   $('#btnGirar').addEventListener('click', girarCamera);
   $('#btnCentro').addEventListener('click', () => { focoCam = heroi.g.position.clone(); });
 
-  $('#btnEditar').addEventListener('click', () => { if (editar.ativo) sairEdicao(); else { entrarEdicao(); toast('Toque numa construção para mover'); } });
+  
   document.addEventListener('click', e => {
     const ed = e.target.closest('[data-ed]'); if (!ed) return;
     const a = ed.dataset.ed;
@@ -3357,12 +3395,12 @@
       if (!alvos.length) toast('Nada para fazer agora: ninguém com fome (com ração) nem produto pronto');
       else { alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo cuidar de ${alvos.length} cercado(s)`, 'bom'); renderJanela(); }
     }
+    if (ac === 'previa-ilha') { mostrarPreviaIlha(); return; }
     if (ac === 'expandir') {
       if (!ilhaCheia() || S.nivel < nivelExpansao() || S.moedas < custoExpansao() || ANEL >= MAX_ANEL) return;
       if (!temMats(matsDe('ilha'), matsExpansao())) { toast(`Faltam materiais: ${matsDe('ilha').map(m => `${MATERIAIS[m].nome} ${(S.mat || {})[m] || 0}/${matsExpansao()}`).join(' · ')}`); return; }
       S.moedas -= custoExpansao(); gastarMats(matsDe('ilha'), matsExpansao()); S.expansao = ANEL + 1; salvar(); if (ON.user) enviarSave();
-      try { sessionStorage.setItem('terralia-msg', '🏝️ A ilha cresceu! Novas terras para liberar em volta.'); } catch (e) {}
-      ON.recarregando = true; setTimeout(() => location.reload(), ON.user ? 1200 : 100);
+      fechar(); reconstruirIlha(ANEL + 1); somT('nivel'); toast('🏝️ A ilha cresceu! Novas terras para liberar em volta.', 'bom'); tudo();
     }
     if (ac === 'add-amigo') pedirAmizade(($('#inAmigo') || {}).value);
     if (ac === 'buscar-coop') { COOP.busca = (($('#inBuscaCoop') || {}).value || '').trim(); COOP.meu = undefined; carregarCoop(); }
@@ -3387,7 +3425,8 @@
     if (ac.startsWith('rank-')) { ON.ordem = ac.slice(5); carregarRanking(); }
     if (ac === 'mudo') { S.audio.mudo = !S.audio.mudo; SOM.config(S.audio); salvar(); renderJanela(); }
     if (ac === 'qualidade') { S.leve = !S.leve; aplicarQualidade(); salvar(); renderJanela(); }
-    if (ac === 'vender-celeiro') { let t = 0; CROPS.concat(FRUTAS).forEach(c => { const q = (S.celeiro[c.id] || 0) - 2; if (q > 0) t += vender(c.id, q); }); if (t) { toast(`Vendeu as sobras por ${fmtN(t)} moedas (ficaram 2 de cada)`, 'bom'); pulsar(); } tudo(); return; }
+    if (ac === 'vender-galpao') { let t = 0; Object.keys(MATERIAIS).forEach(m => { const q = ((S.mat || {})[m] || 0) - 3; if (q > 0) { S.mat[m] -= q; t += q * MAT_PRECO[m]; } }); if (t) { S.moedas += t; S.stats.vendeu = (S.stats.vendeu || 0) + t; somT('moeda'); toast(`Vendeu os materiais extras por ${fmtN(t)} moedas (ficaram 3 de cada)`, 'bom'); pulsar(); } tudo(); return; }
+    if (ac === 'vender-celeiro') { let t = 0; CROPS.concat(FRUTAS).forEach(c => { const q = (S.celeiro[c.id] || 0) - 3; if (q > 0) t += vender(c.id, q); }); if (t) { toast(`Vendeu as sobras por ${fmtN(t)} moedas (ficaram 3 de cada)`, 'bom'); pulsar(); } tudo(); return; }
     if (ac === 'vender-tudo') { let t = 0; VENDAVEIS.filter(c => !ehPlanta(c.id)).forEach(c => t += vender(c.id)); if (t) { toast(`Vendeu tudo por ${fmtN(t)} moedas`, 'bom'); pulsar(); } tudo(); }
     if (ac === 'reset-sim') { const leve = S.leve, ql = S.qual; S = novo(); S.leve = leve; S.qual = ql; S.viuAjuda = true; salvar(); location.reload(); }
   });
@@ -3902,6 +3941,7 @@
     const v = venda;
     if (v.modo === 'vender') { const it = item(v.id), q = S.celeiro[v.id] || 0; return {ic:emojiItem(it), nome:it.nome, tem:q, max:q, preco:precoAtual(v.id), tit:`Vender ${it.nome}`, verbo:'Vender', det:`Você tem ${q} · ${moedaMini}${precoAtual(v.id)} cada`}; }
     if (v.modo === 'vmat') { const m = MATERIAIS[v.id], q = (S.mat || {})[v.id] || 0; return {ic:matIco(v.id), nome:m.nome, tem:q, max:q, preco:MAT_PRECO[v.id], tit:`Vender ${m.nome}`, verbo:'Vender', det:`Você tem ${q} · ${moedaMini}${MAT_PRECO[v.id]} cada`}; }
+    if (v.tipo === 'mat') { const m = MATERIAIS[v.id], pr = MAT_PRECO[v.id] * 2, tem = (S.mat || {})[v.id] || 0; return {ic:matIco(v.id), nome:m.nome, tem, max:Math.max(0, Math.min(Math.floor(S.moedas / pr), 99)), preco:pr, tit:`Comprar ${m.nome}`, verbo:'Comprar', det:`Você tem ${tem} · ${moedaMini}${pr} cada (teste)`, compra:true}; }
     const pl = v.tipo === 'planta', c = pl ? crop(v.id) : INSUMOS[v.id], pr = pl ? precoPlanta(c) : c.preco, tem = pl ? S.celeiro[v.id] || 0 : qtdIns(v.id);
     const max = Math.max(0, Math.min(Math.floor(S.moedas / pr), pl ? livreCeleiro() : 99, 99));
     return {ic:`<span class="emo-g">${c.emoji}</span>`, nome:c.nome, tem, max, preco:pr, tit:`Comprar ${c.nome}`, verbo:'Comprar', det:`Você tem ${tem} · ${moedaMini}${pr} cada`, compra:true};
@@ -3924,7 +3964,8 @@
     if (v.modo === 'vender') { const g = vender(v.id, n); if (g) { toast(`Vendeu ${n} por ${fmtN(g)} moedas`, 'bom'); pulsar(); } }
     else if (v.modo === 'vmat') { S.mat[v.id] -= n; const g = n * k.preco; S.moedas += g; S.stats.vendeu = (S.stats.vendeu || 0) + g; somT('moeda'); toast(`Vendeu ${n} ${k.nome} por ${fmtN(g)} moedas`, 'bom'); pulsar(); salvar(); }
     else { const cu = n * k.preco; if (S.moedas < cu) return; S.moedas -= cu; S.stats.compras = (S.stats.compras || 0) + 1;
-      if (v.tipo === 'planta') S.celeiro[v.id] = (S.celeiro[v.id] || 0) + n; else { if (!S.ins) S.ins = {}; S.ins[v.id] = qtdIns(v.id) + n; }
+      if (v.tipo === 'mat') { if (!S.mat) S.mat = {}; S.mat[v.id] = (S.mat[v.id] || 0) + n; }
+      else if (v.tipo === 'planta') S.celeiro[v.id] = (S.celeiro[v.id] || 0) + n; else { if (!S.ins) S.ins = {}; S.ins[v.id] = qtdIns(v.id) + n; }
       somT('moeda'); toast(`Comprou ${n} ${k.nome} por ${fmtN(cu)} moedas`, 'bom'); salvar(); verificarTutorial(); }
     venda = null; tudo();
   }
