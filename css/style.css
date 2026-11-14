@@ -821,3 +821,6 @@ body.editando #baloes{opacity:.35}
 #btnTrava.travada small{color:#8a2016}
 #btnTrava.livre{background:radial-gradient(circle at 50% 35%,#eaffdc,#9be07a);border-color:#3d8a2a;box-shadow:0 4px 0 #3d8a2a}
 #btnTrava.livre small{color:#2a6a1a}
+/* v0.39 — contador de FPS (teste) */
+#fpsTeste{align-self:flex-end;margin:0 6px 8px 0;padding:3px 9px;border-radius:12px;background:rgba(40,25,10,.72);color:#fff;font:800 12px/1.3 system-ui,sans-serif;white-space:nowrap;pointer-events:none}
+#fpsTeste.bom{color:#9dff7a}#fpsTeste.medio{color:#ffe066}#fpsTeste.ruim{color:#ff8a7a}

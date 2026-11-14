@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.38'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.39'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -39,7 +39,7 @@
     {id:'la',    nome:'Lã',    emoji:'🧶', preco:70, animal:'ovelha'},
     {id:'angora', nome:'Pelo de angorá', emoji:'☁️', preco:120, animal:'coelho'},
     {id:'pena',   nome:'Pena',   emoji:'🪶', preco:85,  animal:'pato'},
-    {id:'trufa',  nome:'Trufa',  emoji:'🍄', preco:260, animal:'porco'},
+    {id:'trufa',  nome:'Bacon',  emoji:'🥓', preco:260, animal:'porco'},
     {id:'mel',    nome:'Mel',    emoji:'🍯', preco:190, animal:'abelha'},
   ];
   // frutas das árvores do pomar (plantou uma vez, colhe sempre)
@@ -83,7 +83,7 @@
     {id:'tortaMaca',nome:'Torta de maçã',     emoji:'🥧', fab:'padaria',   ing:{maca:3, trigo:2, acucar:1},   tempo:1200, preco:880,  xp:40, nivel:13},
     {id:'batataFrita',nome:'Batata frita',    emoji:'🍟', fab:'cozinha',   ing:{batata:3, oleo:1},            tempo:600,  preco:720,  xp:34, nivel:12},
     {id:'sucoLaranja',nome:'Suco de laranja', emoji:'🧃', fab:'cozinha',   ing:{laranja:3},                   tempo:480,  preco:330,  xp:18, nivel:12},
-    {id:'risoto',   nome:'Risoto de trufa',   emoji:'🍲', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:1500, preco:1150, xp:52, nivel:15},
+    {id:'risoto',   nome:'Batata com bacon',   emoji:'🥔', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:1500, preco:1150, xp:52, nivel:15},
     {id:'camiseta', nome:'Camiseta',          emoji:'👕', fab:'tecelagem', ing:{algodao:3},                   tempo:1200, preco:1000, xp:44, nivel:13},
     {id:'travesseiro',nome:'Travesseiro de penas',emoji:'🛏️', fab:'tecelagem', ing:{pena:4, algodao:2},      tempo:1800, preco:1050, xp:50, nivel:14},
     {id:'acucar',   nome:'Açúcar',            emoji:'🧂', fab:'engenho',   ing:{cana:3},                      tempo:420,  preco:560,  xp:22, nivel:11},
@@ -346,7 +346,7 @@
     {tipo:'macieira', mult:1.35,   icone:'🍎', nivel:8,  base:1800, desc:'Árvore de maçã: dá 4 maçãs a cada 30 min, para sempre.'},
     {tipo:'lagoinha',   icone:'🦆', nivel:10, base:4500, desc:'Lagoinha dos patos: cabem 5. Eles dão penas.'},
     {tipo:'engenho',    icone:'🏭', nivel:11, base:7500, desc:'Faz açúcar, óleo de girassol e melado.', unico:true},
-    {tipo:'chiqueiro',  icone:'🐷', nivel:12, base:6500, desc:'Casa dos porcos: cabem 3. Eles acham trufas!'},
+    {tipo:'chiqueiro',  icone:'🐷', nivel:12, base:6500, desc:'Casa dos porcos: cabem 3. Eles dão bacon!'},
     {tipo:'laranjeira', mult:1.35, icone:'🍊', nivel:12, base:3200, desc:'Árvore de laranja: dá 4 laranjas a cada 45 min.'},
     {tipo:'docaria',    icone:'🧁', nivel:13, base:9500, desc:'Faz cupcake, pudim, bala de mel e geleia.', unico:true},
     {tipo:'apiario',    icone:'🐝', nivel:14, base:7000, desc:'Colmeias: cabem 6 abelhas. Elas fazem mel.'},
@@ -520,6 +520,7 @@
   sol.shadow.bias = -0.0005; sol.shadow.normalBias = .02;
   scene.add(sol);
   renderer.shadowMap.autoUpdate = false; // a sombra é recalculada a cada 3 quadros (a ilha quase não se mexe)
+  const fpsC = {n:0, t0:0, el:document.getElementById('fpsTeste')}; // contador de teste (ao lado do Armazém)
   const gov = {soma:0, n:0, bons:0, pr:0, max:1};
   let QUAL = 'alta'; // alta / media / leve (definida ao carregar o save)
   const segs = n => QUAL === 'alta' ? Math.round(n * 1.3) : n; // mais lados = peças mais redondas
@@ -527,9 +528,8 @@
     // cada aparelho usa a nitidez real da própria tela; o jogo mede o desempenho e só baixa o necessário
     const dpr = window.devicePixelRatio || 1;
     gov.max = gov.pr = Math.min(dpr, QUAL === 'leve' ? 1 : QUAL === 'media' ? 1.75 : 3);
-    gov.min = Math.min(gov.max, QUAL === 'alta' ? 1.25 : 1);
-    gov.baixa = QUAL === 'alta' ? 1 / 27 : 1 / 38; // Alta prioriza nitidez: aceita ~30 quadros por segundo
-    gov.sobe = QUAL === 'alta' ? 1 / 40 : 1 / 52; gov.lentos = 0;
+    gov.min = Math.min(gov.max, QUAL === 'alta' ? 1.5 : 1);
+    gov.baixa = 1 / 45; gov.sobe = 1 / 56; gov.lentos = 0; // meta: perto de 60 quadros por segundo
     renderer.setPixelRatio(gov.pr);
     sol.castShadow = QUAL !== 'leve';
     const ms = QUAL === 'alta' ? 2048 : 1024;
@@ -792,7 +792,7 @@
       const roda = new THREE.Group(); roda.position.set(1.95, .9, .2); g.add(roda);
       roda.add(mesh(new THREE.TorusGeometry(.5, .05, 8, 24), 0, 0, 0, 0, true, liso(0x8b5a2b)));
       for (let k = 0; k < 6; k++) { const r = mesh(new THREE.BoxGeometry(.04, 1, .04), 0, 0, 0, 0, false, liso(0x8b5a2b)); r.rotation.z = k * Math.PI / 6; roda.add(r); }
-      roda.rotation.y = Math.PI / 2; roda.userData.roda = true; fabRodas.push(roda);
+      roda.rotation.y = Math.PI / 2; roda.userData.roda = true; roda.traverse(m => { m.castShadow = false; }); fabRodas.push(roda);
       g.add(mesh(new THREE.BoxGeometry(.12, .9, .12), 0, 1.95, .45, .2, true, liso(0x6b4226)));
       // varal com cachecol e suéter
       [-1.75, .25].forEach(x => g.add(cil(.05, .05, 1.5, 0x8b5a2b, x, .75, 1.95, 6)));
@@ -828,7 +828,7 @@
       for (let i = 0; i < 12; i++) g.add(mesh(new THREE.BoxGeometry(.5, .25, .04), 0, -1.6 + (i % 4) * .85 + (i > 3 && i < 8 ? .4 : 0), .4 + Math.floor(i / 4) * .6, 1.21, false, liso(0xa9a294)));
       const tt = telhado(3.4, 1, 3.2, 0x8a4b2a); tt.position.set(-.3, 2.2, -.2); g.add(tt);
       porta(-.8, 0x6b4226, 1.21); janela(.4, 1.3, 1.21, .6, .5);
-      const roda = new THREE.Group(); roda.position.set(1.45, 1.1, .2); roda.rotation.y = Math.PI / 2; g.add(roda); roda.userData.roda = true; fabRodas.push(roda);
+      const roda = new THREE.Group(); roda.position.set(1.45, 1.1, .2); roda.rotation.y = Math.PI / 2; g.add(roda); roda.userData.roda = true; fabRodas.push(roda); roda.traverse(m => { m.castShadow = false; });
       roda.add(mesh(new THREE.TorusGeometry(.95, .08, 8, 24), 0, 0, 0, 0, true, liso(0x8b5a2b)));
       for (let k = 0; k < 8; k++) { const r = mesh(new THREE.BoxGeometry(.08, 1.9, .3), 0, 0, 0, 0, true, liso(0x9a6238)); r.rotation.z = k * Math.PI / 8; roda.add(r); }
       g.add(mesh(new THREE.BoxGeometry(.5, .2, 2.8), 0, 1.75, .12, .2, true, liso(0x4fb3e8)));
@@ -976,7 +976,7 @@
       pas.add(b);
     }
     pas.add(bola(.22, 0x6b4a2b, 0, 0, .05, 10));
-    g.add(pas); pasMoinho.push(pas);
+    pas.traverse(m => { m.castShadow = false; }); g.add(pas); pasMoinho.push(pas);
     return g;
   }
   function modeloPoco() {
@@ -1174,7 +1174,7 @@
       const asa = new THREE.PlaneGeometry(.22, .18); asa.translate(.11, 0, 0);
       const a1 = new THREE.Mesh(asa, m3), a2 = new THREE.Mesh(asa, m3); a2.rotation.y = Math.PI; g3.add(a1, a2);
       g3.position.set(rnd(-MEIA + 3, MEIA - 3), rnd(.6, 1.4), rnd(-MEIA + 3, MEIA - 3)); scene.add(g3);
-      borboletas.push({g:g3, a1, a2, fase:rnd(0, 6), alvo:g3.position.clone(), vel:rnd(.6, 1)});
+      g3.traverse(m => { m.castShadow = false; }); borboletas.push({g:g3, a1, a2, fase:rnd(0, 6), alvo:g3.position.clone(), vel:rnd(.6, 1)});
     }
     // árvores na borda e palmeiras na praia (juntas numa malha só por material)
     const borda = new THREE.Group();
@@ -1288,6 +1288,14 @@
   const geoTile = new THREE.BoxGeometry(G - .28, .3, G - .28);
   const geoSulco = new THREE.BoxGeometry(G - .55, .06, .17);
   const COR_TERRA = 0xa06640, COR_MOLHADA = 0x5f3a23;
+  // terra + 3 sulcos numa peça só (cor dos sulcos pelas cores dos vértices): 1 desenho por canteiro em vez de 4
+  const geoCanteiro = (() => {
+    const partes = [[geoTile, 0, .1, 0, [1, 1, 1]], ...[-1, 0, 1].map(s => [geoSulco, 0, .27, s * .56, [0x7c / 0xa0, 0x4b / 0x66, 0x2c / 0x40]])];
+    const pos = [], nor = [], cor = [];
+    partes.forEach(([g0, x, y, z, c]) => { const g = g0.index ? g0.toNonIndexed() : g0, P = g.attributes.position, N = g.attributes.normal;
+      for (let i = 0; i < P.count; i++) { pos.push(P.getX(i) + x, P.getY(i) + y, P.getZ(i) + z); nor.push(N.getX(i), N.getY(i), N.getZ(i)); cor.push(...c); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(cor, 3)); return g;
+  })();
 
   function criarLote(o) {
     const g = new THREE.Group(), W = 2 * G;
@@ -1299,17 +1307,15 @@
     for (let k = 0; k < 4; k++) {
       const i = o.li * 4 + k;
       const t = new THREE.Group(); t.position.set((k % 2 - .5) * G, 0, (Math.floor(k / 2) - .5) * G); g.add(t);
-      const base = new THREE.Mesh(geoTile, new THREE.MeshStandardMaterial({color:C(COR_TERRA), roughness:.95, envMapIntensity:.3}));
-      base.position.y = .1; base.receiveShadow = true; base.userData.i = i; t.add(base);
-      const sulcos = new THREE.Group();
-      for (let s = -1; s <= 1; s++) { const m = new THREE.Mesh(geoSulco, mat(0x7c4b2c)); m.position.set(0, .27, s * .56); m.receiveShadow = true; sulcos.add(m); }
-      t.add(sulcos);
+      const base = new THREE.Mesh(geoCanteiro, new THREE.MeshStandardMaterial({color:C(COR_TERRA), vertexColors:true, roughness:.95, envMapIntensity:.3}));
+      base.receiveShadow = true; base.userData.i = i; t.add(base); const sulcos = null;
       const planta = new THREE.Group(); planta.position.y = .25; t.add(planta);
       const icone = sprite('✨', .9); icone.position.y = 1.9; icone.visible = false; t.add(icone);
       const marca = new THREE.Mesh(new THREE.RingGeometry(.62, .78, 28).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({color:0xffe066, transparent:true, opacity:.85, depthWrite:false}));
       marca.position.y = .3; marca.visible = false; t.add(marca);
       tiles[i] = {g:t, base, sulcos, planta, icone, marca, chave:'', pop:0};
     }
+    mesclar(g, new Set(g.children.filter(c => c.isGroup))); // moldura de madeira numa peça só
     return g;
   }
   function criarObjeto3D(o) {
@@ -1498,7 +1504,7 @@
   // Tonho: o fazendeiro experiente que ensina o jogo
   let tonho = null;
   function montarTonho() {
-    tonho = criarPersonagem(null, true); scene.add(tonho);
+    tonho = criarPersonagem(null, true); soBlob(tonho, .5); scene.add(tonho);
     tonho.userData.dica = sprite('💬', .8); tonho.userData.dica.position.y = 2.6; tonho.add(tonho.userData.dica);
     posicionarTonho();
   }
@@ -1688,17 +1694,19 @@
     return g;
   }
 
+  // personagens que andam: só a sombrinha redonda (a sombra de verdade é calculada poucas vezes, só para o que fica parado)
+  function soBlob(g, r) { mesclarAnimado(g); let tem = false; g.traverse(m => { m.castShadow = false; if (m.material === matSombra) tem = true; }); if (!tem) g.add(sombraBlob(r)); }
   const heroi = {g:null, rota:[], acao:null, pulo:0, fila:[], atual:null};
   const pets = {};
   function montarPersonagens() {
-    heroi.g = criarFazendeiro(); heroi.g.position.set(0, 0, 2 * G); heroi.g.rotation.y = Math.PI; scene.add(heroi.g);
+    heroi.g = criarFazendeiro(); soBlob(heroi.g, .5); heroi.g.position.set(0, 0, 2 * G); heroi.g.rotation.y = Math.PI; scene.add(heroi.g);
     atualizarPets3D(); atualizarAnimais3D();
   }
   function atualizarPets3D() {
     for (const k in PETS) {
       if (S.amigos[k] && !pets[k]) {
         const g = ({cachorro:criarCachorro, raposa:criarRaposa, gato:criarGato, papagaio:criarPapagaio}[k])();
-        g.position.copy(heroi.g.position).add(V3(rnd(-1.5, 1.5), 0, rnd(.5, 1.5))); scene.add(g);
+        soBlob(g, .4); g.position.copy(heroi.g.position).add(V3(rnd(-1.5, 1.5), 0, rnd(.5, 1.5))); scene.add(g);
         pets[k] = {g, modo:'parado', alvo:g.position.clone(), timer:rnd(1, 3), zzz:null};
         colocarRotuloPet(k);
       }
@@ -1740,13 +1748,50 @@
       while (lista.length < qtdAnimal(k)) {
         const g = ({galinha:criarGalinha, vaca:criarVaca, coelho:criarCoelho, ovelha:criarOvelha, pato:criarPato, porco:criarPorco, abelha:criarAbelha}[k] || criarGalinha)();
         const o = cercadoDoAnimal(k, lista.length); if (!o) break;
-        mesclarAnimado(g); g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
-        lista.push({g, alvo:g.position.clone(), espera:rnd(0, 3)});
+        mesclarAnimado(g); g.traverse(m => { m.castShadow = false; }); g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
+        lista.push({g, alvo:g.position.clone(), espera:rnd(0, 3), est:'anda', est3d:'anda', estatua:null});
       }
-      while (lista.length > qtdAnimal(k)) scene.remove(lista.pop().g);
-      if (reposicionar) lista.forEach((a, j) => { const o = cercadoDoAnimal(k, j); if (o) { a.g.position.copy(pontoNoCercado(o)); a.alvo.copy(a.g.position); } });
+      while (lista.length > qtdAnimal(k)) { const a = lista.pop(); tirarEstatua(a); scene.remove(a.g); }
+      if (reposicionar) lista.forEach((a, j) => { const o = cercadoDoAnimal(k, j); if (o) { tirarEstatua(a); a.g.position.copy(pontoNoCercado(o)); a.alvo.copy(a.g.position); } });
     }
   }
+
+  // ---- bicho parado: quando o produto está pronto ou está com fome ele para, faz uma pose e vira uma peça só (bem mais leve) ----
+  function estadoAnimal(k, j) { const x = aniLista(k)[j]; if (!x || k === 'abelha') return 'anda'; return x.prontos > 0 ? 'pronto' : x.rest <= 0 ? 'fome' : 'anda'; }
+  function propPronto(k) { // o produto aparece junto do bicho
+    const g = new THREE.Group();
+    if (k === 'galinha' || k === 'pato') { const ovo = bola(.12, k === 'pato' ? 0xeef3e2 : 0xfff6e6, .42, .12, .15, 10); ovo.scale.y = 1.25; g.add(ovo); if (k === 'pato') { const pena = bola(.09, 0xfafafa, -.3, .04, .15, 8); pena.scale.set(.5, .25, 1.6); g.add(pena); } }
+    else if (k === 'vaca') { const ub = bola(.22, 0xf7a6a6, 0, .52, -.15, 12); ub.scale.set(1.1, .8, 1); g.add(ub); [[-.08, -.08], [.08, -.08], [-.08, -.22], [.08, -.22]].forEach(([x, z]) => g.add(cil(.035, .03, .16, 0xf08f8f, x, .38, z, 6))); }
+    else if (k === 'porco') { const ba = new THREE.Group(); ba.position.set(.85, 0, .35); ba.rotation.y = .5; g.add(ba); // 2 fatias de bacon
+      [0, 1].forEach(i => { ba.add(mesh(new THREE.BoxGeometry(.6, .07, .2), 0, 0, .05 + i * .08, i * .05, false, liso(i ? 0xc8574f : 0xd8705f))); [-.18, .02, .2].forEach(x => ba.add(mesh(new THREE.BoxGeometry(.07, .074, .205), 0, x, .05 + i * .08, i * .05, false, liso(0xfbe3d6)))); }); }
+    return g;
+  }
+  function posarAnimal(a, k, est) {
+    const g = a.g, u = g.userData;
+    u.corpo.position.y = 0; u.corpo.scale.set(1, 1, 1); u.cab.rotation.set(0, 0, 0); u.pernas.forEach(p => { p.rotation.set(0, 0, 0); p.visible = true; });
+    if (u.prop) { if (u.prop.parent) u.prop.parent.remove(u.prop); u.prop = null; }
+    if (est === 'anda') return;
+    const perna = u.pernas[0] ? u.pernas[0].position.y : .2, deita = est === 'fome' || ['galinha', 'pato', 'coelho', 'porco'].includes(k);
+    if (deita) { u.corpo.position.y = -perna * .92; u.pernas.forEach(p => p.visible = false); }
+    if (est === 'fome') { u.cab.rotation.x = .55; u.corpo.position.y -= .03; }
+    else {
+      u.cab.rotation.x = -.15;
+      if (k === 'ovelha') u.corpo.scale.set(1.18, 1.12, 1.15); // lã bem fofa
+      if (k === 'coelho') u.corpo.scale.set(1.15, 1.1, 1.15);
+      u.prop = propPronto(k); (k === 'vaca' ? u.corpo : g).add(u.prop);
+    }
+  }
+  function tirarEstatua(a) { if (a.estatua) { scene.remove(a.estatua); (a.estatua.userData.geos || []).forEach(g => g.dispose()); a.estatua = null; } a.g.visible = true; }
+  function fazerEstatua(a, k, est) {
+    tirarEstatua(a); posarAnimal(a, k, est); a.est3d = est;
+    if (est === 'anda') { a.g.visible = true; return; }
+    const e = a.g.clone(true), orig = new Set(); e.userData = {}; e.visible = true;
+    a.g.traverse(m => { if (m.geometry) orig.add(m.geometry); });
+    const escondidos = []; e.traverse(m => { if (m !== e && !m.visible) escondidos.push(m); }); escondidos.forEach(m => m.parent && m.parent.remove(m));
+    e.traverse(m => { m.castShadow = false; }); mesclar(e); const geos = []; e.traverse(m => { if (m.geometry && !orig.has(m.geometry)) geos.push(m.geometry); }); e.userData.geos = geos; congelar(e);
+    scene.add(e); a.estatua = e; a.g.visible = false;
+  }
+  let estatuasNoQuadro = 0;
 
   function dentroDe(p, o, folga = 0) { const c = centro(o), [W, D] = dims(o); return Math.abs(p.x - c.x) < W * G / 2 + folga && Math.abs(p.z - c.z) < D * G / 2 + folga; }
   function ajustarDestino(p) {
@@ -1851,9 +1896,13 @@
       } else if (p.zzz) { scene.remove(p.zzz); p.zzz = null; }
     }
 
+    estatuasNoQuadro = 0;
     for (const k in rebanho) {
       rebanho[k].forEach((a, j) => {
         const g = a.g, gu = g.userData;
+        const est = estadoAnimal(k, j);
+        if (est !== a.est3d && estatuasNoQuadro < 4) { estatuasNoQuadro++; fazerEstatua(a, k, est); } // muda a pose (poucos por quadro)
+        if (a.est3d !== 'anda') return; // parado: nada para animar
         const mov = andar(g, a.alvo, gu.vel, dt);
         if (mov) { animarPernas(gu, dt, k === 'galinha' ? 18 : k === 'coelho' ? 10 : 6, k === 'galinha' ? .6 : .4); if (gu.bica) gu.corpo.position.y = Math.abs(Math.sin(gu.fase)) * .04; if (gu.pula) gu.corpo.position.y = Math.abs(Math.sin(gu.fase)) * .18; }
         else {
@@ -1961,9 +2010,8 @@
     t.icone.visible = false;
     if (chave !== 'vazio') {
       const est = +chave.split('|')[2];
-      t.planta.add(est === 2 ? maduro(p.c) : est === 1 ? crescendo(p.c) : broto());
+      { const pl = est === 2 ? maduro(p.c) : est === 1 ? crescendo(p.c) : broto(); pl.traverse(m => { m.castShadow = false; }); mesclar(pl); t.planta.add(pl); } // planta em poucas peças
       if (!p.reg) { t.icone.material.map = emojiTex('💧'); t.icone.visible = true; t.icone.scale.setScalar(.85); }
-      else if (est === 2) { t.icone.material.map = emojiTex(p.dobro ? '🌟' : '✨'); t.icone.visible = true; t.icone.scale.setScalar(.9); }
       else if (temPraga(p)) { t.icone.material.map = emojiTex('🐛'); t.icone.visible = true; t.icone.scale.setScalar(.95); }
       if (antiga && antiga.split('|')[2] !== String(est)) t.pop = 1;
     }
@@ -2215,10 +2263,14 @@
     }
   }
   const tempoCurto = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return s >= 3600 ? `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}` : s >= 60 ? `${Math.floor(s / 60)}m${String(s % 60).padStart(2, '0')}` : `${s}s`; };
+  const verBal = {}; // balões só aparecem por alguns segundos depois de tocar na construção
   function atualizarBaloes() {
     for (const k in baloes) baloes[k].visible = false;
+    const agora = Date.now();
     S.objetos.forEach(o => {
       const T = TIPOS[o.tipo], c = centro(o);
+      if (T.fruta) { const fr = frutosArv[o.id]; if (fr) fr.visible = restaPomar(o) <= 0; }
+      if (!(verBal[o.id] > agora)) return;
       if (T.animal) {
         const e = estadoCercado(o); if (!e.n) return;
         const [, D] = dims(o), b = balao_(o.id, 4.2); b.position.set(c.x, 4.2, c.z + D * G / 4);
@@ -2228,7 +2280,7 @@
       }
       if (o.tipo === 'casinhaPet' && petsComFome()) { const b = balao_(o.id, 3.2); b.position.set(c.x, 3.2, c.z); desenharBalao(b, '🦴', 'fome!', '#ffe4dd'); }
       if (T.fruta) {
-        const r = restaPomar(o), fr = frutosArv[o.id]; if (fr) fr.visible = r <= 0;
+        const r = restaPomar(o);
         const b = balao_(o.id, 3.6); b.position.set(c.x, 3.6, c.z);
         if (r <= 0) desenharBalao(b, fruta(o).emoji, '×' + fruta(o).rende, '#eaffd8'); else desenharBalao(b, '⏳', tempoCurto(r));
       }
@@ -2373,6 +2425,7 @@
     for (const id in obj3D) { const r = obj3D[id]; if (r.rot) { r.rot.visible = !!(editar.ativo || r.ate > agora || (hoverObj && hoverObj.id === id)); const b = baloes[id]; if (b) b.op = r.rot.visible ? .2 : 1; } }
   }
   function clicarConstrucao(o) {
+    verBal[o.id] = Date.now() + 5000; setTimeout(atualizarBaloes, 50);
     if (o.tipo === 'casinhaPet' && !VISITA && !editar.ativo) { alimentarPets(); return; }
     const T = TIPOS[o.tipo]; mostrarNome(o);
     if (T.animal && qtdAnimal(T.animal)) somT(T.animal, 700);
@@ -3112,7 +3165,7 @@
     const nome = ($('#inpPerfil').value || '').trim().slice(0, 14) || 'Fazendeiro';
     const primeira = !S.perfil;
     S.perfil = {nome, avatar:Object.assign({}, perfilTemp)};
-    if (heroi.g) { const pos = heroi.g.position.clone(), rot = heroi.g.rotation.y; scene.remove(heroi.g); heroi.g = criarFazendeiro(); heroi.g.position.copy(pos); heroi.g.rotation.y = rot; scene.add(heroi.g); }
+    if (heroi.g) { const pos = heroi.g.position.clone(), rot = heroi.g.rotation.y; scene.remove(heroi.g); heroi.g = criarFazendeiro(); soBlob(heroi.g, .5); heroi.g.position.copy(pos); heroi.g.rotation.y = rot; scene.add(heroi.g); }
     aplicarAvatar(); salvar(); janela = 'x'; fechar();
     toast(primeira ? `Bem-vindo(a), ${nome}! 🌻` : 'Personagem atualizado!', 'bom');
     if (primeira) setTimeout(mostrarTutorial, 300);
@@ -3584,9 +3637,10 @@
     if (desloc.lengthSq()) { tg.add(desloc); camera.position.add(desloc); }
     ajustarCamera(dt);
     posicionarBaloes(performance.now() / 1000);
-    quadro++; renderer.shadowMap.needsUpdate = quadro % 3 === 0;
+    quadro++; renderer.shadowMap.needsUpdate = quadro % 30 === 0; // sombras das construções: 2× por segundo basta (bichos e pessoas usam sombrinha redonda)
     // qualidade automática: se estiver travando, baixa um pouco a resolução; quando melhorar, volta
     gov.soma += dt; gov.n++;
+    fpsC.n++; if (t - fpsC.t0 > 500) { const f = Math.round(fpsC.n * 1000 / (t - fpsC.t0)); fpsC.n = 0; fpsC.t0 = t; if (fpsC.el) fpsC.el.textContent = `${f} fps · ${String(+gov.pr.toFixed(2)).replace('.', ',')}×`; if (fpsC.el) fpsC.el.className = f >= 50 ? 'bom' : f >= 30 ? 'medio' : 'ruim'; }
     if (gov.soma > 2.5) {
       const med = gov.soma / gov.n; gov.soma = gov.n = 0;
       if (med > gov.baixa && gov.pr > gov.min) { gov.pr = Math.max(gov.min, gov.pr - .25); gov.bons = 0; renderer.setPixelRatio(gov.pr); }
@@ -4702,7 +4756,7 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+    _teste:{ olhar:id => { const c = centro(objPorId(id)), d = camera.position.clone().sub(controls.target); controls.target.copy(c); camera.position.copy(c).add(d); controls.update(); }, tocar:id => clicarConstrucao(objPorId(id)), expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
