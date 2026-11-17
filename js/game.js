@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.48'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.49'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -74,7 +74,7 @@
     {id:'racaoC', nome:'Ração de coelho',  emoji:'🥣', animal:'coelho',  ing:{alface:2, cenoura:2}, tempo:240, nivel:8, preco:0, racao:true, rende:3},
     {id:'racaoP', nome:'Ração de pato',    emoji:'🥣', animal:'pato',    ing:{trigo:2, alface:1},   tempo:200, nivel:10, preco:0, racao:true, rende:3},
     {id:'racaoS', nome:'Ração de porco',   emoji:'🥣', animal:'porco',   ing:{milho:2, batata:2},   tempo:300, nivel:12, preco:0, racao:true, rende:3},
-    {id:'nectar', nome:'Néctar de flores', emoji:'🥣', animal:'abelha',  ing:{girassol:2},          tempo:300, nivel:14, preco:0, racao:true, rende:3},
+    {id:'nectar', nome:'Néctar de flores', emoji:'🌼', animal:'abelha',  ing:{girassol:2},          tempo:300, nivel:14, preco:0, racao:true, rende:3},
     {id:'racaoPet', nome:'Ração de pet',   emoji:'🦴', animal:null, pet:true, ing:{milho:1, cenoura:1}, tempo:150, nivel:3, preco:0, racao:true, rende:3, mini:'🐾', cor:'#c8743a'},
   ];
   RACOES.forEach(r => r.fab = 'moinho');
@@ -82,13 +82,13 @@
   // produtos das fábricas (valem bem mais que o ingrediente cru)
   const PRODUTOS = [
     {id:'pao',      nome:'Pão',               emoji:'🍞', fab:'padaria',   ing:{trigo:3},                     tempo:180,  preco:60,   xp:6,  nivel:4},
-    {id:'paoMilho', nome:'Pão de milho',      emoji:'🌽', fab:'padaria',   ing:{milho:2, ovo:1},              tempo:300,  preco:150,  xp:10, nivel:4},
+    {id:'paoMilho', nome:'Pão de milho',      emoji:'🫓', fab:'padaria',   ing:{milho:2, ovo:1},              tempo:300,  preco:150,  xp:10, nivel:4},
     {id:'bolo',     nome:'Bolo',              emoji:'🎂', fab:'padaria',   ing:{trigo:2, ovo:2, leite:1},     tempo:600,  preco:320,  xp:18, nivel:5},
     {id:'sanduiche',nome:'Sanduíche',         emoji:'🥪', fab:'padaria',   ing:{pao:1, alface:1, queijo:1},   tempo:540,  preco:480,  xp:24, nivel:6},
     {id:'manteiga', nome:'Manteiga',          emoji:'🧈', fab:'laticinio', ing:{leite:2},                     tempo:360,  preco:140,  xp:10, nivel:5},
     {id:'queijo',   nome:'Queijo',            emoji:'🧀', fab:'laticinio', ing:{leite:3},                     tempo:600,  preco:210,  xp:14, nivel:5},
-    {id:'iogurte',  nome:'Iogurte de morango',emoji:'🍓', fab:'laticinio', ing:{leite:1, morango:2},          tempo:480,  preco:330,  xp:18, nivel:6},
-    {id:'novelo',   nome:'Novelo de linha',   emoji:'🧶', fab:'tecelagem', ing:{la:1},                        tempo:300,  preco:110,  xp:8,  nivel:6},
+    {id:'iogurte',  nome:'Iogurte de morango',emoji:'🥤', fab:'laticinio', ing:{leite:1, morango:2},          tempo:480,  preco:330,  xp:18, nivel:6},
+    {id:'novelo',   nome:'Novelo de linha',   emoji:'🧵', fab:'tecelagem', ing:{la:1},                        tempo:300,  preco:110,  xp:8,  nivel:6},
     {id:'cachecol', nome:'Cachecol',          emoji:'🧣', fab:'tecelagem', ing:{la:2},                        tempo:720,  preco:240,  xp:16, nivel:6},
     {id:'sueter',   nome:'Suéter',            emoji:'🧥', fab:'tecelagem', ing:{la:3, novelo:1},              tempo:1500, preco:520,  xp:30, nivel:7},
     {id:'luvas',    nome:'Luvas de angorá',   emoji:'🧤', fab:'tecelagem', ing:{angora:2},                    tempo:900,  preco:380,  xp:20, nivel:8},
@@ -96,24 +96,24 @@
     {id:'omelete',  nome:'Omelete',           emoji:'🍳', fab:'cozinha',   ing:{ovo:2, tomate:1},             tempo:480,  preco:150,  xp:10, nivel:7},
     {id:'salada',   nome:'Salada da horta',   emoji:'🥗', fab:'cozinha',   ing:{alface:2, tomate:1, cenoura:1}, tempo:420, preco:290,  xp:15, nivel:7},
     {id:'torta',    nome:'Torta de abóbora',  emoji:'🥧', fab:'cozinha',   ing:{abobora:1, ovo:2, trigo:2},   tempo:1200, preco:640,  xp:32, nivel:7},
-    {id:'geleia',   nome:'Geleia de uva',     emoji:'🍇', fab:'cozinha',   ing:{uva:3},                       tempo:900,  preco:1900, xp:60, nivel:8},
+    {id:'geleia',   nome:'Geleia de uva',     emoji:'🫐', fab:'cozinha',   ing:{uva:3},                       tempo:900,  preco:1900, xp:60, nivel:8},
     {id:'paoMel',   nome:'Pão de mel',        emoji:'🍪', fab:'padaria',   ing:{trigo:2, mel:1},              tempo:720,  preco:520,  xp:26, nivel:14},
-    {id:'tortaMaca',nome:'Torta de maçã',     emoji:'🥧', fab:'padaria',   ing:{maca:3, trigo:2, acucar:1},   tempo:1200, preco:880,  xp:40, nivel:13},
+    {id:'tortaMaca',nome:'Torta de maçã',     emoji:'🥮', fab:'padaria',   ing:{maca:3, trigo:2, acucar:1},   tempo:1200, preco:880,  xp:40, nivel:13},
     {id:'batataFrita',nome:'Batata frita',    emoji:'🍟', fab:'cozinha',   ing:{batata:3, oleo:1},            tempo:600,  preco:720,  xp:34, nivel:12},
     {id:'sucoLaranja',nome:'Suco de laranja', emoji:'🧃', fab:'cozinha',   ing:{laranja:3},                   tempo:480,  preco:330,  xp:18, nivel:12},
-    {id:'risoto',   nome:'Batata com bacon',   emoji:'🥔', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:1500, preco:1150, xp:52, nivel:15},
+    {id:'risoto',   nome:'Batata com bacon',   emoji:'🥘', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:1500, preco:1150, xp:52, nivel:15},
     {id:'camiseta', nome:'Camiseta',          emoji:'👕', fab:'tecelagem', ing:{algodao:3},                   tempo:1200, preco:1000, xp:44, nivel:13},
     {id:'travesseiro',nome:'Travesseiro de penas',emoji:'🛏️', fab:'tecelagem', ing:{pena:4, algodao:2},      tempo:1800, preco:1050, xp:50, nivel:14},
     {id:'acucar',   nome:'Açúcar',            emoji:'🧂', fab:'engenho',   ing:{cana:3},                      tempo:420,  preco:560,  xp:22, nivel:11},
     {id:'oleo',     nome:'Óleo de girassol',  emoji:'🫗', fab:'engenho',   ing:{girassol:3},                  tempo:480,  preco:580,  xp:24, nivel:11},
-    {id:'melado',   nome:'Melado',            emoji:'🍯', fab:'engenho',   ing:{cana:2, mel:1},               tempo:900,  preco:620,  xp:30, nivel:14},
+    {id:'melado',   nome:'Melado',            emoji:'🍶', fab:'engenho',   ing:{cana:2, mel:1},               tempo:900,  preco:620,  xp:30, nivel:14},
     {id:'cupcake',  nome:'Cupcake',           emoji:'🧁', fab:'docaria',   ing:{trigo:2, acucar:1, ovo:1},    tempo:900,  preco:780,  xp:36, nivel:13},
     {id:'pudim',    nome:'Pudim',             emoji:'🍮', fab:'docaria',   ing:{leite:2, acucar:1, ovo:2},    tempo:1200, preco:900,  xp:42, nivel:14},
     {id:'balaMel',  nome:'Bala de mel',       emoji:'🍬', fab:'docaria',   ing:{mel:1, acucar:1},             tempo:600,  preco:900,  xp:34, nivel:15},
     {id:'docePimenta',nome:'Geleia de pimentão',emoji:'🫙', fab:'docaria', ing:{pimentao:3, acucar:1},        tempo:1200, preco:1400, xp:48, nivel:16},
     {id:'sorvete',  nome:'Sorvete de morango',emoji:'🍨', fab:'sorveteria',ing:{leite:2, morango:2, acucar:1},tempo:900,  preco:1180, xp:46, nivel:16},
     {id:'picole',   nome:'Picolé de melancia',emoji:'🍧', fab:'sorveteria',ing:{melancia:1, acucar:1},        tempo:720,  preco:1150, xp:44, nivel:18},
-    {id:'sorveteCereja',nome:'Sorvete de cereja',emoji:'🍒', fab:'sorveteria',ing:{leite:2, cereja:3, acucar:1},tempo:1200,preco:1500, xp:58, nivel:18},
+    {id:'sorveteCereja',nome:'Sorvete de cereja',emoji:'🍦', fab:'sorveteria',ing:{leite:2, cereja:3, acucar:1},tempo:1200,preco:1500, xp:58, nivel:18},
     {id:'cafeGelado',nome:'Café gelado',      emoji:'🧋', fab:'sorveteria',ing:{cafe:1, leite:2, acucar:1},   tempo:1500, preco:1900, xp:70, nivel:22},
   ];
   const FABRICAS = {
@@ -261,7 +261,7 @@
 
   const $ = s => document.querySelector(s);
   // ícone de item: rações ganham um saquinho colorido com o bichinho
-  const emojiItem = it => it.racao ? it.mini : it.mat ? matIco(it.id) : it.emoji;
+  const emojiItem = it => ITEM_IMG[it.id] ? `<img class="it-mini" src="assets/ui/${ITEM_IMG[it.id]}.webp" alt="">` : it.racao ? it.mini : it.mat ? matIco(it.id) : it.emoji; // o mesmo item tem sempre a mesma imagem
   function iconeItem(it, cls = '') {
     if (ITEM_IMG[it.id]) return `<span class="${cls} it-img">${UI(ITEM_IMG[it.id])}</span>`;
     if (it.mat) return `<span class="${cls}">${matIco(it.id)}</span>`;
@@ -331,7 +331,7 @@
         if (S.ferramenta && S.ferramenta !== 'mao' && S.ferramenta !== 'regador' && !crop(S.ferramenta)) S.ferramenta = 'mao'; if (crop(S.ferramenta)) S.semSel = S.ferramenta; if (!S.semSel) S.semSel = 'trigo';
         if (S.upg.cesta || S.upg.regadorG) { S.upg.maos = Math.max(S.upg.maos || 0, S.upg.cesta || 0); if (S.upg.regadorG) S.moedas += 350; delete S.upg.cesta; delete S.upg.regadorG; }
         // saves antigos: plantação fixa → lotes de 4 canteiros
-        const lotes = S.objetos.filter(o => o.tipo === 'lote').length;
+        const lotes = S.objetos.filter(o => o.tipo === 'lote').length + (S.guardados || []).filter(g => g.tipo === 'lote').length; // terras guardadas contam
         const precisa = Math.max(1, Math.ceil(S.plots.length / 4));
         if (S.tut == null || (S.tut === 0 && S.colhidos > 0)) S.tut = S.colhidos > 0 ? -1 : 0;
         S.stats = Object.assign({colheu:{}, plantou:{}, coletou:{}, vendeu:0, compras:0, fez:{}, alimentou:0}, S.stats);
@@ -411,7 +411,9 @@
   function precoAtual(id) { return Math.max(1, Math.round(item(id).preco)); } // v0.48: preço fixo (comprar na loja custa o dobro: comprar e revender nunca dá lucro)
   const custoUpg = k => Math.round(UPG[k].base * Math.pow(UPG[k].mult, S.upg[k] || 0));
   const nTipo = t => S.objetos.filter(o => o.tipo === t).length;
-  const custoLote = () => Math.round(150 * Math.pow(1.45, nTipo('lote') - 1));
+  const qtdGuardado = t => (S.guardados || []).filter(g => g.tipo === t).length;
+  const nPosse = t => nTipo(t) + qtdGuardado(t);
+  const custoLote = () => Math.round(150 * Math.pow(1.45, nPosse('lote') - 1));
   const CONSTRUCOES = [
     {tipo:'lote',       icone:'🟫', desc:'4 canteiros para plantar.'},
     {tipo:'galinheiro', icone:'🐔', nivel:2, base:300,  desc:'Casa das galinhas: cabem 6.'},
@@ -441,9 +443,9 @@
   const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 7, 12, 17]};
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
   const maxPermitido = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
-  const nivelConstrucao = t => t === 'lote' ? 1 + Math.ceil(nTipo('lote') * .67) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nTipo(t)) : consDe(t).nivel;
+  const nivelConstrucao = t => t === 'lote' ? 1 + Math.ceil(nPosse('lote') * .67) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nPosse(t)) : consDe(t).nivel;
   const ehUnico = t => { const c = consDe(t); return !!(c && c.unico); };
-  const custoConstrucao = t => t === 'lote' ? custoLote() : decDe(t) ? decDe(t).preco : Math.round(consDe(t).base * Math.pow(consDe(t).mult || 1.8, nTipo(t)));
+  const custoConstrucao = t => t === 'lote' ? custoLote() : decDe(t) ? decDe(t).preco : Math.round(consDe(t).base * Math.pow(consDe(t).mult || 1.8, nPosse(t)));
   // bichinho (praga): enquanto está na planta, ela cresce na metade da velocidade
   const decorrido = p => { const ag = Date.now(); let d = ag - p.t0; if (p.pragaEm && ag > p.pragaEm) d -= (Math.min(ag, p.pragaFim || ag) - p.pragaEm) / 2; return d; };
   const restante = p => Math.max(0, p.dur - decorrido(p));
@@ -1559,7 +1561,7 @@
   }
   function montarObjetos() {
     // compra que ficou sem ✓ (app fechou no meio): desfaz, sem cobrar
-    S.objetos.filter(o => o.pend).forEach(o => { S.objetos.splice(S.objetos.indexOf(o), 1); if (o.tipo === 'lote' && o.li === nTipo('lote')) S.plots.splice(o.li * 4, 4); });
+    S.objetos.filter(o => o.pend).forEach(o => { S.objetos.splice(S.objetos.indexOf(o), 1); if (o.tipo === 'lote' && !o.doBau && o.li * 4 + 4 === S.plots.length) S.plots.splice(o.li * 4, 4); });
     S.objetos.forEach(criarObjeto3D);
   }
   const objPorId = id => S.objetos.find(o => o.id === id);
@@ -2368,25 +2370,26 @@
     toast(`${a.emoji} Nova ${a.nome.toLowerCase()}! Toque no ${TIPOS[a.cercado].nome.toLowerCase()} para dar ração`, 'bom'); tudo();
   }
   // comprar construção nova: coloca no primeiro lugar livre e abre o modo edição para posicionar
-  function comprarConstrucao(tipo, perto) {
-    const custo = custoConstrucao(tipo);
-    if (S.nivel < nivelConstrucao(tipo)) { toast(`Libera no nível ${nivelConstrucao(tipo)}`); return; }
-    if (ehUnico(tipo) && nTipo(tipo)) { toast('Você já tem essa construção'); return; }
+  function comprarConstrucao(tipo, perto, doBau) { // doBau: item que estava guardado (sai de graça)
+    const custo = doBau ? 0 : custoConstrucao(tipo);
+    if (!doBau && S.nivel < nivelConstrucao(tipo)) { toast(`Libera no nível ${nivelConstrucao(tipo)}`); return; }
+    if (!doBau && ehUnico(tipo) && nPosse(tipo)) { toast(qtdGuardado(tipo) ? 'Ela está guardada: coloque pela Loja › 📦 Guardados' : 'Você já tem essa construção'); return; }
     if (S.moedas < custo) { toast('Moedas insuficientes'); return; }
     // só paga quando tocar no ✓ verde; o ✕ vermelho desiste sem gastar nada
     const tg = controls.target, ref = perto || {x:Math.round(tg.x / G), z:Math.round(tg.z / G)}, pos = acharEspaco(tipo, ref.x, ref.z) || acharEspaco(tipo);
     if (!pos) { toast('Sem espaço livre! Libere novas terras 🌳'); if (perto) sairEdicao(); return; }
-    const o = {id:novoId(), tipo, rot:perto ? perto.rot || 0 : 0, ...pos, pend:true, custo};
-    if (tipo === 'lote') { o.li = nTipo('lote'); for (let k = 0; k < 4; k++) S.plots.push({c:null}); }
+    const o = {id:novoId(), tipo, rot:perto ? perto.rot || 0 : 0, ...pos, pend:true, custo}; if (doBau) o.doBau = doBau.uid;
+    if (tipo === 'lote' && doBau && doBau.li != null) o.li = doBau.li; else if (tipo === 'lote') { o.li = S.plots.length / 4; for (let k = 0; k < 4; k++) S.plots.push({c:null}); }
     S.objetos.push(o); criarObjeto3D(o);
     fechar(); tudo();
     entrarEdicao(true); selecionar(o);
-    toast(perto ? `Mais um? Arraste e toque ✓ · ✕ para parar` : `Arraste até o lugar e toque ✓ para comprar por ${fmtN(custo)} · ✕ desiste`, 'bom');
+    toast(doBau ? 'Arraste até o lugar e toque ✓ para colocar · ✕ deixa guardado' : perto ? `Mais um? Arraste e toque ✓ · ✕ para parar` : `Arraste até o lugar e toque ✓ para comprar por ${fmtN(custo)} · ✕ desiste`, 'bom');
   }
   function removerObjeto(o) { // tira a construção do jogo (usado ao desistir de uma compra)
     const i = S.objetos.indexOf(o); if (i >= 0) S.objetos.splice(i, 1);
     const r = obj3D[o.id]; if (r) { scene.remove(r.g); const k = pickObjs.indexOf(r.pick); if (k >= 0) pickObjs.splice(k, 1); delete obj3D[o.id]; }
-    if (o.tipo === 'lote' && o.li === nTipo('lote')) S.plots.splice(o.li * 4, 4);
+    if (o.tipo === 'lote') for (let k = 0; k < 4; k++) tiles[o.li * 4 + k] = undefined; // os canteiros somem junto (não ficam tocáveis)
+    if (o.tipo === 'lote' && !o.doBau && o.li * 4 + 4 === S.plots.length) S.plots.splice(o.li * 4, 4);
     if (TIPOS[o.tipo].animal) atualizarAnimais3D(true);
   }
   const temMats = (lista, n) => lista.every(m => ((S.mat || {})[m] || 0) >= n);
@@ -2529,7 +2532,7 @@
       if (T.animal) {
         const e = estadoCercado(o); if (!e.n) return;
         const [, D] = dims(o), b = balao_(o.id, 4.2); b.position.set(c.x, 4.2, c.z + D * G / 4);
-        if (e.prontos) desenharBalao(b, item(ANIMAIS[T.animal].prod).emoji, '×' + e.prontos, '#eaffd8');
+        if (e.prontos) desenharBalao(b, emojiItem(item(ANIMAIS[T.animal].prod)), '×' + e.prontos, '#eaffd8');
         else if (e.prod) desenharBalao(b, '⏳', tempoCurto(e.prox) + (e.fome ? ' 🍽️' : ''));
         else if (e.fome) desenharBalao(b, '🍽️', 'fome!', '#ffe4dd');
       }
@@ -2691,7 +2694,7 @@
     if (T.animal) {
       if (!qtdAnimal(T.animal)) { abrir('animais'); return; }
       { atualizarProducao(); const e = estadoCercado(o), a = ANIMAIS[T.animal];
-        if (e.fome && !e.prontos && !(S.celeiro[a.racao] > 0)) { irParaRacao(a); return; } }
+        if (e.fome && !e.prontos && !(S.celeiro[a.racao] > 0)) { toast(`🍽️ ${a.plural} com fome e sem ${item(a.racao).nome.toLowerCase()}. Faça no moinho 🌾`); somT('erro'); return; } } // só avisa (não abre o moinho sozinho)
       enfileirar({tipo:'cercado', oid:o.id}); return;
     }
     if (T.fab) { if (o.tipo === 'moinho') fabSel = o.id; const oidF = o.tipo === 'moinho' ? o.id : undefined; if (prontosFab(o.tipo, oidF) > 0) { coletarFab(o.tipo, oidF); tudo(); return; } abrir('fabrica', o.tipo); if (!objNaFila(o.id)) enfileirar({tipo:'andar', oid:o.id}); tudo(); }
@@ -2767,7 +2770,7 @@
     if (a) { e.stopPropagation(); e.preventDefault(); mostrarInfo(a.dataset.info, a); return; }
     if (!e.target.closest('#infoItem')) fecharInfo();
   }, true);
-  const clicavel = o => o && (TIPOS[o.tipo].abre || TIPOS[o.tipo].animal || TIPOS[o.tipo].fab || TIPOS[o.tipo].fruta);
+  const clicavel = o => o && (TIPOS[o.tipo].abre || TIPOS[o.tipo].animal || TIPOS[o.tipo].fab || TIPOS[o.tipo].fruta || o.tipo === 'casinhaPet');
   function vizinhos(i) {
     const c = posTile(i), out = [];
     S.plots.forEach((p, j) => { if (tiles[j] && posTile(j).distanceTo(c) < G * 1.6) out.push(j); });
@@ -2848,7 +2851,7 @@
     const lista = [...CONSTRUCOES.map(c => ({tipo:c.tipo, icone:c.icone})), ...DECOR.map(c => ({tipo:c.tipo, icone:c.icone}))];
     let h = '';
     lista.forEach(c => {
-      const nv = nivelConstrucao(c.tipo), trava = S.nivel < nv, custo = custoConstrucao(c.tipo), feito = ehUnico(c.tipo) && nTipo(c.tipo) > 0;
+      const nv = nivelConstrucao(c.tipo), trava = S.nivel < nv, custo = custoConstrucao(c.tipo), feito = ehUnico(c.tipo) && nPosse(c.tipo) > 0;
       if (feito) return;
       h += `<button class="bc ${trava ? 'trava' : ''} ${!trava && S.moedas < custo ? 'caro' : ''}" data-bc="${c.tipo}"><span class="e">${c.icone}</span><small>${TIPOS[c.tipo].nome}</small>
         <b>${trava ? '🔒 Nv ' + nv : moedaMini + fmtN(custo)}</b></button>`;
@@ -2877,6 +2880,7 @@
     ferrEd.style.display = 'flex';
     ferrEd.querySelector('[data-ed=ok]').disabled = !editar.valido;
     ferrEd.querySelector('[data-ed=vender]').style.display = TIPOS[editar.sel.tipo].decor ? '' : 'none';
+    { const gb = ferrEd.querySelector('[data-ed=guardar]'); if (gb) gb.style.display = editar.sel.pend || ['celeiro', 'armazem', 'galpao', 'loja', 'lago'].includes(editar.sel.tipo) ? 'none' : ''; }
     atualizarBaloes();
   }
   function moverSel(p) {
@@ -2898,6 +2902,8 @@
       const custo = o.custo || 0; delete o.custo;
       if (S.moedas < custo) { toast('Moedas insuficientes'); cancelarSel(); return; }
       S.moedas -= custo; delete o.pend; somT('moeda');
+      if (o.doBau) { S.guardados = (S.guardados || []).filter(g => g.uid !== o.doBau); delete o.doBau; editar.compra = false; posicionar(o); editar.sel = null; pegada.visible = false; ferrEd.style.display = 'none';
+        if (TIPOS[o.tipo].animal) atualizarAnimais3D(true); poeiraEm(centro(o), 0xd8b98a); salvar(); sairEdicao(); tudo(); toast(`📦 ${TIPOS[o.tipo].nome} colocado de volta!`, 'bom'); return; }
       const an = TIPOS[o.tipo].animal;
       if (an && !S.presente[o.tipo]) { S.presente[o.tipo] = 1; const r = ANIMAIS[an].racao; S.celeiro[r] = (S.celeiro[r] || 0) + 3; setTimeout(() => toast(`🎁 Presente: 3 ${item(r).nome.toLowerCase()}!`, 'ouro'), 1500); }
     }
@@ -2911,6 +2917,28 @@
       if (T.decor && d && S.moedas >= d.preco) { comprarConstrucao(o.tipo, {x:o.ox, z:o.oz, rot:o.rot}); return; }
       sairEdicao(); toast(`${T.nome} comprado! ✅`, 'bom');
     }
+  }
+  // ===== v0.49: guardar construções e decorações (Loja › 📦 Guardados) =====
+  function motivoNaoGuardar(o) {
+    const T = TIPOS[o.tipo];
+    if (['celeiro', 'armazem', 'galpao', 'loja', 'lago'].includes(o.tipo)) return `O ${T.nome.toLowerCase()} não pode ser guardado (dá para mover)`;
+    if (o.tipo === 'lote') { const ps = S.plots.slice(o.li * 4, o.li * 4 + 4); if (ps.some(p => p && p.c)) return 'Colha ou espere a plantação terminar antes de guardar esta terra'; }
+    if (T.animal) { const a = ANIMAIS[T.animal]; if (qtdAnimal(T.animal) > a.porCercado * (nTipo(o.tipo) - 1)) return `Tem ${a.plural.toLowerCase()} morando aqui: não cabem nos outros cercados`; }
+    if (T.fab) { const e = o.tipo === 'moinho' ? fabEstado('moinho', o.id) : fabEstado(o.tipo); if (e.fila.length || Object.values(e.prontos || {}).some(n => n > 0)) return 'Espere a produção terminar e pegue os produtos antes de guardar'; }
+    if (objNaFila(o.id)) return 'O fazendeiro está indo até aí: espere um pouco';
+    return '';
+  }
+  function guardarSel() {
+    const o = editar.sel; if (!o || o.pend) return;
+    const m = motivoNaoGuardar(o); if (m) { toast(m); somT('erro'); return; }
+    S.objetos.splice(S.objetos.indexOf(o), 1);
+    const r = obj3D[o.id]; if (r) { scene.remove(r.g); const k = pickObjs.indexOf(r.pick); if (k >= 0) pickObjs.splice(k, 1); delete obj3D[o.id]; }
+    if (o.tipo === 'lote') for (let k = 0; k < 4; k++) tiles[o.li * 4 + k] = undefined;
+    if (!S.guardados) S.guardados = [];
+    S.guardados.push({uid:'g' + Date.now() + Math.random().toString(36).slice(2, 6), tipo:o.tipo, li:o.tipo === 'lote' ? o.li : null});
+    editar.sel = null; pegada.visible = false; ferrEd.style.display = 'none';
+    if (TIPOS[o.tipo].animal) atualizarAnimais3D(true);
+    salvar(); tudo(); somT('abrir'); toast(`📦 ${TIPOS[o.tipo].nome} guardado! Coloque de volta em Loja › Guardados`, 'bom');
   }
   function venderSel() {
     const o = editar.sel; if (!o || !TIPOS[o.tipo].decor) return;
@@ -2966,7 +2994,7 @@
   }
   const progMissao = m => Math.max(0, Math.min(m.n, valorMissao(m) - (m.base || 0)));
   function textoMissao(m) {
-    const it = m.id && item(m.id), nome = it ? `${it.emoji} ${it.nome.toLowerCase()}` : '';
+    const it = m.id && item(m.id), nome = it ? `${emojiItem(it)} ${it.nome.toLowerCase()}` : '';
     switch (m.t) {
       case 'colher': return `Colha ${m.n} ${nome}`;
       case 'plantar': return `Plante ${m.n} ${nome}`;
@@ -3075,7 +3103,7 @@
   }
 
   // ================= TUTORIAL =================
-  const primeiro = f => { const i = S.plots.findIndex(f); return i < 0 ? 0 : i; };
+  const primeiro = f => { const i = S.plots.findIndex((p, j) => tiles[j] && f(p)); return i < 0 ? 0 : i; };
   const celeiroObj = () => S.objetos.find(o => o.tipo === 'celeiro') || S.objetos.find(o => o.tipo === 'armazem');
   const TUT = [
     {txt:'Oi! Eu sou o Tonho. Bem-vindo à <b>Terrália Farm</b>! Vou te mostrar como cuidar da sua fazenda.', botao:'Vamos lá!'},
@@ -3179,7 +3207,7 @@
     const slot = (id, ico, nome, qtd, ativo, extra = '') => `<button class="slot ${ativo ? 'ativo' : ''} ${extra}" data-ferr="${id}"><span class="ico">${ico}</span><small>${nome}</small>${qtd != null ? `<span class="qtd">${qtd}</span>` : ''}</button>`;
     const c = semAtual(), q = S.celeiro[c.id] || 0;
     const hb = slot('mao', ICO.cesta, 'Colher', null, S.ferramenta === 'mao') + slot('regador', ICO.regador, 'Regar', null, S.ferramenta === 'regador')
-      + slot('plantar', ICO.saco + `<span class="emo">${c.emoji}</span>`, 'Plantar', q, plantando, (q ? '' : 'vazio ') + 'plantar' + (seletorAberto ? ' aberto' : '')).replace('</button>', '<span class="seta">▲</span></button>');
+      + slot('plantar', ICO.saco + `<span class="emo">${emojiItem(c)}</span>`, 'Plantar', q, plantando, (q ? '' : 'vazio ') + 'plantar' + (seletorAberto ? ' aberto' : '')).replace('</button>', '<span class="seta">▲</span></button>');
     if (hb !== hotbarHTML) { hotbarHTML = hb; $('#hotbar').innerHTML = hb; }
     renderSeletor();
   }
@@ -3212,7 +3240,7 @@
         .concat(ks.map(k => { const q = qtdIns(k), serve = insumoServe(k, p);
           return `<button class="sem ins ${q ? '' : 'vazio'} ${serve ? '' : 'usado'}" data-ins="${k}" title="${INSUMOS[k].desc}"><span class="ico"><span class="emo-g">${INSUMOS[k].emoji}</span></span><small>${INSUMOS[k].nome.split(' ')[0]}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-ins="1">+</span>'}</button>`; }));
       const c = crop(p.c), pr = Math.floor(progresso(p) * 100), avisos = [temPraga(p) && '🐛 bichinho!', p.dobro && '🌟 colheita dobrada', p.prot && '🧴 protegida', p.rap && '⚡ adubada'].filter(Boolean);
-      el.innerHTML = `<div class="tempo-card"><div class="tc-anel" style="--p:${pr}"><span>${c.emoji}</span></div><div class="tc-txt"><b data-tc-tempo="1">${fmtT(restante(p) / 1000)}</b><small>${c.nome} · <span data-tc-pct="1">${pr}</span>%</small>${avisos.length ? `<em>${avisos.join(' · ')}</em>` : ''}</div></div>` + (bts.length ? `<div class="sel-lista ferr">${bts.join('')}</div>` : '');
+      el.innerHTML = `<div class="tempo-card"><div class="tc-anel" style="--p:${pr}"><span>${emojiItem(c)}</span></div><div class="tc-txt"><b data-tc-tempo="1">${fmtT(restante(p) / 1000)}</b><small>${c.nome} · <span data-tc-pct="1">${pr}</span>%</small>${avisos.length ? `<em>${avisos.join(' · ')}</em>` : ''}</div></div>` + (bts.length ? `<div class="sel-lista ferr">${bts.join('')}</div>` : '');
       posicionarSeletor(); return;
     }
     if (modoSel !== 'sementes') {
@@ -3222,7 +3250,7 @@
     }
     const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
     el.innerHTML = '<div class="sel-linha">' + (pags > 1 ? `<button class="pg" data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button>` : '') + '<div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.celeiro[c.id] || 0;
-      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${c.emoji}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<button class="pg" data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button>` : '') + '</div>';
+      return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${emojiItem(c)}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<button class="pg" data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button>` : '') + '</div>';
     posicionarSeletor();
   }
   let molduraSel = null; // moldura amarela no canteiro tocado
@@ -3240,7 +3268,7 @@
   const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
-  const SUBLOJA = {sementes:'🌱 Plantas', producao:'🏭 Produção', animais:'🐄 Animais', fazenda:'🏡 Fazenda', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', insumos:'🧪 Adubos', materiais:'🧰 Materiais'};
+  const SUBLOJA = {sementes:'🌱 Plantas', producao:'🏭 Produção', animais:'🐄 Animais', fazenda:'🏡 Fazenda', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', insumos:'🧪 Adubos', materiais:'🧰 Materiais', guardados:'📦 Guardados'};
   // em qual aba da loja fica cada construção
   const GRUPO_LOJA = {producao:['moinho', 'padaria', 'laticinio', 'tecelagem', 'cozinha', 'engenho', 'docaria', 'sorveteria'],
     animais:['galinheiro', 'curral', 'pasto', 'coelheira', 'lagoinha', 'chiqueiro', 'apiario', 'casinhaPet']};
@@ -3295,6 +3323,11 @@
         h += tile({selo:q ? `Você tem ${q}` : '', ic:`<span class="mat-card">${matIco(k)}</span>`, nome:m.nome, info:`<span>Usado para ampliar ${m.para === 'ilha' ? 'a ilha' : m.para === 'celeiro' ? 'o celeiro' : 'o armazém'}</span>`,
           acao:`<button class="btn verde" data-compra="mat:${k}" ${S.moedas < pr ? 'disabled' : ''}>Comprar · ${moedaMini}${pr}</button>`});
       });
+      if (subLoja === 'guardados') { const gs = S.guardados || [];
+        if (!gs.length) h += `<div class="vazio-msg">📦 Nada guardado ainda.<br><small>No modo edição, toque numa construção ou decoração e use o botão 📦 para guardar. Ela fica aqui para colocar de volta quando quiser, de graça.</small></div>`;
+        gs.forEach(g => { const T = TIPOS[g.tipo], c = consDe(g.tipo) || decDe(g.tipo) || {};
+          h += tile({selo:'Guardado', ic:iconeLoja(g.tipo, c.icone || '📦'), nome:T.nome, info:`<span class="desc">${g.tipo === 'lote' ? 'Terra com 4 canteiros' : 'Volta do jeito que estava'}</span>`,
+            acao:`<button class="btn verde" data-colocar="${g.uid}">Colocar · grátis</button>`}); }); }
       if (subLoja === 'insumos') Object.entries(INSUMOS).filter(([k, n]) => !n.fora).forEach(([k, n]) => {
         const trava = S.nivel < n.nivel, q = qtdIns(k);
         h += tile({trava, selo:trava ? `🔒 Nível ${n.nivel}` : q ? `Você tem ${q}` : '', seloCls:trava ? 'trava' : '',
@@ -3380,16 +3413,16 @@
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
         const ic = a.img ? `<span class="foto-g ${/webp$/.test(a.img) ? 'recorte' : ''}"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`;
         let status, principal, extras = '';
-        if (trava) { status = `🔒 Nível ${Math.max(a.nivel, nvC)} · dão ${it.emoji}`; principal = `<button class="btn" disabled>Bloqueado</button>`; }
+        if (trava) { status = `🔒 Nível ${Math.max(a.nivel, nvC)} · dão ${emojiItem(it)}`; principal = `<button class="btn" disabled>Bloqueado</button>`; }
         else if (!nTipo(a.cercado)) { status = `Precisa ${TIPOS[a.cercado].fem ? 'de uma' : 'de um'} ${nomeC}`; principal = `<button class="btn verde" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>Construir · ${moedaMini}${fmtN(cc)}</button>`; }
         else {
           let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
           const temR = (S.celeiro[r.id] || 0) > 0;
-          status = n ? `<div class="ciclo"><span class="cc fome ${fome ? 'on' : ''}">🍽️ Com fome <b>${fome}</b></span><i>›</i><span class="cc prod ${prod ? 'on' : ''}">⏳ Produzindo <b>${prod}</b></span><i>›</i><span class="cc pronto ${pr ? 'on' : ''}">${it.emoji} Pronto <b>${pr}</b></span></div>` : 'Nenhum animal ainda';
+          status = n ? `<div class="ciclo"><span class="cc fome ${fome ? 'on' : ''}">🍽️ Com fome <b>${fome}</b></span><i>›</i><span class="cc prod ${prod ? 'on' : ''}">⏳ Produzindo <b>${prod}</b></span><i>›</i><span class="cc pronto ${pr ? 'on' : ''}">${emojiItem(it)} Pronto <b>${pr}</b></span></div>` : 'Nenhum animal ainda';
           status += `<span class="ani-racao ${(S.celeiro[r.id] || 0) ? '' : 'zero'}" data-info="${r.id}">${iconeItem(r, 'mini-ic')} ${r.nome}: tem <b>${S.celeiro[r.id] || 0}</b> ${(S.celeiro[r.id] || 0) ? '' : '· toque para ver como fazer'}</span>`;
           if (!n) principal = `<button class="btn verde" data-animal="${k}" ${S.moedas < custoAnimal(k) ? 'disabled' : ''}>Comprar ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}</button>`;
           else if (cercadosDe(k).some(o => objNaFila(o.id))) principal = '<button class="btn" disabled>🚶 A caminho…</button>';
-          else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">👉 Coletar ${pr} ${it.emoji}</button>`;
+          else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">👉 Coletar ${pr} ${emojiItem(it)}</button>`;
           else if (fome && temR) principal = `<button class="btn verde" data-ir-cercado="${k}">👉 Dar ração a ${Math.min(fome, S.celeiro[r.id])} 🥣</button>`;
           else if (fome) principal = `<button class="btn laranja" data-fazer-racao="${r.id}">👉 Fazer ração 🌾</button>`;
           else principal = `<button class="btn" data-ir-cercado="${k}">✅ Tudo certo · ver</button>`;
@@ -3766,7 +3799,7 @@
   document.addEventListener('click', e => {
     const ed = e.target.closest('[data-ed]'); if (!ed) return;
     const a = ed.dataset.ed;
-    if (a === 'girar') girarSel(); if (a === 'ok') confirmarSel(); if (a === 'cancelar') cancelarSel(); if (a === 'concluir') sairEdicao(); if (a === 'vender') venderSel();
+    if (a === 'girar') girarSel(); if (a === 'ok') confirmarSel(); if (a === 'cancelar') cancelarSel(); if (a === 'concluir') sairEdicao(); if (a === 'vender') venderSel(); if (a === 'guardar') guardarSel();
   });
 
   $('#filaUI').addEventListener('click', e => { const b = e.target.closest('[data-fila]'); if (!b) return; if (b.dataset.fila === 'tudo') { limparFila(); toast('✋ Lista de afazeres cancelada'); } else removerDaFila(+b.dataset.fila); });
@@ -3808,6 +3841,7 @@
       if (!alvos.length) { toast(cercadosDe(k).some(o => objNaFila(o.id)) ? '👍 O fazendeiro já está indo lá' : 'Nada para fazer agora nesses cercados'); return; }
       alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id}));
       toast(`🐾 Indo cuidar ${alvos.length > 1 ? 'dos ' + alvos.length + ' cercados' : 'do cercado'} de ${a.plural.toLowerCase()}`, 'bom'); renderJanela(); return; }
+    const cg = e.target.closest('[data-colocar]'); if (cg) { const g = (S.guardados || []).find(x => x.uid === cg.dataset.colocar); if (g) comprarConstrucao(g.tipo, null, g); return; }
     const fr = e.target.closest('[data-fazer-racao]'); if (fr) { guiarFazer(fr.dataset.fazerRacao); return; }
     const im = e.target.closest('[data-ir-moinho]'); if (im) { const o = S.objetos.find(o => o.tipo === 'moinho'); if (o) { focar(centro(o)); clicarConstrucao(o); } else abrir('loja', 'construcoes'); return; }
     const rc = e.target.closest('[data-receita]'); if (rc) {
@@ -3860,9 +3894,9 @@
     if (ac === 'cuidar-todos') {
       const c = resumoCuidar();
       if (c.alvos.length) { c.alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo ${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' e ')}`, 'bom'); }
-      if (c.semR.length) { const a = ANIMAIS[c.semR[0]]; setTimeout(() => { toast(`🥣 Falta ${item(a.racao).nome.toLowerCase()} para ${a.plural.toLowerCase()}: vamos fazer!`); guiarFazer(a.racao); }, c.alvos.length ? 1400 : 0); }
+      if (c.semR.length) setTimeout(() => toast(`🥣 Sem ração para ${c.semR.map(k => ANIMAIS[k].plural.toLowerCase()).join(', ')}. Faça no moinho (botão laranja "Fazer ração")`), c.alvos.length ? 1200 : 0); // só avisa: não abre nada sozinho
       else if (!c.alvos.length) toast('Tudo em dia! Nenhum animal com fome nem produto pronto 😊');
-      if (c.alvos.length && !c.semR.length) renderJanela();
+      renderJanela();
     }
     if (ac === 'previa-ilha') { mostrarPreviaIlha(); return; }
     if (ac === 'expandir') {
@@ -4084,10 +4118,11 @@
   // o passe segue o calendário: no dia 17 já dá para pegar os prêmios do dia 1 ao 17. A cada 7 dias um baú.
   const PASSE_GRATIS = [
     ['moedas', 200], ['item', 'racaoG', 6], ['xp', 30], ['item', 'milho', 10], ['ins', 'rapido', 2], ['moedas', 400], ['bau', 1],
-    ['mat', 'armazem', 1], ['item', 'racaoV', 6], ['xp', 60], ['moedas', 500], ['item', 'cenoura', 10], ['ins', 'super', 1], ['bau', 2],
-    ['mat', 'celeiro', 1], ['item', 'racaoO', 6], ['moedas', 700], ['xp', 100], ['ins', 'rapido', 3], ['item', 'tomate', 10], ['bau', 3],
-    ['mat', 'armazem', 2], ['moedas', 900], ['item', 'racaoPet', 6], ['xp', 150], ['ins', 'super', 2], ['mat', 'celeiro', 2], ['bau', 4],
-    ['mat', 'ilha', 1], ['moedas', 1200], ['bau', 5]];
+    ['mat', 'parafuso', 1], ['item', 'racaoV', 6], ['xp', 60], ['moedas', 500], ['item', 'cenoura', 10], ['ins', 'super', 1], ['bau', 2],
+    ['mat', 'prego', 1], ['item', 'racaoO', 6], ['moedas', 700], ['xp', 100], ['ins', 'rapido', 3], ['item', 'tomate', 10], ['bau', 3],
+    ['mat', 'tabua', 2], ['moedas', 900], ['item', 'racaoPet', 6], ['xp', 150], ['ins', 'super', 2], ['mat', 'tijolo', 2], ['bau', 4],
+    ['mat', 'escritura', 1], ['moedas', 1200], ['bau', 5]];
+  const BAU_MAT = ['fita', 'tinta', 'parafuso', 'prego', 'marreta', 'estaca', 'tabua'];
   const PASSE_PREMIUM = PASSE_GRATIS.map(([t, a, b]) => t === 'moedas' ? ['moedas', a * 2] : t === 'xp' ? ['xp', a * 2] : t === 'bau' ? ['bau', a + 2] : t === 'mat' ? ['mat', a, (b || 1) + 1] : ['ins', (a === 'super' ? 'super' : 'rapido'), 3]);
   function passeEstado() {
     const m = mesStr();
@@ -4102,8 +4137,8 @@
     if (t === 'xp') { ganharXp(a); return `⭐ ${a} XP`; }
     if (t === 'item') { S.celeiro[a] = (S.celeiro[a] || 0) + b; return `${item(a).emoji} ${b} ${item(a).nome.toLowerCase()}`; }
     if (t === 'ins') { if (!S.ins) S.ins = {}; S.ins[a] = (S.ins[a] || 0) + b; return `${INSUMOS[a].emoji} ${b} ${INSUMOS[a].nome.toLowerCase()}`; }
-    if (t === 'mat') { const ms = matsDe(a), m = ms[Math.floor(Math.random() * ms.length)], q = b || 1; mudarEstoque(m, q); return `${MATERIAIS[m].emoji} ${q} ${MATERIAIS[m].nome.toLowerCase()}`; }
-    if (t === 'bau') { const mo = 400 * a + 200, ms = matsDe(a >= 5 ? 'ilha' : a % 2 ? 'armazem' : 'celeiro'), m = ms[Math.floor(Math.random() * ms.length)];
+    if (t === 'mat') { const q = b || 1; mudarEstoque(a, q); return `${MATERIAIS[a].emoji} ${q} ${MATERIAIS[a].nome.toLowerCase()}`; }
+    if (t === 'bau') { const mo = 400 * a + 200, m = BAU_MAT[(a - 1) % BAU_MAT.length];
       S.moedas += mo; mudarEstoque(m, a >= 5 ? 2 : 1); ganharXp(40 * a); return `🧰 Baú: 💰 ${fmtN(mo)} + ${MATERIAIS[m].emoji} ${MATERIAIS[m].nome.toLowerCase()} + ⭐ ${40 * a} XP`; }
     return '';
   }
@@ -4113,8 +4148,8 @@
     if (t === 'xp') return {ic:UI('estrela'), txt:a + ' XP'};
     if (t === 'item') return {ic:iconeItem(item(a), 'e'), txt:'×' + b};
     if (t === 'ins') return {ic:`<span class="emo-g">${INSUMOS[a].emoji}</span>`, txt:'×' + b};
-    if (t === 'mat') return {ic:`<span class="emo-g">${a === 'ilha' ? '📜' : a === 'celeiro' ? '🧱' : '🔩'}</span>`, txt:`material ×${b || 1}`};
-    if (t === 'bau') return {ic:UI('bau'), txt:'Baú!'};
+    if (t === 'mat') return {ic:`<span class="pc-mat">${matIco(a)}</span>`, txt:`${MATERIAIS[a].nome} ×${b || 1}`};
+    if (t === 'bau') return {ic:UI('bau'), txt:'Baú!', dica:`${fmtN(400 * a + 200)} moedas + ${MATERIAIS[BAU_MAT[(a - 1) % BAU_MAT.length]].nome} + ${40 * a} XP`};
     return {ic:'', txt:''};
   }
   function resgatarPasse() { // pega de uma vez todos os prêmios liberados até hoje
@@ -4138,7 +4173,7 @@
     for (let i = 0; i < tot; i++) {
       const g = iconePasse(PASSE_GRATIS[i]), pr = iconePasse(PASSE_PREMIUM[i]), feito = i < p.dia, livre = !feito && i < hoje, grande = PASSE_GRATIS[i][0] === 'bau';
       h += `<div class="passe-col ${feito ? 'feito' : ''} ${livre ? 'hoje' : ''} ${grande ? 'grande' : ''} ${i >= hoje ? 'futuro' : ''}" ${livre ? 'data-acao="resgatar-passe"' : ''}><span class="passe-dia">Dia ${i + 1}</span>
-        <div class="passe-card"><div class="pc-ic">${g.ic}</div><small>${g.txt}</small>${feito ? '<b class="pc-ok">✓</b>' : ''}</div>
+        <div class="passe-card" title="${esc(g.dica || g.txt)}"><div class="pc-ic">${g.ic}</div><small>${g.txt}</small>${feito ? '<b class="pc-ok">✓</b>' : ''}</div>
         <div class="passe-card prem"><div class="pc-ic">${pr.ic}</div><small>${pr.txt}</small><b class="pc-tranca">🔒</b></div></div>`;
     }
     return h + `</div><p class="dica passe-dica">Cada dia do mês libera um prêmio. Faltou alguns dias? Pegue tudo de uma vez até o fim do mês. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
@@ -4492,7 +4527,7 @@
     if (v.tipo === 'mat') { const m = MATERIAIS[v.id], pr = MAT_PRECO[v.id] * 2, tem = (S.mat || {})[v.id] || 0; return {ic:matIco(v.id), nome:m.nome, tem, max:Math.max(0, Math.min(Math.floor(S.moedas / pr), 99)), preco:pr, tit:`Comprar ${m.nome}`, verbo:'Comprar', det:`Você tem ${tem} · ${moedaMini}${pr} cada (teste)`, compra:true}; }
     const pl = v.tipo === 'planta', c = pl ? crop(v.id) : INSUMOS[v.id], pr = pl ? precoPlanta(c) : c.preco, tem = pl ? S.celeiro[v.id] || 0 : qtdIns(v.id);
     const max = Math.max(0, Math.min(Math.floor(S.moedas / pr), pl ? livreCeleiro() : 99, 99));
-    return {ic:`<span class="emo-g">${c.emoji}</span>`, nome:c.nome, tem, max, preco:pr, tit:`Comprar ${c.nome}`, verbo:'Comprar', det:`Você tem ${tem} · ${moedaMini}${pr} cada`, compra:true};
+    return {ic:ITEM_IMG[c.id] ? `<span class="img-g">${UI(ITEM_IMG[c.id])}</span>` : `<span class="emo-g">${c.emoji}</span>`, nome:c.nome, tem, max, preco:pr, tit:`Comprar ${c.nome}`, verbo:'Comprar', det:`Você tem ${tem} · ${moedaMini}${pr} cada`, compra:true};
   }
   function renderVenda() {
     const el = $('#popVenda'); if (!venda) { el.classList.remove('on'); return; }
