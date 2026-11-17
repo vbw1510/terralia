@@ -4361,10 +4361,31 @@
       const r = await fetch('versao.json?t=' + Date.now(), {cache:'no-store'}); const j = await r.json();
       if (j.versao && j.versao !== VERSAO) {
         novaVersao = j.versao; const u = lerUpd();
-        if (avisar || u.alvo !== j.versao || (u.n || 0) < 2) atualizarJogo(); // proteção: no máximo 2 tentativas para a mesma versão
+        if (avisar || u.alvo !== j.versao || (u.n || 0) < 2) atualizarJogo(); // tenta atualizar até 2 vezes seguidas
+        else bloquearVersao(j.versao); // não conseguiu: NÃO deixa jogar na versão velha, fica tentando sozinho
       } else { novaVersao = null; try { sessionStorage.removeItem('terralia-upd'); } catch (e) {} if (avisar) toast('✅ Você já está na versão mais nova (' + VERSAO + ')', 'bom'); }
     } catch (e) { if (avisar) toast('Sem internet para procurar atualização'); }
     if (janela === 'config') renderJanela();
+  }
+  let bloqueio = null;
+  const telaUpdHTML = (tit, txt, extra) => `<div class="upd-raios"></div>
+    <img class="upd-logo" src="assets/ui/logo.webp" alt="Terrália Farm">
+    <img class="upd-boneco upd-esq" src="assets/ui/fazendeiro.webp" alt=""><img class="upd-boneco upd-dir" src="assets/ui/fazendeira.webp" alt="">
+    <div class="upd-caixa"><h3>${tit}</h3><p>${txt}</p><div class="upd-barra"><i></i></div>${extra}</div>`;
+  function bloquearVersao(alvo) { // atualização obrigatória: o jogo fica parado até a versão nova chegar
+    salvar(); let el = $('#telaAtualiza');
+    if (!el) { el = document.createElement('div'); el.id = 'telaAtualiza'; document.body.appendChild(el); }
+    let seg = 20;
+    const pinta = () => { const t = el.querySelector('[data-upd-seg]'); if (t) { t.textContent = seg; return; }
+      el.innerHTML = telaUpdHTML('Atualização obrigatória', `A versão ${esc(alvo)} está chegando no servidor. Sua fazenda está salva.<br>Tentando de novo em <b data-upd-seg>${seg}</b>s…`,
+        `<button data-upd-tentar>🔄 Tentar agora</button><small class="upd-ver">Você está na ${esc(VERSAO)}</small>`); };
+    pinta(); el.classList.add('on', 'bloqueado');
+    if (!el.dataset.ok) { el.dataset.ok = 1; el.addEventListener('click', e => { if (e.target.closest('[data-upd-tentar]')) tentarDeNovo(); }); }
+    clearInterval(bloqueio); bloqueio = setInterval(() => { seg--; if (seg <= 0) tentarDeNovo(); else pinta(); }, 1000);
+  }
+  function tentarDeNovo() { // zera as tentativas e recarrega pedindo tudo novo ao servidor
+    clearInterval(bloqueio); try { sessionStorage.removeItem('terralia-upd'); } catch (e) {}
+    location.replace(location.pathname + '?v=' + Date.now());
   }
   async function atualizarJogo() {
     if (atualizando) return; atualizando = true;
@@ -4372,7 +4393,7 @@
     try { sessionStorage.setItem('terralia-upd', JSON.stringify({alvo:novaVersao, n})); } catch (e) {}
     let el = $('#telaAtualiza');
     if (!el) { el = document.createElement('div'); el.id = 'telaAtualiza'; document.body.appendChild(el); }
-    el.innerHTML = `<div class="upd-caixa"><div class="upd-ic">🌱</div><h3>Atualizando o Terrália Farm</h3><p>Versão ${esc(novaVersao || '')}… sua fazenda já está salva.</p><div class="upd-barra"><i></i></div></div>`;
+    el.innerHTML = telaUpdHTML('Atualizando o jogo', `Baixando a versão ${esc(novaVersao || '')}… sua fazenda já está salva.`, '');
     el.classList.add('on');
     salvar();
     const reabrir = () => location.replace(location.pathname + '?v=' + encodeURIComponent(novaVersao || Date.now()));
@@ -5055,6 +5076,8 @@
   setInterval(() => lembrarConvidado(false), 60000);
   $('#faixaConta').addEventListener('click', e => { $('#faixaConta').classList.remove('on'); if (!e.target.closest('.fc-x')) abrirLogin('inicio'); });
   ($('#btnJogar') || document.createElement('i')).addEventListener('click', async () => {
+    await Promise.race([procurarVersao(false), new Promise(r => setTimeout(r, 3500))]); // antes de entrar: confere se é a versão mais nova
+    if (atualizando || bloqueio) return;
     if (ON.user) { iniciarJogo(true); return; }
     if (ON.sb) { try { const {data} = await ON.sb.auth.getSession(); if (data && data.session) { iniciarJogo(true); return; } } catch (e) {} }
     if (!ON.sb || !podeLogar()) { iniciarJogo(true); return; } // sem servidor (arquivo local/prévia): joga direto
