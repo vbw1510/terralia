@@ -879,7 +879,7 @@ body.editando #baloes{opacity:.35}
 @media (max-height:420px){.nv-novos{display:none}.nv-sub{font-size:13px}}
 /* v0.44 — tamanho da interface, do texto e fonte (Configurações > Tela e texto) */
 .topo,.lateral,.cantos,.missoes,.barra-edicao{zoom:var(--esc-ui,1)}
-#jcorpo,#jtitulo,.chat{zoom:var(--esc-txt,1)}
+#jcorpo,#jtitulo{zoom:var(--esc-txt,1)}
 body.fonte-legivel,body.fonte-legivel button,body.fonte-legivel input{font-family:Verdana,Tahoma,'Segoe UI',sans-serif;letter-spacing:-.2px}
 body.fonte-simples,body.fonte-simples button,body.fonte-simples input{font-family:Arial,'Helvetica Neue',sans-serif}
 body.sem-fps #fpsTeste{display:none}
@@ -893,7 +893,7 @@ body.colocando #ferrEdicao [data-ed=vender]{display:none!important}
 #barraConstrucao{display:none!important}
 /* v0.44 — atualização obrigatória */
 #telaAtualiza{z-index:1000}
-#telaAtualiza [data-upd-tentar]{margin-top:12px;padding:10px 22px;border:0;border-radius:14px;background:#5cb83c;color:#fff;font:inherit;font-weight:800;font-size:16px;box-shadow:0 4px 0 #3a7f22;cursor:pointer}
+#telaAtualiza [data-upd-tentar],#telaAtualiza [data-upd-agora]{margin-top:12px;padding:10px 22px;border:0;border-radius:14px;background:#5cb83c;color:#fff;font:inherit;font-weight:800;font-size:16px;box-shadow:0 4px 0 #3a7f22;cursor:pointer}
 #telaAtualiza .upd-ver{display:block;margin-top:8px;opacity:.6;font-size:12px}
 /* v0.44 — tela de atualização bonita: logo, fazendeiros e raios */
 #telaAtualiza{flex-direction:column;overflow:hidden;background:linear-gradient(rgba(120,200,255,.35),rgba(150,220,110,.55)),url(../assets/img/capa.jpg) center/cover}
@@ -904,7 +904,7 @@ body.colocando #ferrEdicao [data-ed=vender]{display:none!important}
 #telaAtualiza .upd-dir{right:2vw;animation:updAceno 2.4s ease-in-out -1.2s infinite;transform-origin:bottom center}
 #telaAtualiza .upd-caixa{position:relative;padding:12px 22px 14px;width:min(360px,60vw)}
 #telaAtualiza .upd-caixa h3{margin:0 0 4px}
-#telaAtualiza [data-upd-tentar]{margin-top:10px}
+#telaAtualiza [data-upd-tentar],#telaAtualiza [data-upd-agora]{margin-top:10px}
 @keyframes updGira{to{transform:rotate(360deg)}}
 @keyframes updAceno{0%,100%{transform:rotate(-3deg) translateY(0)}50%{transform:rotate(3deg) translateY(-8px)}}
 @media (max-width:560px){#telaAtualiza .upd-boneco{height:46vh;opacity:.9}}
@@ -958,3 +958,12 @@ body.colocando #ferrEdicao [data-ed=vender]{display:none!important}
 .passe-dica{margin:4px 0 0}
 .passe-legenda{display:flex;gap:14px;font-size:12px;color:#6a4a2a;margin:0 0 4px 2px}
 .passe-legenda span:last-child{color:#b4600c}
+/* v0.47 — configurações: mesma altura em todas as abas; barrinhas de tamanho; texto do jogo */
+.janela.cfg{height:min(100%,470px)}
+.janela.cfg .jcorpo{flex:1;min-height:0;overflow-y:auto}
+.tela-linha .tela-val{color:#2f8a1c;font-size:13px;margin-left:4px}
+.tela-ctrl{display:flex;align-items:center;gap:10px;width:100%}
+.tela-ctrl input[type=range]{flex:1;min-width:120px}
+.tela-ctrl .botoes-cfg{flex:none;gap:4px}
+.tela-ctrl .botoes-cfg .btn{min-width:34px;padding:4px 8px}
+#toasts,.chat,#infoItem,.missoes .mis,.missoes .mis-topo,#barraVisita{zoom:var(--esc-jogo,1)}

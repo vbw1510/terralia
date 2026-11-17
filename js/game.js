@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.46'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.47'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -21,9 +21,10 @@
   const iconeLoja = (t, emo) => LOJA_IMG[t] ? `<span class="img-g">${UI(LOJA_IMG[t])}</span>` : `<span class="emo-g">${emo}</span>`;
   // tamanho da interface, do texto e fonte: valem só para este aparelho
   const TELA = (() => { try { const t = JSON.parse(localStorage.getItem('terralia-tela') || 'null'); if (t) return t; } catch (e) {}
-    const h = Math.min(innerWidth, innerHeight); return {ui:Math.max(.8, Math.min(1.3, Math.round(h / 384 * 10) / 10)), txt:1, fonte:'padrao', fps:false, auto:true}; })();
+    const h = Math.min(innerWidth, innerHeight); return {ui:Math.max(.8, Math.min(1.3, Math.round(h / 384 * 10) / 10)), txt:1, jogo:1, fonte:'padrao', fps:false, auto:true}; })();
+  if (TELA.jogo == null) TELA.jogo = 1;
   function aplicarTela() {
-    const r = document.documentElement.style; r.setProperty('--esc-ui', TELA.ui); r.setProperty('--esc-txt', TELA.txt);
+    const r = document.documentElement.style; r.setProperty('--esc-ui', TELA.ui); r.setProperty('--esc-txt', TELA.txt); r.setProperty('--esc-jogo', TELA.jogo);
     document.body.classList.toggle('fonte-legivel', TELA.fonte === 'legivel'); document.body.classList.toggle('fonte-simples', TELA.fonte === 'simples');
     document.body.classList.toggle('sem-fps', !TELA.fps);
   }
@@ -3240,7 +3241,7 @@
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
-    $('.janela').classList.toggle('ani', janela === 'animais');
+    $('.janela').classList.toggle('ani', janela === 'animais'); $('.janela').classList.toggle('cfg', janela === 'config');
     $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca', 'passe'].includes(janela));
     let h = '';
     const tile = o => `<div class="tile ${o.trava ? 'trava' : ''} ${o.cls || ''}" ${o.attr || ''}>
@@ -3456,9 +3457,12 @@
         <div class="linha-cfg"><span>🎥 Câmera</span><span class="botoes-cfg"><button class="btn ${S.camLivre ? '' : 'verde'}" data-cam-cfg="0">🔒 Travada</button><button class="btn ${S.camLivre ? 'verde' : ''}" data-cam-cfg="1">🔓 Livre</button></span></div>
         <div class="linha-cfg"><span>📈 Contador de FPS</span><button class="btn ${TELA.fps ? 'verde' : ''}" data-acao="fps-toggle">${TELA.fps ? 'Ligado' : 'Desligado'}</button></div>`;
       if (abaCfg === 'tela') {
-        const bt = (attr, v, atual, txt) => `<button class="btn ${Math.abs(atual - v) < .001 || atual === v ? 'verde' : ''}" ${attr}="${v}">${txt}</button>`;
-        h += `<div class="linha-cfg col"><span>🔍 Tamanho dos botões e barras</span><span class="botoes-cfg">${[.8, .9, 1, 1.1, 1.2, 1.3].map(v => bt('data-tela-ui', v, TELA.ui, Math.round(v * 100) + '%')).join('')}</span></div>
-          <div class="linha-cfg col"><span>🔤 Tamanho do texto das janelas</span><span class="botoes-cfg">${[[.9, 'Pequeno'], [1, 'Normal'], [1.15, 'Grande'], [1.3, 'Extra grande']].map(([v, n]) => bt('data-tela-txt', v, TELA.txt, n)).join('')}</span></div>
+        const bt = (attr, v, atual, txt) => `<button class="btn mini-b ${Math.abs(atual - v) < .001 ? 'verde' : ''}" ${attr}="${v}">${txt}</button>`;
+        const barra = (k, tit, min, max, pre) => `<div class="linha-cfg col tela-linha"><span>${tit} <b class="tela-val" data-tela-val="${k}">${Math.round(TELA[k] * 100)}%</b></span>
+          <div class="tela-ctrl"><input type="range" class="vol" data-tela-barra="${k}" min="${min}" max="${max}" step="0.05" value="${TELA[k]}"><span class="botoes-cfg">${pre.map(([v, n]) => bt('data-tela-' + k, v, TELA[k], n)).join('')}</span></div></div>`;
+        h += barra('ui', '🔍 Tamanho dos botões e barras', .7, 1.5, [[.8, 'P'], [1, 'M'], [1.2, 'G']])
+          + barra('jogo', '🎮 Texto do jogo (missões, avisos, chat)', .8, 1.6, [[.9, 'P'], [1, 'M'], [1.2, 'G']])
+          + barra('txt', '🔤 Texto das janelas', .8, 1.5, [[.9, 'P'], [1, 'M'], [1.15, 'G']]) + `
           <div class="linha-cfg col"><span>✒️ Fonte</span><span class="botoes-cfg">${[['padrao', 'Padrão', "'Baloo 2'"], ['legivel', 'Mais legível', 'Verdana'], ['simples', 'Simples', 'Arial']].map(([v, n, f]) => `<button class="btn ${TELA.fonte === v ? 'verde' : ''}" data-tela-fonte="${v}" style="font-family:${f},sans-serif">${n}</button>`).join('')}</span></div>
           <p class="dica cfg-dica">Vale só para este aparelho. ${TELA.auto ? 'O tamanho foi escolhido sozinho pela tela do seu celular.' : ''} <button class="btn mini-b" data-acao="tela-auto">Voltar ao automático</button></p>`;
       }
@@ -3805,6 +3809,7 @@
     const ct = e.target.closest('[data-conta]'); if (ct) { trocarConta(ct.dataset.conta); return; }
     const ca = e.target.closest('[data-cfg-aba]'); if (ca) { abaCfg = ca.dataset.cfgAba; renderJanela(); return; }
     const tu = e.target.closest('[data-tela-ui]'); if (tu) { TELA.ui = +tu.dataset.telaUi; salvarTela(); renderJanela(); return; }
+    const tj = e.target.closest('[data-tela-jogo]'); if (tj) { TELA.jogo = +tj.dataset.telaJogo; salvarTela(); renderJanela(); return; }
     const tt = e.target.closest('[data-tela-txt]'); if (tt) { TELA.txt = +tt.dataset.telaTxt; salvarTela(); renderJanela(); return; }
     const tf = e.target.closest('[data-tela-fonte]'); if (tf) { TELA.fonte = tf.dataset.telaFonte; salvarTela(); renderJanela(); return; }
     const cc = e.target.closest('[data-cam-cfg]'); if (cc) { definirCamLivre(cc.dataset.camCfg === '1'); renderJanela(); return; }
@@ -3846,7 +3851,7 @@
     if (ac === 'voltar-visita') voltarDaVisita();
     if (ac === 'procurar-versao') procurarVersao(true);
     if (ac === 'fps-toggle') { TELA.fps = !TELA.fps; salvarTela(TELA.auto); renderJanela(); return; }
-    if (ac === 'tela-auto') { const h = Math.min(innerWidth, innerHeight); Object.assign(TELA, {ui:Math.max(.8, Math.min(1.3, Math.round(h / 384 * 10) / 10)), txt:1, fonte:'padrao'}); salvarTela(true); renderJanela(); return; }
+    if (ac === 'tela-auto') { const h = Math.min(innerWidth, innerHeight); Object.assign(TELA, {ui:Math.max(.8, Math.min(1.3, Math.round(h / 384 * 10) / 10)), txt:1, jogo:1, fonte:'padrao'}); salvarTela(true); renderJanela(); return; }
     if (ac === 'restaurar-backup') { const b = lerBackup(); if (!b) return;
       if (!confirm('Trocar a fazenda atual pela cópia de segurança (nível ' + b.nivel + ')? A fazenda atual vira a nova cópia.')) return;
       guardarBackup(S, 'aparelho'); const d = Object.assign({}, b.dados, {uid:S.uid, nuvemVer:S.nuvemVer, salvoEm:Date.now()});
@@ -4040,24 +4045,27 @@
   }
   function trocarPedido(i) { S.pedidos[i] = {itens:[], espera:Date.now() + 3 * 60 * 1000}; toast('🗑️ Pedido descartado. Um novo chega em 3 minutos.'); tudo(); }
   // ================= PASSE DO FAZENDEIRO (v0.46): 1 recompensa por dia, temporadas de 30 dias =================
-  const NIVEL_PASSE = 2, DIA_MS = 864e5, INICIO_PASSE = Date.UTC(2026, 10, 17, 3); // temporada 1 começa em 17/11/2026 (meia-noite de Brasília)
+  const NIVEL_PASSE = 2;
+  const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
   const hojeStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
-  const temporadaAtual = () => Math.floor((Date.now() - INICIO_PASSE) / (30 * DIA_MS)) + 1;
-  const fimTemporada = () => INICIO_PASSE + temporadaAtual() * 30 * DIA_MS;
-  // recompensas: [tipo, id/quantidade, quantidade]; a cada 7 dias um baú grande
+  const mesStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1); };
+  const diaDoMes = () => new Date().getDate();
+  const diasNoMes = () => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate(); };
+  // o passe segue o calendário: no dia 17 já dá para pegar os prêmios do dia 1 ao 17. A cada 7 dias um baú.
   const PASSE_GRATIS = [
     ['moedas', 200], ['item', 'racaoG', 6], ['xp', 30], ['item', 'milho', 10], ['ins', 'rapido', 2], ['moedas', 400], ['bau', 1],
     ['mat', 'armazem', 1], ['item', 'racaoV', 6], ['xp', 60], ['moedas', 500], ['item', 'cenoura', 10], ['ins', 'super', 1], ['bau', 2],
     ['mat', 'celeiro', 1], ['item', 'racaoO', 6], ['moedas', 700], ['xp', 100], ['ins', 'rapido', 3], ['item', 'tomate', 10], ['bau', 3],
     ['mat', 'armazem', 2], ['moedas', 900], ['item', 'racaoPet', 6], ['xp', 150], ['ins', 'super', 2], ['mat', 'celeiro', 2], ['bau', 4],
-    ['mat', 'ilha', 1], ['bau', 5]];
+    ['mat', 'ilha', 1], ['moedas', 1200], ['bau', 5]];
   const PASSE_PREMIUM = PASSE_GRATIS.map(([t, a, b]) => t === 'moedas' ? ['moedas', a * 2] : t === 'xp' ? ['xp', a * 2] : t === 'bau' ? ['bau', a + 2] : t === 'mat' ? ['mat', a, (b || 1) + 1] : ['ins', (a === 'super' ? 'super' : 'rapido'), 3]);
   function passeEstado() {
-    const t = temporadaAtual();
-    if (!S.passe || S.passe.temp !== t) S.passe = {temp:t, dia:0, ult:null};
+    const m = mesStr();
+    if (!S.passe || S.passe.mes !== m) S.passe = {mes:m, dia:S.passe && !S.passe.mes && S.passe.temp === 1 ? S.passe.dia || 0 : 0}; // mês novo: começa do dia 1
     return S.passe;
   }
-  const passePode = () => { if (S.nivel < NIVEL_PASSE || VISITA) return false; const p = passeEstado(); return p.dia < 30 && p.ult !== hojeStr(); };
+  const passeFalta = () => { if (S.nivel < NIVEL_PASSE || VISITA) return 0; return Math.max(0, Math.min(diaDoMes(), diasNoMes()) - passeEstado().dia); };
+  const passePode = () => passeFalta() > 0;
   function premioPasse(r) { // aplica e devolve o texto
     const [t, a, b] = r;
     if (t === 'moedas') { S.moedas += a; return `💰 ${fmtN(a)} moedas`; }
@@ -4079,29 +4087,31 @@
     if (t === 'bau') return {ic:UI('bau'), txt:'Baú!'};
     return {ic:'', txt:''};
   }
-  function resgatarPasse() {
-    if (!passePode()) return;
-    const p = passeEstado(), r = PASSE_GRATIS[p.dia], txt = premioPasse(r);
-    p.dia++; p.ult = hojeStr(); somT(r[0] === 'bau' ? 'nivel' : 'moeda');
-    toast(`🎁 Dia ${p.dia}: ${txt}`, 'ouro'); salvar(); if (ON.user) enviarSave(); tudo(); renderJanela();
+  function resgatarPasse() { // pega de uma vez todos os prêmios liberados até hoje
+    const n = passeFalta(); if (!n) return;
+    const p = passeEstado(), m0 = S.moedas; let bau = 0, outros = 0, xp = 0, ult = '';
+    for (let k = 0; k < n; k++) { const r = PASSE_GRATIS[p.dia]; if (r[0] === 'xp') xp += r[1]; if (r[0] === 'bau') { bau++; xp += 40 * r[1]; } else if (r[0] !== 'moedas' && r[0] !== 'xp') outros++; ult = premioPasse(r); p.dia++; }
+    somT(bau ? 'nivel' : 'moeda'); salvar(); if (ON.user) enviarSave(); tudo(); renderJanela();
+    if (n === 1) toast(`🎁 Dia ${p.dia}: ${ult}`, 'ouro');
+    else toast(`🎁 ${n} prêmios resgatados: 💰 ${fmtN(S.moedas - m0)}${xp ? ` · ⭐ ${xp} XP` : ''}${bau ? ` · 🧰 ${bau} baú${bau > 1 ? 's' : ''}` : ''}${outros ? ` · +${outros} itens` : ''}`, 'ouro');
   }
   function lembrarPasse() { // 1× por dia, ao entrar: abre o passe sozinho
     if (!passePode() || janela || (S.tut >= 0 && S.tut <= 12) || S.passeVisto === hojeStr()) return;
     S.passeVisto = hojeStr(); abrir('passe');
   }
   function htmlPasse() {
-    const p = passeEstado(), pode = passePode(), dias = Math.max(0, Math.ceil((fimTemporada() - Date.now()) / DIA_MS));
-    let h = `<div class="passe-topo"><div><b>Temporada ${p.temp}</b><small>Entre todo dia e resgate um prêmio · acaba em ${dias} dia${dias === 1 ? '' : 's'}</small></div>
-      <div class="passe-prog"><i style="width:${100 * p.dia / 30}%"></i><span>${p.dia}/30</span></div>
-      ${pode ? '<button class="btn verde" data-acao="resgatar-passe">🎁 Resgatar o prêmio de hoje</button>' : `<button class="btn" disabled>${p.dia >= 30 ? '🏆 Temporada completa!' : '✅ Volte amanhã'}</button>`}</div>
+    const p = passeEstado(), falta = passeFalta(), tot = diasNoMes(), hoje = diaDoMes(), resta = tot - hoje;
+    let h = `<div class="passe-topo"><div><b>Passe de ${MESES[new Date().getMonth()]}</b><small>Um prêmio para cada dia do mês · ${resta ? `acaba em ${resta} dia${resta === 1 ? '' : 's'}` : 'último dia!'}</small></div>
+      <div class="passe-prog"><i style="width:${100 * p.dia / tot}%"></i><span>${p.dia}/${tot}</span></div>
+      ${falta ? `<button class="btn verde" data-acao="resgatar-passe">🎁 Resgatar ${falta > 1 ? `${falta} prêmios` : 'o prêmio de hoje'}</button>` : `<button class="btn" disabled>${p.dia >= tot ? '🏆 Mês completo!' : '✅ Volte amanhã'}</button>`}</div>
       <div class="passe-legenda"><span>🎁 Em cima: <b>grátis</b></span><span>⭐ Embaixo: <b>Premium</b> (em breve)</span></div><div class="passe-trilha">`;
-    for (let i = 0; i < 30; i++) {
-      const g = iconePasse(PASSE_GRATIS[i]), pr = iconePasse(PASSE_PREMIUM[i]), feito = i < p.dia, hoje = i === p.dia && pode, grande = PASSE_GRATIS[i][0] === 'bau';
-      h += `<div class="passe-col ${feito ? 'feito' : ''} ${hoje ? 'hoje' : ''} ${grande ? 'grande' : ''}" ${hoje ? 'data-acao="resgatar-passe"' : ''}><span class="passe-dia">Dia ${i + 1}</span>
+    for (let i = 0; i < tot; i++) {
+      const g = iconePasse(PASSE_GRATIS[i]), pr = iconePasse(PASSE_PREMIUM[i]), feito = i < p.dia, livre = !feito && i < hoje, grande = PASSE_GRATIS[i][0] === 'bau';
+      h += `<div class="passe-col ${feito ? 'feito' : ''} ${livre ? 'hoje' : ''} ${grande ? 'grande' : ''} ${i >= hoje ? 'futuro' : ''}" ${livre ? 'data-acao="resgatar-passe"' : ''}><span class="passe-dia">Dia ${i + 1}</span>
         <div class="passe-card"><div class="pc-ic">${g.ic}</div><small>${g.txt}</small>${feito ? '<b class="pc-ok">✓</b>' : ''}</div>
         <div class="passe-card prem"><div class="pc-ic">${pr.ic}</div><small>${pr.txt}</small><b class="pc-tranca">🔒</b></div></div>`;
     }
-    return h + `</div><p class="dica passe-dica">Faltou um dia? Não perde nada: continua de onde parou. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
+    return h + `</div><p class="dica passe-dica">Cada dia do mês libera um prêmio. Faltou alguns dias? Pegue tudo de uma vez até o fim do mês. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
   }
   function htmlPedidos() {
     if (S.nivel < NIVEL_PEDIDOS) return `<p class="dica">O caminhão de pedidos chega no nível ${NIVEL_PEDIDOS}. 🚚</p>`;
@@ -4502,13 +4512,24 @@
       const r = await fetch('versao.json?t=' + Date.now(), {cache:'no-store'}); const j = await r.json();
       if (j.versao && j.versao !== VERSAO) {
         novaVersao = j.versao; const u = lerUpd();
-        if (avisar || u.alvo !== j.versao || (u.n || 0) < 2) atualizarJogo(); // tenta atualizar até 2 vezes seguidas
+        if (jogoIniciado && !avisar && u.alvo !== j.versao) avisarPendente(j.versao); // jogando: avisa no meio da tela
+        else if (avisar || u.alvo !== j.versao || (u.n || 0) < 2) atualizarJogo(); // tenta atualizar até 2 vezes seguidas
         else bloquearVersao(j.versao); // não conseguiu: NÃO deixa jogar na versão velha, fica tentando sozinho
       } else { novaVersao = null; try { sessionStorage.removeItem('terralia-upd'); } catch (e) {} if (avisar) toast('✅ Você já está na versão mais nova (' + VERSAO + ')', 'bom'); }
     } catch (e) { if (avisar) toast('Sem internet para procurar atualização'); }
     if (janela === 'config') renderJanela();
   }
-  let bloqueio = null;
+  let bloqueio = null, pendente = null;
+  function avisarPendente(v) { // versão nova enquanto joga: tela no meio, atualiza no toque (ou sozinho em 20s)
+    if (pendente) return; salvar(); let el = $('#telaAtualiza');
+    if (!el) { el = document.createElement('div'); el.id = 'telaAtualiza'; document.body.appendChild(el); }
+    let seg = 20;
+    el.innerHTML = telaUpdHTML('Atualização pendente!', `Chegou a versão <b>${esc(v)}</b> do Terrália Farm com novidades.<br>Sua fazenda está salva. Atualizando sozinho em <b data-upd-seg>${seg}</b>s…`,
+      `<button data-upd-agora>✨ Atualizar agora</button><small class="upd-ver">Você está na ${esc(VERSAO)}</small>`);
+    el.classList.add('on', 'pendente'); somT('nivel');
+    if (!el.dataset.ag) { el.dataset.ag = 1; el.addEventListener('click', e => { if (e.target.closest('[data-upd-agora]')) { clearInterval(pendente); atualizarJogo(); } }); }
+    pendente = setInterval(() => { seg--; const t = el.querySelector('[data-upd-seg]'); if (t) t.textContent = Math.max(0, seg); if (seg <= 0) { clearInterval(pendente); atualizarJogo(); } }, 1000);
+  }
   const telaUpdHTML = (tit, txt, extra) => `<div class="upd-raios"></div>
     <img class="upd-logo" src="assets/ui/logo.webp" alt="Terrália Farm">
     <img class="upd-boneco upd-esq" src="assets/ui/fazendeiro.webp" alt=""><img class="upd-boneco upd-dir" src="assets/ui/fazendeira.webp" alt="">
@@ -4999,9 +5020,13 @@
   iniciarOnline();
   iniciarVenda();
   if (VISITA) { document.body.classList.add('visitando'); renderVisita(); $('#barraVisita').addEventListener('click', e => { if (e.target.closest('[data-acao=voltar-visita]')) voltarDaVisita(); }); } else aplicarRecompensaVisita();
-  setTimeout(() => procurarVersao(false), 2500); setInterval(() => procurarVersao(false), 2 * 60 * 1000);
+  setTimeout(() => procurarVersao(false), 2500); setInterval(() => procurarVersao(false), 60 * 1000); // confere a cada 1 minuto
+  addEventListener('focus', () => procurarVersao(false)); addEventListener('online', () => procurarVersao(false)); addEventListener('pageshow', () => procurarVersao(false));
   document.addEventListener('visibilitychange', () => { if (!document.hidden) procurarVersao(false); });
   try { const m = sessionStorage.getItem('terralia-msg'); if (m) { sessionStorage.removeItem('terralia-msg'); setTimeout(() => toast(m, 'bom'), 800); } } catch (e) {}
+  $('#jcorpo').addEventListener('input', e => { const tb = e.target.closest('[data-tela-barra]'); // barrinhas de tamanho: muda na hora
+    if (tb) { const k = tb.dataset.telaBarra; TELA[k] = Math.round(+tb.value * 100) / 100; const v = $(`[data-tela-val=${k}]`); if (v) v.textContent = Math.round(TELA[k] * 100) + '%'; if (k !== 'txt') aplicarTela(); return; } });
+  $('#jcorpo').addEventListener('change', e => { const tb = e.target.closest('[data-tela-barra]'); if (tb) { salvarTela(); renderJanela(); } });
   $('#jcorpo').addEventListener('input', e => { const r = e.target.closest('[data-vol]'); if (!r) return; S.audio[r.dataset.vol] = +r.value; SOM.config(S.audio); });
   $('#jcorpo').addEventListener('change', e => { const r = e.target.closest('[data-vol]'); if (!r) return; salvar(); if (r.dataset.vol === 'efeitos') somT('vaca'); });
   document.addEventListener('pointerdown', e => { if (e.target.closest('button, .tile, [data-abrir], [data-acao], .sem')) somT('clique', 40); }, true);
