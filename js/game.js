@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.42'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.43'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -202,33 +202,42 @@
     poste:      {nome:'Poste de luz',       w:1, d:1, decor:true, obst:true},
     arvoreDec:  {nome:'Árvore frutífera',   w:1, d:1, decor:true, obst:true},
     fonte:      {nome:'Fonte',              w:2, d:2, decor:true, obst:true},
-    carroca:    {nome:'Carroça',            w:2, d:1, decor:true, obst:true},
-    carrinho:   {nome:'Carrinho de feira',  w:1, d:1, decor:true, obst:true},
-    barris:     {nome:'Barris de maçã',     w:1, d:1, decor:true, obst:true},
-    caixotes:   {nome:'Caixotes da colheita', w:1, d:1, decor:true, obst:true},
-    bancoRustico:{nome:'Banco de madeira',  w:1, d:1, decor:true, obst:true},
+    carroca:    {nome:'Carrinho de mão',    w:1, d:1, decor:true, obst:true},
+    carrinho:   {nome:'Banca de caixotes',  w:1, d:1, decor:true, obst:true},
+    barris:     {nome:'Barris',             w:1, d:1, decor:true, obst:true},
+    caixotes:   {nome:'Caixotes e sacos',   w:1, d:1, decor:true, obst:true},
+    bancoRustico:{nome:'Pilha de toras',    w:1, d:1, decor:true, obst:true},
     cercaMadeira:{nome:'Cerca de madeira',  w:1, d:1, decor:true},
-    jardim:     {nome:'Jardim florido',     w:1, d:1, decor:true},
+    jardim:     {nome:'Moita de arbustos',  w:1, d:1, decor:true},
+    porteira:   {nome:'Porteira',           w:1, d:1, decor:true},
+    casinhaA:   {nome:'Casinha',            w:2, d:2, decor:true, obst:true},
+    casinhaB:   {nome:'Casa de dois andares', w:2, d:2, decor:true, obst:true},
+    taverna:    {nome:'Taverna',            w:3, d:3, decor:true, obst:true},
+    tecidos:    {nome:'Pilha de tecidos',   w:1, d:1, decor:true, obst:true},
   };
-  const ENFEITES = { // caixotes, barris e baldes em volta das construções (andam junto quando move)
-    loja:[['caixaCenoura', -1.75, 2.75, .25, .85], ['caixaMaca', 1.8, 2.7, -.3, .85], ['barrilMaca', 2.25, 1.6, 0, .9]],
-    celeiro:[['barril', -2.6, 2.3, 0, .95], ['balde', -2, 2.75, 0, 1], ['caixote', 2.55, 2.35, .4, .9]],
-    galpao:[['caixote', -1.6, 1.55, .3, .8], ['barril', 1.65, 1.5, 0, .85]],
-    armazem:[['caixote', -2.6, 1.55, -.2, .85], ['caixote', -2.1, 1.85, .5, .7]],
+  const ENFEITES = { // caixotes, barris e sacos em volta das construções (andam junto quando move)
+    celeiro:[['barril', -2.6, 2.4, 0, 1], ['baldeAgua', -2.05, 2.75, 0, 1], ['caixaG', 2.5, 2.4, .4, 1], ['saco', 2.0, 2.8, .2, 1]],
+    galpao:[['caixaG', -1.6, 1.55, .3, 1], ['lenha', 1.55, 1.5, .2, 1]],
+    armazem:[['caixaG', -2.6, 1.55, -.2, 1], ['caixaP', -2.1, 1.85, .5, 1], ['saco', -2.5, 2.05, 0, 1]],
+    padaria:[['saco', 1.55, 1.6, 0, 1], ['saco', 1.25, 1.9, .5, .9]],
   };
-  const DECOR_GLB = { // decorações feitas com os modelos dos packs: [modelo, x, z, giro, escala]
-    carroca:[['carroca', 0, 0, Math.PI / 2 + .15, 1]], carrinho:[['carrinho', 0, 0, .3, 1]],
-    barris:[['barrilMaca', -.35, -.2, 0, 1], ['barril', .4, .25, 1, .9], ['balde', .1, .6, 0, 1]],
-    caixotes:[['caixaCenoura', -.3, -.25, .2, 1], ['caixaMaca', .35, .3, -.3, 1], ['caixote', .45, -.45, .5, .8]],
-    bancoRustico:[['bancoRustico', 0, 0, 0, 1]], cercaMadeira:[['cercaMadeira', 0, 0, 0, 1]],
-    jardim:[['arbustoFlor', -.3, -.3, 0, .9], ['flor4', .4, -.2, 1, 1], ['flor3', -.2, .45, 2, 1], ['samambaia', .45, .45, 0, .9]],
+  const DECOR_GLB = { // decorações feitas com os modelos do KayKit: [modelo, x, z, giro, escala]
+    carroca:[['carrinhoMao', 0, 0, .6, 1], ['saco', -.45, .45, 0, .9]],
+    carrinho:[['caixaAberta', -.3, -.2, .2, 1], ['caixaG', .35, .3, -.3, 1], ['saco', .4, -.45, .5, 1]],
+    barris:[['barril', -.35, -.2, 0, 1], ['barril', .4, .25, 1, .95], ['baldeAgua', .05, .6, 0, 1]],
+    caixotes:[['caixaG', -.3, -.25, .2, 1], ['caixaP', .4, .3, -.3, 1], ['saco', .45, -.4, .5, 1], ['saco', -.4, .45, 1, .9]],
+    bancoRustico:[['toras', 0, 0, .3, 1]], cercaMadeira:[['cerca', 0, 0, 0, 1]], porteira:[['porteira', 0, 0, 0, 1]],
+    jardim:[['arbusto1', -.3, -.3, 0, 1], ['arbusto3', .35, .2, 1, .9], ['capim1', -.25, .5, 2, 1], ['capim2', .5, -.45, 0, 1]],
+    casinhaA:[['casaA', 0, 0, 0, 1]], casinhaB:[['casaB', 0, 0, 0, 1]], taverna:[['taverna', 0, 0, 0, 1]], tecidos:[['tecidos', 0, 0, .4, 1]],
   };
   const DECOR = [
     {tipo:'flores', icone:'🌷', preco:40, nivel:1}, {tipo:'caminho', icone:'🪨', preco:15, nivel:1}, {tipo:'cercaDec', icone:'🤍', preco:25, nivel:1},
     {tipo:'banco', icone:'🪑', preco:80, nivel:2}, {tipo:'espantalho', icone:'🎃', preco:120, nivel:2}, {tipo:'poste', icone:'💡', preco:150, nivel:3},
     {tipo:'arvoreDec', icone:'🍎', preco:200, nivel:3}, {tipo:'fonte', icone:'⛲', preco:900, nivel:5},
-    {tipo:'jardim', icone:'🌺', preco:60, nivel:1}, {tipo:'cercaMadeira', icone:'🪵', preco:30, nivel:1}, {tipo:'bancoRustico', icone:'🪑', preco:90, nivel:2},
-    {tipo:'caixotes', icone:'🥕', preco:110, nivel:2}, {tipo:'barris', icone:'🛢️', preco:130, nivel:3}, {tipo:'carrinho', icone:'🛒', preco:260, nivel:4}, {tipo:'carroca', icone:'🛞', preco:420, nivel:5},
+    {tipo:'jardim', icone:'🌳', preco:50, nivel:1}, {tipo:'cercaMadeira', icone:'🪵', preco:30, nivel:1}, {tipo:'porteira', icone:'🚪', preco:45, nivel:1},
+    {tipo:'caixotes', icone:'📦', preco:90, nivel:2}, {tipo:'barris', icone:'🛢️', preco:100, nivel:2}, {tipo:'carroca', icone:'🛞', preco:140, nivel:2},
+    {tipo:'bancoRustico', icone:'🪵', preco:120, nivel:3}, {tipo:'tecidos', icone:'🧶', preco:150, nivel:3}, {tipo:'carrinho', icone:'🍎', preco:180, nivel:3},
+    {tipo:'casinhaA', icone:'🏠', preco:800, nivel:5}, {tipo:'casinhaB', icone:'🏡', preco:1200, nivel:7}, {tipo:'taverna', icone:'🍺', preco:2500, nivel:10},
   ];
   const MERCADO_MS = 20000;
 
@@ -955,6 +964,7 @@
     return g;
   }
   function modeloLoja() {
+    if (THREE.GLTFLoader) { const g = new THREE.Group(); g.add(modeloGLB('mercado', 0, 0, 0, 1)); return g; } // mercado do KayKit
     const g = new THREE.Group(), lz = -.5;
     g.add(chaoPlano(3.6, 1.4, 0xd8b98a).translateZ(2.2));
     g.add(mesh(new THREE.BoxGeometry(4.2, 2.7, 3.2), 0, 0, 1.35, lz, true, liso(0xf6e6c4)));
@@ -975,6 +985,7 @@
   }
   let pasMoinho = [];
   function modeloMoinho() {
+    if (THREE.GLTFLoader) { const g = new THREE.Group(); g.add(modeloGLB('moinho', 0, 0, 0, 1)); return g; } // moinho do KayKit (as pás giram)
     const g = new THREE.Group();
     g.add(cil(1.45, 1.6, .8, 0x9ea4a8, 0, .4, 0, 18));
     for (let i = 0; i < 12; i++) { const a = i / 12 * Math.PI * 2; g.add(mesh(new THREE.DodecahedronGeometry(.22, 0), 0x8c9296, Math.cos(a) * 1.5, .3 + (i % 2) * .3, Math.sin(a) * 1.5)); }
@@ -1002,6 +1013,7 @@
     return g;
   }
   function modeloPoco() {
+    if (THREE.GLTFLoader) { const g = new THREE.Group(); g.add(modeloGLB('poco', 0, 0, 0, 1)); return g; } // poço do KayKit
     const g = new THREE.Group();
     g.add(cil(.72, .78, .8, 0xa7acb1, 0, .4, 0, 18));
     const borda = mesh(new THREE.TorusGeometry(.72, .09, 8, 20), 0, 0, .8, 0, true, liso(0x8c9296)); borda.rotation.x = Math.PI / 2; g.add(borda);
@@ -1082,34 +1094,48 @@
     return g;
   }
 
-  // ================= MODELOS 3D DOS PACKS (Quaternius, CC0) =================
+  // ================= MODELOS 3D DO KAYKIT (Kay Lousberg, CC0) =================
   // tamanho: altura (a) ou largura (l) desejada, em unidades do mundo
   const MODELOS = {
-    flor3:{f:'n_Flower_3_Group', a:.75}, flor4:{f:'n_Flower_4_Group', a:.7}, arbusto:{f:'n_Bush_Common', a:1.05}, arbustoFlor:{f:'n_Bush_Common_Flowers', a:1.05},
-    samambaia:{f:'n_Fern_1', a:.75}, cogumelo:{f:'n_Mushroom_Common', a:.4}, trevo:{f:'n_Clover_1', a:.3}, capim:{f:'n_Grass_Common_Tall', a:.7},
-    pedrinha:{f:'n_Pebble_Round_2', l:.55}, pedra:{f:'n_Rock_Medium_1', l:1.2}, planta:{f:'n_Plant_1_Big', a:.95},
-    caixaCenoura:{f:'p_FarmCrate_Carrot', l:.95}, caixaMaca:{f:'p_FarmCrate_Apple', l:.95}, barril:{f:'p_Barrel', a:1}, barrilMaca:{f:'p_Barrel_Apples', a:1.05},
-    balde:{f:'p_Bucket_Wooden_1', a:.45}, carrinho:{f:'p_Stall_Cart_Empty', l:1.9}, bancoRustico:{f:'p_Bench', l:1.7}, caixote:{f:'p_Crate_Wooden', l:.85},
-    carroca:{f:'p_Prop_Wagon', l:3.6}, cercaMadeira:{f:'p_Prop_WoodenFence_Single', l:2.1},
+    moinho:{f:'hex/building_windmill_red', l:3.9}, mercado:{f:'hex/building_market_red', l:6.1}, poco:{f:'hex/building_well_red', l:1.95},
+    casaA:{f:'hex/building_home_A_red', l:3.9}, casaB:{f:'hex/building_home_B_red', l:3.9}, taverna:{f:'hex/building_tavern_red', l:6},
+    cerca:{f:'hex/fence_wood_straight', l:2.15}, porteira:{f:'hex/fence_wood_straight_gate', l:2.15},
+    barril:{f:'hex/barrel', a:.8}, caixaG:{f:'hex/crate_A_big', l:.8}, caixaP:{f:'hex/crate_A_small', l:.55}, caixaAberta:{f:'hex/crate_open', l:.8},
+    saco:{f:'hex/sack', a:.5}, carrinhoMao:{f:'hex/wheelbarrow', l:1.5}, baldeAgua:{f:'hex/bucket_water', a:.42}, lenha:{f:'hex/resource_lumber', l:1},
+    arv1:{f:'floresta/Tree_1_A', a:3.6}, arv1b:{f:'floresta/Tree_1_B', a:3.3}, arv2:{f:'floresta/Tree_2_A', a:3.4}, arv2c:{f:'floresta/Tree_2_C', a:3},
+    arv3:{f:'floresta/Tree_3_A', a:3.8}, arv4:{f:'floresta/Tree_4_A', a:3.5},
+    arbusto1:{f:'floresta/Bush_1_A', l:1.1}, arbusto2:{f:'floresta/Bush_2_A', l:1}, arbusto3:{f:'floresta/Bush_3_A', l:.9}, arbusto4:{f:'floresta/Bush_4_A', l:1.1},
+    pedra1:{f:'floresta/Rock_1_A', l:1}, pedra2:{f:'floresta/Rock_2_A', l:.8}, pedra3:{f:'floresta/Rock_3_A', l:1.1},
+    capim1:{f:'floresta/Grass_1_A', a:.42}, capim2:{f:'floresta/Grass_2_A', a:.38},
+    toras:{f:'recursos/Wood_Log_Stack', l:1.5}, tecidos:{f:'recursos/Textiles_Stack_Large_Colored', l:.95},
   };
-  const glb = {cache:{}, espera:{}, ok:false};
+  const glb = {cache:{}, espera:{}, ok:false}, matPack = {};
   function carregarModelos() {
     if (!THREE.GLTFLoader) return Promise.resolve();
+    THREE.Cache.enabled = true; // a textura de cada pack é baixada uma vez só
     const L = new THREE.GLTFLoader(), nomes = Object.keys(MODELOS);
-    return Promise.all(nomes.map(k => new Promise(res => L.load(`assets/modelos/${MODELOS[k].f}.glb`, gl => {
-      const raiz = gl.scene; raiz.updateMatrixWorld(true);
-      const bb = new THREE.Box3().setFromObject(raiz), tam = bb.getSize(V3()), m = MODELOS[k];
-      const esc = m.a ? m.a / tam.y : m.l / Math.max(tam.x, tam.z);
+    return Promise.all(nomes.map(k => new Promise(res => L.load(`assets/kaykit/${MODELOS[k].f}.gltf`, gl => {
+      const raiz = gl.scene, m = MODELOS[k], pasta = m.f.split('/')[0]; raiz.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(raiz), tam = bb.getSize(V3());
+      const esc = m.a ? m.a / tam.y : m.l / Math.max(tam.x, tam.z), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2;
       const partes = []; // geometria já no tamanho e com o pé no chão, centralizada
-      raiz.traverse(o => { if (!o.isMesh) return; const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld);
-        g.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); g.scale(esc, esc, esc); g.computeBoundingSphere();
-        const mt = o.material; if (mt.map) { mt.map.anisotropy = 4; } if (m.f[0] === 'n') mt.vertexColors = false; // no pack de natureza a cor dos vértices é dado de vento, não cor mt.envMapIntensity = .35; if (mt.transparent && mt.alphaTest === 0) { mt.alphaTest = .5; mt.transparent = false; }
+      raiz.traverse(o => { if (!o.isMesh) return;
+        // todas as peças do mesmo pack usam o mesmo material: assim dá para juntar tudo em poucas peças
+        let mt = matPack[pasta]; if (!mt) { mt = matPack[pasta] = o.material; if (mt.map) { mt.map.anisotropy = 4; mt.map.encoding = THREE.sRGBEncoding; } mt.envMapIntensity = .35; mt.roughness = .85; mt.metalness = 0; }
+        if (/fan/i.test(o.name)) { // pás do moinho: ficam numa peça separada que gira
+          const piv = o.getWorldPosition(V3()); piv.x = (piv.x - cx) * esc; piv.y = (piv.y - bb.min.y) * esc; piv.z = (piv.z - cz) * esc;
+          const g = o.geometry.clone(); g.scale(esc, esc, esc); g.computeBoundingSphere(); partes.push({g, mt, piv}); return; }
+        const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-cx, -bb.min.y, -cz); g.scale(esc, esc, esc); g.computeBoundingSphere();
         partes.push({g, mt}); });
       glb.cache[k] = partes; (glb.espera[k] || []).forEach(gr => encherGLB(gr, k)); delete glb.espera[k]; res();
-    }, undefined, () => res())))).then(() => { glb.ok = true; });
+    }, undefined, () => res())))).then(() => { glb.ok = true; montarDecorTerras(); });
   }
   function encherGLB(gr, k) {
-    glb.cache[k].forEach(({g, mt}) => { const m = new THREE.Mesh(g, mt); m.castShadow = gr.userData.sombra !== false; m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); gr.add(m); });
+    glb.cache[k].forEach(({g, mt, piv}) => {
+      const m = new THREE.Mesh(g, mt); m.castShadow = gr.userData.sombra !== false; m.receiveShadow = true;
+      if (piv) { const pv = new THREE.Group(); pv.position.copy(piv); pv.add(m); m.castShadow = false; gr.add(pv); pasMoinho.push(pv);
+        for (let p = gr; p; p = p.parent) if (p.userData.oidRaiz) { pv.userData.oid = p.userData.oidRaiz; break; } return; }
+      m.matrixAutoUpdate = false; m.updateMatrix(); gr.add(m); });
     gr.updateMatrixWorld(true); if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
   }
   function modeloGLB(k, x = 0, z = 0, ry = 0, s = 1) { // devolve um grupo; o modelo entra assim que terminar de baixar
@@ -1120,8 +1146,10 @@
 
   // flores, arbustos, pedras e plantinhas espalhados nos lugares vazios (cada modelo é desenhado de uma vez só)
   let natureza = [], natAssinatura = '';
-  const NAT_PESOS = [['capim', 5], ['flor3', 3], ['flor4', 3], ['trevo', 3], ['arbusto', 2], ['arbustoFlor', 2], ['samambaia', 2], ['pedrinha', 2], ['cogumelo', 1.2], ['planta', 1.2], ['pedra', .8]];
-  const NAT_SOMBRA = {arbusto:1, arbustoFlor:1, pedra:1, planta:1};
+  const NAT_PESOS = [['capim1', 4], ['capim2', 4], ['arbusto1', 2], ['arbusto2', 2], ['arbusto3', 2], ['arbusto4', 1.5], ['pedra1', 1], ['pedra2', 1.2], ['pedra3', .8]];
+  const NAT_ARV = ['arv1', 'arv1b', 'arv2', 'arv2c', 'arv3', 'arv4'];
+  const NAT_SOMBRA = {arbusto1:1, arbusto2:1, arbusto3:1, arbusto4:1, pedra1:1, pedra2:1, pedra3:1, arv1:1, arv1b:1, arv2:1, arv2c:1, arv3:1, arv4:1};
+  let posBordaArv = []; // lugares das árvores da borda da ilha (guardados ao montar a ilha)
   function espalharNatureza() {
     if (!glb.ok) return;
     natureza.forEach(m => scene.remove(m)); natureza = [];
@@ -1132,15 +1160,18 @@
         for (const [cx, cz] of z.cel) {
           if (ocup.has(cx + ',' + cz)) continue;
           Math.random = sorteio((cx + 99) * 7919 + (cz + 99) * 104729);
+          if (!livre && Math.random() < .3) { const k = NAT_ARV[Math.random() * NAT_ARV.length | 0]; (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * .8, cz * G + (Math.random() - .5) * .8, Math.random() * 6.28, .85 + Math.random() * .35]); continue; } // terra bloqueada: mata
           const n = Math.random() < (livre ? .1 : .32) ? 1 + (Math.random() < .35 ? 1 : 0) : 0;
           for (let i = 0; i < n; i++) {
             let r = Math.random() * total, k = NAT_PESOS[0][0]; for (const [kk, w] of NAT_PESOS) { if ((r -= w) <= 0) { k = kk; break; } }
-            if (livre && (k === 'pedra' || k === 'planta')) k = 'flor3'; // nas terras em uso, só coisa pequena
+            if (livre && /pedra1|pedra3|arbusto4/.test(k)) k = 'capim1'; // nas terras em uso, só coisa pequena
             (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * 1.5, cz * G + (Math.random() - .5) * 1.5, Math.random() * 6.28, .8 + Math.random() * .45]);
           }
         }
       }
+      posBordaArv.forEach(([x, z, i]) => { const k = NAT_ARV[i % NAT_ARV.length]; (lista[k] = lista[k] || []).push([x, z, i * 1.7, .9 + (i % 5) * .08]); }); // árvores da borda
     } finally { Math.random = mr; }
+    if (bordaArv) bordaArv.visible = false; // as árvores antigas da borda dão lugar às do KayKit
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), eixo = V3(0, 1, 0);
     for (const k in lista) { const pts = lista[k], partes = glb.cache[k]; if (!partes) continue;
       partes.forEach(({g, mt}) => { const im = new THREE.InstancedMesh(g, mt, pts.length);
@@ -1219,7 +1250,7 @@
     g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
   let sombraNuvens = null; const borboletas = [];
-  let ilhaObjs = [];
+  let ilhaObjs = [], bordaArv = null;
   function montarIlha() {
     const antes = new Set(scene.children);
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
@@ -1255,7 +1286,7 @@
     const pontoIlha = () => p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1));
     for (let i = 0; i < 1300; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.5)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); tufos.setColorAt(i, c.setHSL(rnd(.24, .3), rnd(.5, .7), rnd(.3, .45)).convertSRGBToLinear()); }
     { let cx = 0, cz = 0, cor = 0; for (let i = 0; i < 420; i++) { if (i % 14 === 0) { pontoIlha(); cx = p.x; cz = p.z; cor = coresF[Math.random() * 5 | 0]; } p.set(cx + rnd(-1.1, 1.1), .12, cz + rnd(-1.1, 1.1)); sc.setScalar(rnd(.8, 1.3)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(Math.random() < .8 ? cor : 0xffffff).convertSRGBToLinear()); } } // flores em canteirinhos
-    tufos.receiveShadow = true; scene.add(tufos); // as flores agora vêm dos modelos novos (espalharNatureza)
+    tufos.receiveShadow = true; scene.add(tufos, flores);
     // sombra das nuvens passando devagar pelo chão
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g2 = cv.getContext('2d');
       for (let i = 0; i < 9; i++) { const x = rnd(20, 236), y = rnd(20, 236), r = rnd(30, 60), gr = g2.createRadialGradient(x, y, 4, x, y, r); gr.addColorStop(0, 'rgba(0,20,0,.55)'); gr.addColorStop(1, 'rgba(0,20,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 256, 256); }
@@ -1271,13 +1302,14 @@
       g3.traverse(m => { m.castShadow = false; }); borboletas.push({g:g3, a1, a2, fase:rnd(0, 6), alvo:g3.position.clone(), vel:rnd(.6, 1)});
     }
     // árvores na borda e palmeiras na praia (juntas numa malha só por material)
-    const borda = new THREE.Group();
+    const borda = new THREE.Group(); bordaArv = new THREE.Group(); posBordaArv = [];
     for (let i = 0; i < 64; i++) {
       const lado = i % 4, t = rnd(-MEIA + 2, MEIA - 2), o = MEIA - rnd(.3, .9);
       const x = lado === 0 ? t : lado === 1 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
       const a = Math.random() < .35 ? pinheiro(rnd(.85, 1.2)) : Math.random() < .25 ? arbusto(rnd(1, 1.3)) : arvore(rnd(.8, 1.1), Math.random() < .2 ? 0xe83b2c : null);
-      a.position.set(x, 0, z); borda.add(a);
+      a.position.set(x, 0, z); bordaArv.add(a); posBordaArv.push([x, z, i]);
     }
+    scene.add(bordaArv); mesclar(bordaArv); congelar(bordaArv); if (glb.ok) bordaArv.visible = false;
     for (let i = 0; i < 14; i++) {
       const lado = i % 4, t = rnd(-MEIA, MEIA), o = MEIA + rnd(1.2, 2.2);
       const x = lado < 2 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
@@ -1316,13 +1348,13 @@
       for (const z of ZONAS) {
         if (S.zonas.includes(z.key)) continue;
         Math.random = sorteio((z.zx + 50) * 997 + (z.zz + 50) * 131);
-        const qtd = 6 + (Math.random() * 3 | 0), usadas = new Set();
+        const qtd = glb.ok ? 0 : 6 + (Math.random() * 3 | 0), usadas = new Set(); // com o KayKit, a mata vem do espalharNatureza
         for (let i = 0; i < qtd; i++) {
           const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const k = cx + ',' + cz; if (usadas.has(k)) continue; usadas.add(k);
           const r = Math.random(), o = r < .45 ? arvore(rnd(.8, 1.15), Math.random() < .15 ? 0xf5a623 : null) : r < .6 ? pinheiro(rnd(.9, 1.2)) : r < .75 ? pedra(rnd(1, 1.6)) : r < .88 ? tora(rnd(.8, 1.1)) : arbusto(rnd(.9, 1.3));
           o.position.set(cx * G + rnd(-.4, .4), 0, cz * G + rnd(-.4, .4)); g.add(o);
         }
-        for (let i = 0; i < 6; i++) { const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const b = arbusto(rnd(.6, .9)); b.position.set(cx * G + rnd(-.8, .8), 0, cz * G + rnd(-.8, .8)); g.add(b); }
+        for (let i = 0; i < (glb.ok ? 0 : 6); i++) { const [cx, cz] = z.cel[Math.random() * z.cel.length | 0]; const b = arbusto(rnd(.6, .9)); b.position.set(cx * G + rnd(-.8, .8), 0, cz * G + rnd(-.8, .8)); g.add(b); }
         const mx = z.cel.reduce((a, c) => a + c[0], 0) / z.cel.length * G, mz = z.cel.reduce((a, c) => a + c[1], 0) / z.cel.length * G;
         const placa = new THREE.Group(); // placa de madeira
         placa.add(cil(.07, .08, 1.3, 0x7a4b25, 0, .65, 0, 6));
@@ -1428,6 +1460,7 @@
     else if (o.tipo === 'casinhaPet') g = modeloCasinhaPet();
     else if (T.decor) g = modeloDecor(o.tipo);
     else g = modeloCercado(o.tipo, T.w, T.d);
+    g.userData.oidRaiz = o.id;
     { const ex = ENFEITES[o.tipo]; if (ex) ex.forEach(([k, x, z, ry, s]) => g.add(modeloGLB(k, x, z, ry, s))); } // enfeites dos packs em volta da construção
     if (o.tipo !== 'lote' && o.tipo !== 'lago') { const anim = new Set(); g.traverse(x => { if (fumacas.includes(x) || pasMoinho.includes(x) || fabRodas.includes(x) || x.userData.anim) anim.add(x); }); mesclar(g, anim); }
     let rot = null;
