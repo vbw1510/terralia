@@ -910,3 +910,51 @@ body.colocando #ferrEdicao [data-ed=vender]{display:none!important}
 @media (max-width:560px){#telaAtualiza .upd-boneco{height:46vh;opacity:.9}}
 #telaAtualiza{background:#7cc45a}
 #telaAtualiza::before{content:"";position:absolute;inset:-30px;background:linear-gradient(rgba(130,205,255,.55),rgba(140,215,100,.6)),url(../assets/img/capa.jpg) center/cover;filter:blur(14px) saturate(1.1)}
+/* v0.45 — info do item (toque num item: o que é e onde consegue) */
+#infoItem{position:fixed;z-index:450;display:none;width:min(270px,80vw);background:var(--creme);border:3px solid var(--madeira);border-radius:16px;box-shadow:0 6px 0 var(--madeira),0 10px 24px rgba(0,0,0,.35);padding:10px 12px 12px;color:var(--texto)}
+#infoItem.on{display:block;animation:infoEntra .18s ease-out}
+#infoItem .info-topo{display:flex;align-items:center;gap:10px;padding-right:22px}
+#infoItem .info-topo .grande,#infoItem .info-topo img,#infoItem .info-topo .emo-g{width:44px;height:44px;font-size:34px;flex:none}
+#infoItem .info-topo b{display:block;font-size:16px}
+#infoItem .info-topo small{color:#8a6a4a;font-size:12px}
+#infoItem p{margin:8px 0 10px;font-size:13px;line-height:1.35;color:#6a4a2a}
+#infoItem .btn{width:100%}
+#infoItem .info-x{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:0;background:#e6c99a;color:#6a4a2a;font-weight:900;cursor:pointer}
+@keyframes infoEntra{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+[data-info]{cursor:pointer}
+.ing[data-info],.ped-it[data-info]{transition:transform .1s}
+.ing[data-info]:active,.ped-it[data-info]:active,.info-alvo:active{transform:scale(.9)}
+.ing.falta{text-decoration:underline dotted;text-underline-offset:2px}
+.info-alvo{display:contents}
+.ani-st .ani-racao{display:block;margin-top:2px;font-weight:700;overflow:hidden;text-overflow:ellipsis}
+.ani-st .ani-racao.zero{color:#c0392b}
+.btn.laranja{background:linear-gradient(#ffb547,#f08a1c);color:#fff;border-color:#b4600c;box-shadow:0 4px 0 #b4600c}
+.mini-b small{display:block;font-size:10px;font-weight:600;opacity:.9}
+/* v0.46 — Passe do Fazendeiro */
+.passe-btn.brilha{animation:passeBrilha 1.4s ease-in-out infinite}
+@keyframes passeBrilha{50%{box-shadow:0 0 0 3px #ffd34d,0 0 14px #ffd34d}}
+.passe-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.passe-topo>div:first-child{flex:1;min-width:150px}
+.passe-topo b{display:block;font-size:16px;color:var(--texto)}
+.passe-topo small{color:#8a6a4a;font-size:12px}
+.passe-prog{position:relative;width:140px;height:18px;border-radius:10px;background:#e8d6b4;border:2px solid var(--madeira);overflow:hidden}
+.passe-prog i{display:block;height:100%;background:linear-gradient(90deg,#ffcf3d,#ff9f1a)}
+.passe-prog span{position:absolute;inset:0;text-align:center;font-size:11px;font-weight:800;line-height:14px;color:#5a3a1a}
+.passe-trilha{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;scroll-snap-type:x proximity}
+.passe-rotulos{display:flex;flex-direction:column;justify-content:space-around;padding-top:18px;flex:none;font-weight:800;font-size:12px;color:#6a4a2a;writing-mode:vertical-rl;transform:rotate(180deg)}
+.passe-rotulos span{padding:20px 0}.passe-rotulos .prem{color:#b4600c}
+.passe-col{flex:none;width:86px;display:flex;flex-direction:column;align-items:center;gap:6px;scroll-snap-align:start}
+.passe-dia{font-size:11px;font-weight:800;color:#8a6a4a}
+.passe-card{position:relative;width:100%;height:92px;border-radius:14px;background:#fffaf0;border:3px solid #e2c99c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.passe-card .pc-ic{width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:34px}
+.passe-card .pc-ic img,.passe-card .pc-ic .e{width:46px;height:46px;object-fit:contain}
+.passe-card small{font-size:11px;font-weight:800;color:#5a3a1a;text-align:center;line-height:1.1}
+.passe-card.prem{background:linear-gradient(#fff3d6,#ffe2a3);border-color:#e0a84a;opacity:.75}
+.passe-card .pc-tranca{position:absolute;top:3px;right:4px;font-size:13px}
+.passe-card .pc-ok{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(90,180,60,.55);border-radius:11px;color:#fff;font-size:34px;text-shadow:0 2px 0 #2f6e1c}
+.passe-col.grande .passe-card:not(.prem){border-color:#f0b429;background:linear-gradient(#fff8d8,#ffe9a6)}
+.passe-col.hoje .passe-card:not(.prem){border-color:#4fb431;box-shadow:0 0 0 3px #8be35f;animation:passeBrilha 1.2s ease-in-out infinite;cursor:pointer}
+.passe-col.hoje .passe-dia{color:#2f8a1c}
+.passe-dica{margin:4px 0 0}
+.passe-legenda{display:flex;gap:14px;font-size:12px;color:#6a4a2a;margin:0 0 4px 2px}
+.passe-legenda span:last-child{color:#b4600c}

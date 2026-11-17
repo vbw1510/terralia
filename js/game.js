@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.44'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.46'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -335,6 +335,15 @@
         if (S.tut == null || (S.tut === 0 && S.colhidos > 0)) S.tut = S.colhidos > 0 ? -1 : 0;
         S.stats = Object.assign({colheu:{}, plantou:{}, coletou:{}, vendeu:0, compras:0, fez:{}, alimentou:0}, S.stats);
         S.cap = Object.assign({armazem:0, celeiro:0}, S.cap); S.fab = S.fab || {};
+        if (VISITA) { // v0.45: bichinho só aparece na fazenda dos amigos (vira ajuda da visita)
+          let sem = [...(VISITA.uid || 'x') + new Date().toDateString()].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
+          const rnd = () => (sem = (sem * 1103515245 + 12345) >>> 0) / 4294967296, ag = Date.now();
+          const cres = S.plots.map((q, i) => i).filter(i => { const q = S.plots[i]; return q.c && q.reg && q.t0 && ag - q.t0 < q.dur; });
+          for (let n = Math.min(cres.length, 2 + Math.floor(rnd() * 3)); n > 0; n--) { const i = cres.splice(Math.floor(rnd() * cres.length), 1)[0], q = S.plots[i]; q.pragaEm = ag - 1000; q.pragaFim = null; q.prot = false; }
+        } else {
+          S.plots.forEach(q => { delete q.pragaEm; delete q.pragaFim; }); // na própria fazenda não tem mais bichinho
+          if (S.ins && S.ins.antipraga) { const v = S.ins.antipraga * 60; S.moedas += v; delete S.ins.antipraga; setTimeout(() => toast(`🧴 O spray antipraga saiu do jogo: você recebeu ${fmtN(v)} moedas de volta`, 'ouro'), 4000); }
+        }
         if (S.sementes && Object.keys(S.sementes).length) { for (const k in S.sementes) if (S['sementes'][k] > 0) S.celeiro[k] = (S.celeiro[k] || 0) + S['sementes'][k]; } S.sementes = {}; // sementes viraram plantas no celeiro
         if (S.petComeu == null) { S.petComeu = Date.now(); if (Object.keys(PETS).some(k => S.amigos && S.amigos[k])) S.celeiro.racaoPet = (S.celeiro.racaoPet || 0) + 3; }
         if (!S.objetos.some(o => o.tipo === 'galpao')) { const ce = S.objetos.find(o => o.tipo === 'celeiro'), pos = acharEspaco('galpao', ce ? ce.ox : -6, ce ? ce.oz + 4 : -2); if (pos) S.objetos.push({id:'og' + Date.now(), tipo:'galpao', rot:0, ...pos}); }
@@ -422,7 +431,7 @@
   const temPraga = p => !!(p && p.c && p.reg && p.pragaEm && !p.pragaFim && Date.now() >= p.pragaEm && decorrido(p) < p.dur);
   const crescendo_ = p => !!(p && p.c && p.reg && decorrido(p) < p.dur);
   const INSUMOS = {
-    antipraga:{nome:'Spray antipraga', emoji:'🧴', preco:60, nivel:4, desc:'Tira o bichinho e protege a planta até a colheita.'},
+    antipraga:{nome:'Spray antipraga', emoji:'🧴', preco:60, nivel:999, fora:true, desc:'Tira o bichinho e protege a planta até a colheita.'}, // v0.45: saiu da loja
     rapido:   {nome:'Adubo rápido',    emoji:'⚡', preco:120, nivel:5, desc:'A planta fica pronta na metade do tempo que falta.'},
     super:    {nome:'Super adubo',     emoji:'🌟', preco:220, nivel:8, desc:'Dobra a colheita do canteiro.'},
   };
@@ -456,8 +465,8 @@
   const aniLista = k => { const L = S.ani[k] || (S.ani[k] = []); while (L.length < qtdAnimal(k)) L.push({rest:0, t:0, prontos:0}); return L; };
   const nomePet = k => (S.nomes && S.nomes[k]) || PETS[k].nome;
   // espaço: Celeiro guarda plantas, Armazém guarda a produção
-  const capArmazem = () => 100 + 30 * S.cap.armazem, capCeleiro = () => 100 + 30 * S.cap.celeiro;
-  const matsAmpliar = k => 1 + Math.floor(S.cap[k] / 2); // quantos de cada material para ampliar
+  const capArmazem = () => 100 + 50 * S.cap.armazem, capCeleiro = () => 100 + 50 * S.cap.celeiro; // sempre de 50 em 50
+  const matsAmpliar = k => 1 + Math.floor(S.cap[k] / 3); // quantos de cada material para ampliar
   const matsExpansao = () => 3 + 3 * ANEL;
   // Celeiro = só plantas (colheitas e frutas) · Armazém = produção (leite, ovo, pão, rações…). Os dois usam S.celeiro, cada um com a sua capacidade.
   const ehPlanta = id => CROPS.some(c => c.id === id) || FRUTAS.some(f => f.id === id);
@@ -467,7 +476,7 @@
   const livreCeleiro = () => Math.max(0, capCeleiro() - usoCeleiro());
   const livreDe = id => MATERIAIS[id] ? 1e9 : ehPlanta(id) ? livreCeleiro() : livreArmazem();
   const precoPlanta = c => c.preco * 2; // comprar na loja custa o dobro de vender: vale a pena guardar para replantar
-  const custoAmpliar = k => Math.round(150 * Math.pow(1.35, S.cap[k]) / 10) * 10;
+  const custoAmpliar = k => Math.round(100 * Math.pow(1.25, S.cap[k]) / 10) * 10;
   let avisoCheio = 0;
   function avisarCheio(k) { if (Date.now() - avisoCheio > 2500) { avisoCheio = Date.now(); toast(k === 'celeiro' ? '🏚️ Celeiro cheio! Venda plantas ou amplie o celeiro' : '📦 Armazém cheio! Venda itens ou amplie o armazém'); } }
   const vagasFab = t => nTipo(t) ? 2 + (S.upg.moinhoVaga || 0) : 0; // cada fábrica (e cada moinho) tem a sua fila
@@ -2224,7 +2233,6 @@
     const p = S.plots[i];
     if (!p || !p.c || p.reg) return false;
     p.reg = true; p.t0 = Date.now(); p.dur = S.tut >= 0 && S.tut <= 5 ? 4000 : crop(p.c).tempo * 1000 * velocidade(); // no tutorial a 1ª planta cresce rapidinho
-    if (!(S.tut >= 0 && S.tut <= 5) && !p.prot && crop(p.c).tempo >= 120 && S.nivel >= 4 && Math.random() < .12) p.pragaEm = p.t0 + p.dur * (.15 + Math.random() * .35);
     if (!silencioso) { chuva(i, 0x6cc3ee, .08); somT('agua', 120); }
     return true;
   }
@@ -2663,6 +2671,15 @@
     if (T.fab) { if (o.tipo === 'moinho') fabSel = o.id; const oidF = o.tipo === 'moinho' ? o.id : undefined; if (prontosFab(o.tipo, oidF) > 0) { coletarFab(o.tipo, oidF); tudo(); return; } abrir('fabrica', o.tipo); if (!objNaFila(o.id)) enfileirar({tipo:'andar', oid:o.id}); tudo(); }
   }
   let destaqueRec = null;
+  function resumoCuidar() { // o que o "Cuidar de todos" vai fazer
+    const r = {alvos:[], col:0, ali:0, semR:[]};
+    for (const o of S.objetos) { const T = TIPOS[o.tipo]; if (!T.animal || !qtdAnimal(T.animal)) continue;
+      const e = estadoCercado(o), temR = (S.celeiro[ANIMAIS[T.animal].racao] || 0) > 0;
+      if (e.fome && !temR && !r.semR.includes(T.animal)) r.semR.push(T.animal);
+      if (objNaFila(o.id) || !(e.prontos || (e.fome && temR))) continue;
+      r.alvos.push(o); r.col += e.prontos; if (temR) r.ali += Math.min(e.fome, S.celeiro[ANIMAIS[T.animal].racao]); }
+    return r;
+  }
   function irParaRacao(a) { // bicho com fome e sem ração: já abre o moinho mostrando a ração certa
     const r = item(a.racao), m = listaMoinhos()[0];
     if (!m) { toast(`${a.plural} com fome! Construa um Moinho para fazer ${r.nome.toLowerCase()} 🌾`); abrir('loja', 'construcoes'); return; }
@@ -2671,6 +2688,59 @@
     toast(`🍽️ ${a.plural} com fome! Faça ${r.nome.toLowerCase()} aqui no moinho`, 'bom');
     apontar_(() => $(`[data-receita=${r.id}]`), null, 6000);
   }
+  // ===== v0.45: tocar num item mostra o que é e onde consegue; "Ir lá" leva até o lugar com a mãozinha =====
+  const fabDe = id => Object.keys(FABRICAS).find(f => FABRICAS[f].receitas.some(r => r.id === id));
+  const noNa = n => (/a$|ão$|agem$|ade$/.test(n.toLowerCase()) && !/moinho|engenho|laticínio|galinheiro|curral|pasto|chiqueiro|apiário/i.test(n) ? 'na ' : 'no ') + n;
+  function fonteItem(id) {
+    const it = item(id); if (!it) return '';
+    if (MATERIAIS[id]) return '🎁 Cai de vez em quando ao colher e produzir. Também tem na Loja › Materiais.';
+    if (crop(id)) return S.nivel < crop(id).nivel ? `🔒 Planta que libera no nível ${crop(id).nivel}.` : '🌱 Planta: plante num canteiro (sementes na Loja › Plantas). Cada colheita rende 2.';
+    if (it.arvore) return `🌳 Dá na ${TIPOS[it.arvore].nome.toLowerCase()} (Loja › Fazenda).${S.nivel < it.nivel ? ` Libera no nível ${it.nivel}.` : ''}`;
+    const an = Object.keys(ANIMAIS).find(k => ANIMAIS[k].prod === id);
+    if (an) { const a = ANIMAIS[an]; return `${a.emoji} Vem ${/a$/.test(a.nome) ? 'da' : 'do'} ${a.nome.toLowerCase()}, ${noNa(TIPOS[a.cercado].nome.toLowerCase())}. Ela come ${item(a.racao).nome.toLowerCase()}.`; }
+    const f = fabDe(id);
+    if (f) { const r = FABRICAS[f].receitas.find(r => r.id === id); return `🏭 Feito ${noNa(FABRICAS[f].nome)} com ${Object.entries(r.ing).map(([k, n]) => `${n} ${item(k).nome.toLowerCase()}`).join(', ')}.${S.nivel < r.nivel ? ` Libera no nível ${r.nivel}.` : ''}`; }
+    return '';
+  }
+  function guiarFazer(id) { // abre a fábrica certa já na receita; se faltar ingrediente, aponta para ele
+    const f = fabDe(id), r = f && FABRICAS[f].receitas.find(r => r.id === id); if (!r) return;
+    if (S.nivel < r.nivel) { toast(`${r.nome} libera no nível ${r.nivel}`); return; }
+    const o = f === 'moinho' ? listaMoinhos()[0] : S.objetos.find(o => o.tipo === f);
+    if (!o) { abrir('loja', subDe(f)); rolarAte(`[data-construir=${f}]`); apontar_(() => $(`[data-construir=${f}]`)); toast(`Construa: ${FABRICAS[f].nome} para fazer ${r.nome.toLowerCase()}`); return; }
+    if (f === 'moinho') fabSel = o.id;
+    focar(centro(o)); destaqueRec = id; abrir('fabrica', f); destaqueRec = null;
+    const el = $(`[data-rec=${id}]`); if (el) el.scrollIntoView({block:'center'});
+    const falta = Object.entries(r.ing).find(([k, n]) => (S.celeiro[k] || 0) < n);
+    if (falta) { toast(`Falta ${item(falta[0]).nome.toLowerCase()}: toque nele para ver onde consegue 👆`); apontar_(() => $(`[data-rec=${id}] [data-info=${falta[0]}]`), null, 6000); }
+    else apontar_(() => $(`[data-receita=${id}]`), null, 6000);
+  }
+  function guiarItem(id) {
+    fecharInfo();
+    if (MATERIAIS[id]) { abrir('loja', 'materiais'); return; }
+    if (crop(id)) { guiarMissao({t:'plantar', id}); return; }
+    const it = item(id);
+    if (it && it.arvore) { guiarMissao({t:'ter', id:it.arvore}); return; }
+    if (EXTRAS.some(e => e.id === id)) { guiarMissao({t:'coletar', id}); return; }
+    guiarFazer(id);
+  }
+  function fecharInfo() { const el = $('#infoItem'); if (el) el.classList.remove('on'); }
+  function mostrarInfo(id, alvo) {
+    const it = item(id); if (!it) return;
+    let el = $('#infoItem');
+    if (!el) { el = document.createElement('div'); el.id = 'infoItem'; document.body.appendChild(el);
+      el.addEventListener('click', e => { const b = e.target.closest('[data-info-ir]'); if (b) guiarItem(b.dataset.infoIr); if (e.target.closest('[data-info-x]')) fecharInfo(); }); }
+    el.innerHTML = `<button class="info-x" data-info-x>✕</button><div class="info-topo">${iconeItem(it, 'grande')}<div><b>${esc(it.nome)}</b><small>Você tem ${fmtN(estoque(id))}</small></div></div>
+      <p>${fonteItem(id)}</p><button class="btn verde" data-info-ir="${id}">Ir lá 👉</button>`;
+    el.classList.add('on');
+    const r = alvo.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
+    let x = Math.min(innerWidth - w - 8, Math.max(8, r.left + r.width / 2 - w / 2)), y = r.top - h - 8; if (y < 8) y = Math.min(innerHeight - h - 8, r.bottom + 8);
+    el.style.left = x + 'px'; el.style.top = y + 'px';
+  }
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-info]');
+    if (a) { e.stopPropagation(); e.preventDefault(); mostrarInfo(a.dataset.info, a); return; }
+    if (!e.target.closest('#infoItem')) fecharInfo();
+  }, true);
   const clicavel = o => o && (TIPOS[o.tipo].abre || TIPOS[o.tipo].animal || TIPOS[o.tipo].fab || TIPOS[o.tipo].fruta);
   function vizinhos(i) {
     const c = posTile(i), out = [];
@@ -2973,6 +3043,7 @@
     });
     const nlc = typeof CHAT !== 'undefined' ? totalNaoLidas() : 0;
     h += `<button class="mis-topo chat-btn" data-chat-abrir="1">💬 Chat ${nlc ? `<b class="mis-pronta">${nlc}</b>` : ''}</button>`;
+    if (!VISITA && S.nivel >= NIVEL_PASSE) h += `<button class="mis-topo passe-btn ${passePode() ? 'brilha' : ''}" data-abrir="passe">🎁 Passe ${passePode() ? '<b class="mis-pronta">!</b>' : ''}</button>`;
     if (h !== missoesHTML) { missoesHTML = h; $('#missoes').innerHTML = h; }
   }
 
@@ -3139,7 +3210,7 @@
   }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
+  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
   const SUBLOJA = {sementes:'🌱 Plantas', producao:'🏭 Produção', animais:'🐄 Animais', fazenda:'🏡 Fazenda', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', insumos:'🧪 Adubos', materiais:'🧰 Materiais'};
@@ -3170,7 +3241,7 @@
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
     $('.janela').classList.toggle('ani', janela === 'animais');
-    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca'].includes(janela));
+    $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca', 'passe'].includes(janela));
     let h = '';
     const tile = o => `<div class="tile ${o.trava ? 'trava' : ''} ${o.cls || ''}" ${o.attr || ''}>
       ${o.selo ? `<span class="selo ${o.seloCls || ''}">${o.selo}</span>` : ''}
@@ -3196,7 +3267,7 @@
         h += tile({selo:q ? `Você tem ${q}` : '', ic:`<span class="mat-card">${matIco(k)}</span>`, nome:m.nome, info:`<span>Usado para ampliar ${m.para === 'ilha' ? 'a ilha' : m.para === 'celeiro' ? 'o celeiro' : 'o armazém'}</span>`,
           acao:`<button class="btn verde" data-compra="mat:${k}" ${S.moedas < pr ? 'disabled' : ''}>Comprar · ${moedaMini}${pr}</button>`});
       });
-      if (subLoja === 'insumos') Object.entries(INSUMOS).forEach(([k, n]) => {
+      if (subLoja === 'insumos') Object.entries(INSUMOS).filter(([k, n]) => !n.fora).forEach(([k, n]) => {
         const trava = S.nivel < n.nivel, q = qtdIns(k);
         h += tile({trava, selo:trava ? `🔒 Nível ${n.nivel}` : q ? `Você tem ${q}` : '', seloCls:trava ? 'trava' : '',
           ic:`<span class="emo-card">${n.emoji}</span>`, nome:n.nome, info:`<span class="desc">${n.desc}</span>`,
@@ -3242,11 +3313,11 @@
     const barraCap = (uso, cap, k) => { const ms = matsDe(k), n = matsAmpliar(k), ok = temMats(ms, n) && S.moedas >= custoAmpliar(k);
       return `<div class="cap"><div class="cap-txt">📦 ${uso}/${cap}</div><div class="mis-barra"><i style="width:${Math.min(100, 100 * uso / cap)}%;${uso >= cap ? 'background:#e0503a' : ''}"></i></div>
       <span class="mats">${ms.map(m => `<span class="${((S.mat || {})[m] || 0) >= n ? 'ok' : ''}" title="${MATERIAIS[m].nome}">${matIco(m)}${(S.mat || {})[m] || 0}/${n}</span>`).join('')}</span>
-      <button class="btn ${ok ? 'verde' : ''}" data-ampliar="${k}">Ampliar +30 · ${moedaMini}${fmtN(custoAmpliar(k))}</button></div>`; };
+      <button class="btn ${ok ? 'verde' : ''}" data-ampliar="${k}">Ampliar +50 · ${moedaMini}${fmtN(custoAmpliar(k))}</button></div>`; };
     // Armazém, Celeiro e Galpão: mesmo desenho (barra de cima igual, cards iguais, só o que você tem)
     const topoEstoque = (cap, total, acao, dica) => `<div class="loja-topo estoque"><div class="topo-linha">${cap}<button class="btn verde vender-tudo" data-acao="${acao}" ${total ? '' : 'disabled'}>Vender tudo · ${moedaMini}${fmtN(total)}</button></div><p class="dica">${dica}</p></div><div class="vitrine estoque">`;
     const cardItem = (id, q, ic, nome, pr, extra, acao) => { const td = S.tend[id] || 0, seta = td > 0 ? '<b class="sobe">▲</b>' : td < 0 ? '<b class="desce">▼</b>' : '';
-      return tile({selo:`× ${q}`, ic, nome, info:`<span class="preco-g">${moedaMini}${pr} ${pr && !MATERIAIS[id] ? seta : ''}</span><span>${extra}</span>`, acao}); };
+      return tile({selo:`× ${q}`, ic:`<span data-info="${id}" class="info-alvo">${ic}</span>`, nome, info:`<span class="preco-g">${moedaMini}${pr} ${pr && !MATERIAIS[id] ? seta : ''}</span><span>${extra}</span>`, acao}); };
     const vazio = txt => `<div class="vazio-msg">${txt}</div>`;
     if (janela === 'armazem') {
       const lista = VENDAVEIS.filter(c => !ehPlanta(c.id) && (S.celeiro[c.id] || 0) > 0), racs = RACOES.filter(r => S.celeiro[r.id] > 0);
@@ -3275,7 +3346,7 @@
     }
     if (janela === 'animais') {
       atualizarProducao();
-      h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Cada animal come <b>1 ração</b> e produz. O fazendeiro coleta e alimenta.</p><button class="btn verde mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos</button>${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
+      h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Cada animal come <b>1 ração</b> e produz. O fazendeiro coleta e alimenta.</p>${(() => { const c = resumoCuidar(); return `<button class="btn ${c.col || c.ali ? 'verde' : ''} mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos${c.col || c.ali ? `<small>${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' · ')}</small>` : c.semR.length ? '<small>falta ração</small>' : '<small>tudo em dia</small>'}</button>`; })()}${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
       for (const k in ANIMAIS) {
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
@@ -3287,12 +3358,12 @@
           let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
           const temR = (S.celeiro[r.id] || 0) > 0;
           status = n ? ([pr ? `${it.emoji} ${pr} pronto(s)` : '', fome ? `🍽️ ${fome} com fome` : '', prod ? `⏳ ${prod} produzindo` : ''].filter(Boolean).join(' · ') || 'Tudo certo') : 'Nenhum animal ainda';
-          status += ` · ${iconeItem(r, 'mini-ic')}${S.celeiro[r.id] || 0}`;
+          status += `<span class="ani-racao ${(S.celeiro[r.id] || 0) ? '' : 'zero'}" data-info="${r.id}">${iconeItem(r, 'mini-ic')} Come ${r.nome.toLowerCase()} · tem <b>${S.celeiro[r.id] || 0}</b></span>`;
           if (!n) principal = `<button class="btn verde" data-animal="${k}" ${S.moedas < custoAnimal(k) ? 'disabled' : ''}>Comprar ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}</button>`;
           else if (cercadosDe(k).some(o => objNaFila(o.id))) principal = '<button class="btn" disabled>🚶 A caminho…</button>';
           else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">Coletar ${pr} ${it.emoji}</button>`;
           else if (fome && temR) principal = `<button class="btn verde" data-ir-cercado="${k}">Dar ração 🥣</button>`;
-          else if (fome) principal = `<button class="btn" data-ir-moinho="1">Fazer ração</button>`;
+          else if (fome) principal = `<button class="btn laranja" data-fazer-racao="${r.id}">Fazer ração 🌾</button>`;
           else principal = `<button class="btn" data-ir-cercado="${k}">Ver ${nomeC}</button>`;
           if (n) extras = `<div class="ani-mini"><button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio<small>precisa + cercado</small>' : `+1 ${a.emoji}<small>${moedaMini}${fmtN(custoAnimal(k))}</small>`}</button>${S.nivel < nvProx ? `<button class="btn" disabled>+ ${nomeC}<small>nível ${nvProx}</small></button>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>+ ${nomeC}<small>${moedaMini}${fmtN(cc)}</small></button>`}</div>`;
         }
@@ -3321,7 +3392,7 @@
       h += `${prontos ? `<button class="btn verde" data-acao="coletar-fab">Pegar ×${prontos}</button>` : ''}</div>`;
       F.receitas.forEach(r => {
         const trava = S.nivel < r.nivel, ok = temIngredientes(r) && M.fila.length < vagas;
-        const ings = Object.entries(r.ing).map(([id, n]) => { const q = S.celeiro[id] || 0; return `<span class="ing ${q >= n ? 'tem' : 'falta'}">${item(id).emoji}${q}/${n}</span>`; }).join('');
+        const ings = Object.entries(r.ing).map(([id, n]) => { const q = S.celeiro[id] || 0; return `<span class="ing ${q >= n ? 'tem' : 'falta'}" data-info="${id}">${emojiItem(item(id))}${q}/${n}</span>`; }).join('');
         const tem = S.celeiro[r.id] || 0;
         h += `<div class="receita ${trava ? 'trava' : ''} ${destaqueRec === r.id ? 'destaque' : ''}" data-rec="${r.id}">${iconeItem(r, 'e')}<div class="meio"><b>${r.nome}</b> <span class="tem-qtd ${tem ? '' : 'zero'}">×${tem}</span>${trava ? ` <span class="nv">Nível ${r.nivel}</span>` : ''}
           <div class="det">${ings} <span>⏱${tempoCurto(r.tempo * 1000)}</span> ${r.rende ? `<span>×${r.rende} porções</span>` : `<span>💰${r.preco}</span>`}</div></div>
@@ -3404,6 +3475,7 @@
     }
     if (janela === 'ranking') h += htmlRanking();
     if (janela === 'pedidos') h += htmlPedidos();
+    if (janela === 'passe') h += htmlPasse();
     if (janela === 'banca') h += htmlBanca();
     if (janela === 'amigos') h += (ON.user ? `<div class="subabas"><button data-social="amigos" class="${SOC.aba !== 'coop' ? 'ativa' : ''}">👥 Amigos</button><button data-social="coop" class="${SOC.aba === 'coop' ? 'ativa' : ''}">🤝 Cooperativa</button></div>` : '') + (SOC.aba === 'coop' && ON.user ? htmlCoop() : htmlAmigos());
     if (janela === 'nuvem') h += htmlNuvem();
@@ -3415,6 +3487,7 @@
     }
     const vOld = $('#jcorpo .vitrine'), chaveV = janela + subLoja, sl = vOld && vitrineChave === chaveV ? vOld.scrollLeft : 0; vitrineChave = chaveV;
     $('#jcorpo').innerHTML = h;
+    if (janela === 'passe') { const c = $('.passe-col.hoje') || [...document.querySelectorAll('.passe-col.feito')].pop(); const tr = $('.passe-trilha'); if (c && tr) tr.scrollLeft = Math.max(0, c.offsetLeft - tr.offsetLeft - 120); }
     const vNew = $('#jcorpo .vitrine'); if (vNew) vNew.scrollLeft = sl;
     if (janela === 'perfil') { const pv = $('#prevAvatar'); if (pv) pv.appendChild(mini.r.domElement); }
   }
@@ -3704,6 +3777,7 @@
       if (!alvos.length) { toast(cercadosDe(k).some(o => objNaFila(o.id)) ? '👍 O fazendeiro já está indo lá' : 'Nada para fazer agora nesses cercados'); return; }
       alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id}));
       toast(`🐾 Indo cuidar ${alvos.length > 1 ? 'dos ' + alvos.length + ' cercados' : 'do cercado'} de ${a.plural.toLowerCase()}`, 'bom'); renderJanela(); return; }
+    const fr = e.target.closest('[data-fazer-racao]'); if (fr) { guiarFazer(fr.dataset.fazerRacao); return; }
     const im = e.target.closest('[data-ir-moinho]'); if (im) { const o = S.objetos.find(o => o.tipo === 'moinho'); if (o) { focar(centro(o)); clicarConstrucao(o); } else abrir('loja', 'construcoes'); return; }
     const rc = e.target.closest('[data-receita]'); if (rc) {
       if (rc.dataset.max) { let n = 0; while (produzir(rc.dataset.receita, true)) n++; toast(n ? `⚙️ ${n}× ${item(rc.dataset.receita).nome} na fila` : 'Sem ingredientes ou fila cheia', n ? 'bom' : ''); tudo(); }
@@ -3747,10 +3821,13 @@
     if (ac === 'ver-terra') { fechar(); guiarTerra(); }
     if (ac === 'instalar' && pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.finally(() => { pedidoInstalar = null; renderJanela(); }); }
     if (ac === 'chamar-pets') { S.seguir = !S.seguir; atualizarPets3D(); salvar(); renderJanela(); toast(S.seguir ? '🐾 Seus bichinhos estão seguindo você' : '🐾 Bichinhos soltos para passear'); }
+    if (ac === 'resgatar-passe') { resgatarPasse(); return; }
     if (ac === 'cuidar-todos') {
-      const alvos = S.objetos.filter(o => { const T = TIPOS[o.tipo]; if (!T.animal || !qtdAnimal(T.animal) || objNaFila(o.id)) return false; const e2 = estadoCercado(o); return e2.prontos || (e2.fome && (S.celeiro[ANIMAIS[T.animal].racao] || 0) > 0); });
-      if (!alvos.length) toast('Nada para fazer agora: ninguém com fome (com ração) nem produto pronto');
-      else { alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo cuidar de ${alvos.length} cercado(s)`, 'bom'); renderJanela(); }
+      const c = resumoCuidar();
+      if (c.alvos.length) { c.alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo ${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' e ')}`, 'bom'); }
+      if (c.semR.length) { const a = ANIMAIS[c.semR[0]]; setTimeout(() => { toast(`🥣 Falta ${item(a.racao).nome.toLowerCase()} para ${a.plural.toLowerCase()}: vamos fazer!`); guiarFazer(a.racao); }, c.alvos.length ? 1400 : 0); }
+      else if (!c.alvos.length) toast('Tudo em dia! Nenhum animal com fome nem produto pronto 😊');
+      if (c.alvos.length && !c.semR.length) renderJanela();
     }
     if (ac === 'previa-ilha') { mostrarPreviaIlha(); return; }
     if (ac === 'expandir') {
@@ -3962,6 +4039,70 @@
     S.pedidos[i] = {itens:[], espera:Date.now() + 30 * 1000}; tudo();
   }
   function trocarPedido(i) { S.pedidos[i] = {itens:[], espera:Date.now() + 3 * 60 * 1000}; toast('🗑️ Pedido descartado. Um novo chega em 3 minutos.'); tudo(); }
+  // ================= PASSE DO FAZENDEIRO (v0.46): 1 recompensa por dia, temporadas de 30 dias =================
+  const NIVEL_PASSE = 2, DIA_MS = 864e5, INICIO_PASSE = Date.UTC(2026, 10, 17, 3); // temporada 1 começa em 17/11/2026 (meia-noite de Brasília)
+  const hojeStr = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+  const temporadaAtual = () => Math.floor((Date.now() - INICIO_PASSE) / (30 * DIA_MS)) + 1;
+  const fimTemporada = () => INICIO_PASSE + temporadaAtual() * 30 * DIA_MS;
+  // recompensas: [tipo, id/quantidade, quantidade]; a cada 7 dias um baú grande
+  const PASSE_GRATIS = [
+    ['moedas', 200], ['item', 'racaoG', 6], ['xp', 30], ['item', 'milho', 10], ['ins', 'rapido', 2], ['moedas', 400], ['bau', 1],
+    ['mat', 'armazem', 1], ['item', 'racaoV', 6], ['xp', 60], ['moedas', 500], ['item', 'cenoura', 10], ['ins', 'super', 1], ['bau', 2],
+    ['mat', 'celeiro', 1], ['item', 'racaoO', 6], ['moedas', 700], ['xp', 100], ['ins', 'rapido', 3], ['item', 'tomate', 10], ['bau', 3],
+    ['mat', 'armazem', 2], ['moedas', 900], ['item', 'racaoPet', 6], ['xp', 150], ['ins', 'super', 2], ['mat', 'celeiro', 2], ['bau', 4],
+    ['mat', 'ilha', 1], ['bau', 5]];
+  const PASSE_PREMIUM = PASSE_GRATIS.map(([t, a, b]) => t === 'moedas' ? ['moedas', a * 2] : t === 'xp' ? ['xp', a * 2] : t === 'bau' ? ['bau', a + 2] : t === 'mat' ? ['mat', a, (b || 1) + 1] : ['ins', (a === 'super' ? 'super' : 'rapido'), 3]);
+  function passeEstado() {
+    const t = temporadaAtual();
+    if (!S.passe || S.passe.temp !== t) S.passe = {temp:t, dia:0, ult:null};
+    return S.passe;
+  }
+  const passePode = () => { if (S.nivel < NIVEL_PASSE || VISITA) return false; const p = passeEstado(); return p.dia < 30 && p.ult !== hojeStr(); };
+  function premioPasse(r) { // aplica e devolve o texto
+    const [t, a, b] = r;
+    if (t === 'moedas') { S.moedas += a; return `💰 ${fmtN(a)} moedas`; }
+    if (t === 'xp') { ganharXp(a); return `⭐ ${a} XP`; }
+    if (t === 'item') { S.celeiro[a] = (S.celeiro[a] || 0) + b; return `${item(a).emoji} ${b} ${item(a).nome.toLowerCase()}`; }
+    if (t === 'ins') { if (!S.ins) S.ins = {}; S.ins[a] = (S.ins[a] || 0) + b; return `${INSUMOS[a].emoji} ${b} ${INSUMOS[a].nome.toLowerCase()}`; }
+    if (t === 'mat') { const ms = matsDe(a), m = ms[Math.floor(Math.random() * ms.length)], q = b || 1; mudarEstoque(m, q); return `${MATERIAIS[m].emoji} ${q} ${MATERIAIS[m].nome.toLowerCase()}`; }
+    if (t === 'bau') { const mo = 400 * a + 200, ms = matsDe(a >= 5 ? 'ilha' : a % 2 ? 'armazem' : 'celeiro'), m = ms[Math.floor(Math.random() * ms.length)];
+      S.moedas += mo; mudarEstoque(m, a >= 5 ? 2 : 1); ganharXp(40 * a); return `🧰 Baú: 💰 ${fmtN(mo)} + ${MATERIAIS[m].emoji} ${MATERIAIS[m].nome.toLowerCase()} + ⭐ ${40 * a} XP`; }
+    return '';
+  }
+  function iconePasse(r) {
+    const [t, a, b] = r;
+    if (t === 'moedas') return {ic:UI('moeda'), txt:fmtN(a)};
+    if (t === 'xp') return {ic:UI('estrela'), txt:a + ' XP'};
+    if (t === 'item') return {ic:iconeItem(item(a), 'e'), txt:'×' + b};
+    if (t === 'ins') return {ic:`<span class="emo-g">${INSUMOS[a].emoji}</span>`, txt:'×' + b};
+    if (t === 'mat') return {ic:`<span class="emo-g">${a === 'ilha' ? '📜' : a === 'celeiro' ? '🧱' : '🔩'}</span>`, txt:`material ×${b || 1}`};
+    if (t === 'bau') return {ic:UI('bau'), txt:'Baú!'};
+    return {ic:'', txt:''};
+  }
+  function resgatarPasse() {
+    if (!passePode()) return;
+    const p = passeEstado(), r = PASSE_GRATIS[p.dia], txt = premioPasse(r);
+    p.dia++; p.ult = hojeStr(); somT(r[0] === 'bau' ? 'nivel' : 'moeda');
+    toast(`🎁 Dia ${p.dia}: ${txt}`, 'ouro'); salvar(); if (ON.user) enviarSave(); tudo(); renderJanela();
+  }
+  function lembrarPasse() { // 1× por dia, ao entrar: abre o passe sozinho
+    if (!passePode() || janela || (S.tut >= 0 && S.tut <= 12) || S.passeVisto === hojeStr()) return;
+    S.passeVisto = hojeStr(); abrir('passe');
+  }
+  function htmlPasse() {
+    const p = passeEstado(), pode = passePode(), dias = Math.max(0, Math.ceil((fimTemporada() - Date.now()) / DIA_MS));
+    let h = `<div class="passe-topo"><div><b>Temporada ${p.temp}</b><small>Entre todo dia e resgate um prêmio · acaba em ${dias} dia${dias === 1 ? '' : 's'}</small></div>
+      <div class="passe-prog"><i style="width:${100 * p.dia / 30}%"></i><span>${p.dia}/30</span></div>
+      ${pode ? '<button class="btn verde" data-acao="resgatar-passe">🎁 Resgatar o prêmio de hoje</button>' : `<button class="btn" disabled>${p.dia >= 30 ? '🏆 Temporada completa!' : '✅ Volte amanhã'}</button>`}</div>
+      <div class="passe-legenda"><span>🎁 Em cima: <b>grátis</b></span><span>⭐ Embaixo: <b>Premium</b> (em breve)</span></div><div class="passe-trilha">`;
+    for (let i = 0; i < 30; i++) {
+      const g = iconePasse(PASSE_GRATIS[i]), pr = iconePasse(PASSE_PREMIUM[i]), feito = i < p.dia, hoje = i === p.dia && pode, grande = PASSE_GRATIS[i][0] === 'bau';
+      h += `<div class="passe-col ${feito ? 'feito' : ''} ${hoje ? 'hoje' : ''} ${grande ? 'grande' : ''}" ${hoje ? 'data-acao="resgatar-passe"' : ''}><span class="passe-dia">Dia ${i + 1}</span>
+        <div class="passe-card"><div class="pc-ic">${g.ic}</div><small>${g.txt}</small>${feito ? '<b class="pc-ok">✓</b>' : ''}</div>
+        <div class="passe-card prem"><div class="pc-ic">${pr.ic}</div><small>${pr.txt}</small><b class="pc-tranca">🔒</b></div></div>`;
+    }
+    return h + `</div><p class="dica passe-dica">Faltou um dia? Não perde nada: continua de onde parou. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
+  }
   function htmlPedidos() {
     if (S.nivel < NIVEL_PEDIDOS) return `<p class="dica">O caminhão de pedidos chega no nível ${NIVEL_PEDIDOS}. 🚚</p>`;
     garantirPedidos();
@@ -3970,7 +4111,7 @@
       if (!p.itens.length) { h += `<div class="tile"><div class="t-ic"><span class="emo-g">🚚</span></div><div class="t-nome">Novo pedido</div><div class="t-info"><span>chega em ${fmtT(Math.max(0, p.espera - Date.now()) / 1000)}</span></div><div class="t-acao"></div></div>`; return; }
       const ok = p.itens.every(([id, q]) => (S.celeiro[id] || 0) >= q);
       h += `<div class="tile larga ${ok ? 'amigo-ok' : ''}"><span class="selo ${ok ? 'max' : ''}">${ok ? 'Pronto!' : 'Pedido ' + (i + 1)}</span>
-        <div class="ped-itens">${p.itens.map(([id, q]) => { const tem = S.celeiro[id] || 0; return `<div class="ped-it ${tem >= q ? 'ok' : ''}"><span>${emojiItem(item(id))}</span><b>${Math.min(tem, q)}/${q}</b></div>`; }).join('')}</div>
+        <div class="ped-itens">${p.itens.map(([id, q]) => { const tem = S.celeiro[id] || 0; return `<div class="ped-it ${tem >= q ? 'ok' : ''}" data-info="${id}"><span>${emojiItem(item(id))}</span><b>${Math.min(tem, q)}/${q}</b></div>`; }).join('')}</div>
         <div class="t-info"><span class="preco-g">${moedaMini}${fmtN(p.moedas)}</span><span>⭐ ${p.xp} XP</span>${p.expira ? `<span>⏳ ${fmtT(Math.max(0, p.expira - Date.now()) / 1000)}</span>` : ''}</div>
         <div class="t-acao"><button class="btn verde" data-pedido="${i}" ${ok ? '' : 'disabled'}>Entregar</button><button class="btn" data-trocar-pedido="${i}" title="Trocar pedido">🗑️</button></div></div>`;
     });
@@ -4919,6 +5060,7 @@
   function iniciarJogo(comGesto) {
     if (jogoIniciado) return; jogoIniciado = true;
     try { sessionStorage.removeItem('terralia-entrar'); } catch (e) {}
+    setTimeout(() => { try { lembrarPasse(); } catch (e) {} }, 4500);
     $('#telaLogin').classList.remove('on');
     if (MOBILE && comGesto) {
       try {
