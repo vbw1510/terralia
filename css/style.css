@@ -824,3 +824,14 @@ body.editando #baloes{opacity:.35}
 /* v0.39 — contador de FPS (teste) */
 #fpsTeste{align-self:flex-end;margin:0 6px 8px 0;padding:3px 9px;border-radius:12px;background:rgba(40,25,10,.72);color:#fff;font:800 12px/1.3 system-ui,sans-serif;white-space:nowrap;pointer-events:none}
 #fpsTeste.bom{color:#9dff7a}#fpsTeste.medio{color:#ffe066}#fpsTeste.ruim{color:#ff8a7a}
+/* v0.40 — tela de atualização automática */
+#telaAtualiza{position:fixed;inset:0;z-index:400;display:none;align-items:center;justify-content:center;background:linear-gradient(#9fd8ff,#c9f0a8)}
+#telaAtualiza.on{display:flex}
+#telaAtualiza .upd-caixa{background:var(--creme);border:4px solid var(--madeira);border-radius:24px;box-shadow:0 8px 0 var(--madeira);padding:18px 26px;text-align:center;width:min(380px,86vw)}
+#telaAtualiza .upd-ic{font-size:46px;line-height:1;animation:updPula 1s ease-in-out infinite}
+#telaAtualiza h3{margin:8px 0 4px;color:var(--texto);font-size:19px}
+#telaAtualiza p{margin:0 0 12px;color:#7a5a3a;font-size:14px}
+#telaAtualiza .upd-barra{height:14px;border-radius:8px;background:#e8d6b4;border:2px solid var(--madeira);overflow:hidden}
+#telaAtualiza .upd-barra i{display:block;height:100%;width:30%;background:linear-gradient(90deg,#6bc94a,#9be07a);border-radius:6px;animation:updBarra 1.1s ease-in-out infinite}
+@keyframes updBarra{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
+@keyframes updPula{50%{transform:translateY(-6px)}}

@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.39'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.42'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -202,11 +202,33 @@
     poste:      {nome:'Poste de luz',       w:1, d:1, decor:true, obst:true},
     arvoreDec:  {nome:'Árvore frutífera',   w:1, d:1, decor:true, obst:true},
     fonte:      {nome:'Fonte',              w:2, d:2, decor:true, obst:true},
+    carroca:    {nome:'Carroça',            w:2, d:1, decor:true, obst:true},
+    carrinho:   {nome:'Carrinho de feira',  w:1, d:1, decor:true, obst:true},
+    barris:     {nome:'Barris de maçã',     w:1, d:1, decor:true, obst:true},
+    caixotes:   {nome:'Caixotes da colheita', w:1, d:1, decor:true, obst:true},
+    bancoRustico:{nome:'Banco de madeira',  w:1, d:1, decor:true, obst:true},
+    cercaMadeira:{nome:'Cerca de madeira',  w:1, d:1, decor:true},
+    jardim:     {nome:'Jardim florido',     w:1, d:1, decor:true},
+  };
+  const ENFEITES = { // caixotes, barris e baldes em volta das construções (andam junto quando move)
+    loja:[['caixaCenoura', -1.75, 2.75, .25, .85], ['caixaMaca', 1.8, 2.7, -.3, .85], ['barrilMaca', 2.25, 1.6, 0, .9]],
+    celeiro:[['barril', -2.6, 2.3, 0, .95], ['balde', -2, 2.75, 0, 1], ['caixote', 2.55, 2.35, .4, .9]],
+    galpao:[['caixote', -1.6, 1.55, .3, .8], ['barril', 1.65, 1.5, 0, .85]],
+    armazem:[['caixote', -2.6, 1.55, -.2, .85], ['caixote', -2.1, 1.85, .5, .7]],
+  };
+  const DECOR_GLB = { // decorações feitas com os modelos dos packs: [modelo, x, z, giro, escala]
+    carroca:[['carroca', 0, 0, Math.PI / 2 + .15, 1]], carrinho:[['carrinho', 0, 0, .3, 1]],
+    barris:[['barrilMaca', -.35, -.2, 0, 1], ['barril', .4, .25, 1, .9], ['balde', .1, .6, 0, 1]],
+    caixotes:[['caixaCenoura', -.3, -.25, .2, 1], ['caixaMaca', .35, .3, -.3, 1], ['caixote', .45, -.45, .5, .8]],
+    bancoRustico:[['bancoRustico', 0, 0, 0, 1]], cercaMadeira:[['cercaMadeira', 0, 0, 0, 1]],
+    jardim:[['arbustoFlor', -.3, -.3, 0, .9], ['flor4', .4, -.2, 1, 1], ['flor3', -.2, .45, 2, 1], ['samambaia', .45, .45, 0, .9]],
   };
   const DECOR = [
     {tipo:'flores', icone:'🌷', preco:40, nivel:1}, {tipo:'caminho', icone:'🪨', preco:15, nivel:1}, {tipo:'cercaDec', icone:'🤍', preco:25, nivel:1},
     {tipo:'banco', icone:'🪑', preco:80, nivel:2}, {tipo:'espantalho', icone:'🎃', preco:120, nivel:2}, {tipo:'poste', icone:'💡', preco:150, nivel:3},
     {tipo:'arvoreDec', icone:'🍎', preco:200, nivel:3}, {tipo:'fonte', icone:'⛲', preco:900, nivel:5},
+    {tipo:'jardim', icone:'🌺', preco:60, nivel:1}, {tipo:'cercaMadeira', icone:'🪵', preco:30, nivel:1}, {tipo:'bancoRustico', icone:'🪑', preco:90, nivel:2},
+    {tipo:'caixotes', icone:'🥕', preco:110, nivel:2}, {tipo:'barris', icone:'🛢️', preco:130, nivel:3}, {tipo:'carrinho', icone:'🛒', preco:260, nivel:4}, {tipo:'carroca', icone:'🛞', preco:420, nivel:5},
   ];
   const MERCADO_MS = 20000;
 
@@ -1060,8 +1082,80 @@
     return g;
   }
 
+  // ================= MODELOS 3D DOS PACKS (Quaternius, CC0) =================
+  // tamanho: altura (a) ou largura (l) desejada, em unidades do mundo
+  const MODELOS = {
+    flor3:{f:'n_Flower_3_Group', a:.75}, flor4:{f:'n_Flower_4_Group', a:.7}, arbusto:{f:'n_Bush_Common', a:1.05}, arbustoFlor:{f:'n_Bush_Common_Flowers', a:1.05},
+    samambaia:{f:'n_Fern_1', a:.75}, cogumelo:{f:'n_Mushroom_Common', a:.4}, trevo:{f:'n_Clover_1', a:.3}, capim:{f:'n_Grass_Common_Tall', a:.7},
+    pedrinha:{f:'n_Pebble_Round_2', l:.55}, pedra:{f:'n_Rock_Medium_1', l:1.2}, planta:{f:'n_Plant_1_Big', a:.95},
+    caixaCenoura:{f:'p_FarmCrate_Carrot', l:.95}, caixaMaca:{f:'p_FarmCrate_Apple', l:.95}, barril:{f:'p_Barrel', a:1}, barrilMaca:{f:'p_Barrel_Apples', a:1.05},
+    balde:{f:'p_Bucket_Wooden_1', a:.45}, carrinho:{f:'p_Stall_Cart_Empty', l:1.9}, bancoRustico:{f:'p_Bench', l:1.7}, caixote:{f:'p_Crate_Wooden', l:.85},
+    carroca:{f:'p_Prop_Wagon', l:3.6}, cercaMadeira:{f:'p_Prop_WoodenFence_Single', l:2.1},
+  };
+  const glb = {cache:{}, espera:{}, ok:false};
+  function carregarModelos() {
+    if (!THREE.GLTFLoader) return Promise.resolve();
+    const L = new THREE.GLTFLoader(), nomes = Object.keys(MODELOS);
+    return Promise.all(nomes.map(k => new Promise(res => L.load(`assets/modelos/${MODELOS[k].f}.glb`, gl => {
+      const raiz = gl.scene; raiz.updateMatrixWorld(true);
+      const bb = new THREE.Box3().setFromObject(raiz), tam = bb.getSize(V3()), m = MODELOS[k];
+      const esc = m.a ? m.a / tam.y : m.l / Math.max(tam.x, tam.z);
+      const partes = []; // geometria já no tamanho e com o pé no chão, centralizada
+      raiz.traverse(o => { if (!o.isMesh) return; const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld);
+        g.translate(-(bb.min.x + bb.max.x) / 2, -bb.min.y, -(bb.min.z + bb.max.z) / 2); g.scale(esc, esc, esc); g.computeBoundingSphere();
+        const mt = o.material; if (mt.map) { mt.map.anisotropy = 4; } if (m.f[0] === 'n') mt.vertexColors = false; // no pack de natureza a cor dos vértices é dado de vento, não cor mt.envMapIntensity = .35; if (mt.transparent && mt.alphaTest === 0) { mt.alphaTest = .5; mt.transparent = false; }
+        partes.push({g, mt}); });
+      glb.cache[k] = partes; (glb.espera[k] || []).forEach(gr => encherGLB(gr, k)); delete glb.espera[k]; res();
+    }, undefined, () => res())))).then(() => { glb.ok = true; });
+  }
+  function encherGLB(gr, k) {
+    glb.cache[k].forEach(({g, mt}) => { const m = new THREE.Mesh(g, mt); m.castShadow = gr.userData.sombra !== false; m.receiveShadow = true; m.matrixAutoUpdate = false; m.updateMatrix(); gr.add(m); });
+    gr.updateMatrixWorld(true); if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+  }
+  function modeloGLB(k, x = 0, z = 0, ry = 0, s = 1) { // devolve um grupo; o modelo entra assim que terminar de baixar
+    const gr = new THREE.Group(); gr.position.set(x, 0, z); gr.rotation.y = ry; gr.scale.setScalar(s); gr.userData.glb = k;
+    if (glb.cache[k]) encherGLB(gr, k); else (glb.espera[k] = glb.espera[k] || []).push(gr);
+    return gr;
+  }
+
+  // flores, arbustos, pedras e plantinhas espalhados nos lugares vazios (cada modelo é desenhado de uma vez só)
+  let natureza = [], natAssinatura = '';
+  const NAT_PESOS = [['capim', 5], ['flor3', 3], ['flor4', 3], ['trevo', 3], ['arbusto', 2], ['arbustoFlor', 2], ['samambaia', 2], ['pedrinha', 2], ['cogumelo', 1.2], ['planta', 1.2], ['pedra', .8]];
+  const NAT_SOMBRA = {arbusto:1, arbustoFlor:1, pedra:1, planta:1};
+  function espalharNatureza() {
+    if (!glb.ok) return;
+    natureza.forEach(m => scene.remove(m)); natureza = [];
+    const ocup = ocupacao(null), lista = {}, total = NAT_PESOS.reduce((a, p) => a + p[1], 0), mr = Math.random;
+    try {
+      for (const z of ZONAS) {
+        const livre = S.zonas.includes(z.key);
+        for (const [cx, cz] of z.cel) {
+          if (ocup.has(cx + ',' + cz)) continue;
+          Math.random = sorteio((cx + 99) * 7919 + (cz + 99) * 104729);
+          const n = Math.random() < (livre ? .1 : .32) ? 1 + (Math.random() < .35 ? 1 : 0) : 0;
+          for (let i = 0; i < n; i++) {
+            let r = Math.random() * total, k = NAT_PESOS[0][0]; for (const [kk, w] of NAT_PESOS) { if ((r -= w) <= 0) { k = kk; break; } }
+            if (livre && (k === 'pedra' || k === 'planta')) k = 'flor3'; // nas terras em uso, só coisa pequena
+            (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * 1.5, cz * G + (Math.random() - .5) * 1.5, Math.random() * 6.28, .8 + Math.random() * .45]);
+          }
+        }
+      }
+    } finally { Math.random = mr; }
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), eixo = V3(0, 1, 0);
+    for (const k in lista) { const pts = lista[k], partes = glb.cache[k]; if (!partes) continue;
+      partes.forEach(({g, mt}) => { const im = new THREE.InstancedMesh(g, mt, pts.length);
+        pts.forEach(([x, z, ry, s], i) => im.setMatrixAt(i, m4.compose(p.set(x, 0, z), q.setFromAxisAngle(eixo, ry), sc.setScalar(s))));
+        im.castShadow = !!NAT_SOMBRA[k]; im.receiveShadow = true; im.matrixAutoUpdate = false; scene.add(im); natureza.push(im); }); }
+    if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
+  }
+  function conferirNatureza() { // refaz quando algo é construído, movido ou removido, ou quando libera terra
+    const sig = S.objetos.map(o => o.tipo + o.ox + ',' + o.oz + ',' + (o.rot || 0)).join('|') + '#' + S.zonas.length + '#' + ANEL;
+    if (sig !== natAssinatura && glb.ok) { natAssinatura = sig; espalharNatureza(); }
+  }
+
   function modeloDecor(t) {
     const g = new THREE.Group();
+    if (DECOR_GLB[t]) { DECOR_GLB[t].forEach(([k, x, z, ry, s]) => g.add(modeloGLB(k, x, z, ry, s))); return g; }
     if (t === 'flores') {
       g.add(cil(.85, .9, .16, 0x7a5233, 0, .08, 0, 20)); g.add(cil(.78, .78, .04, 0x5a3a22, 0, .17, 0, 20));
       const cs = [0xff6fa0, 0xffd84a, 0xffffff, 0xb08cff, 0xff8a3d];
@@ -1161,7 +1255,7 @@
     const pontoIlha = () => p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1));
     for (let i = 0; i < 1300; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.5)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); tufos.setColorAt(i, c.setHSL(rnd(.24, .3), rnd(.5, .7), rnd(.3, .45)).convertSRGBToLinear()); }
     { let cx = 0, cz = 0, cor = 0; for (let i = 0; i < 420; i++) { if (i % 14 === 0) { pontoIlha(); cx = p.x; cz = p.z; cor = coresF[Math.random() * 5 | 0]; } p.set(cx + rnd(-1.1, 1.1), .12, cz + rnd(-1.1, 1.1)); sc.setScalar(rnd(.8, 1.3)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(Math.random() < .8 ? cor : 0xffffff).convertSRGBToLinear()); } } // flores em canteirinhos
-    tufos.receiveShadow = true; scene.add(tufos, flores);
+    tufos.receiveShadow = true; scene.add(tufos); // as flores agora vêm dos modelos novos (espalharNatureza)
     // sombra das nuvens passando devagar pelo chão
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g2 = cv.getContext('2d');
       for (let i = 0; i < 9; i++) { const x = rnd(20, 236), y = rnd(20, 236), r = rnd(30, 60), gr = g2.createRadialGradient(x, y, 4, x, y, r); gr.addColorStop(0, 'rgba(0,20,0,.55)'); gr.addColorStop(1, 'rgba(0,20,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 256, 256); }
@@ -1334,12 +1428,13 @@
     else if (o.tipo === 'casinhaPet') g = modeloCasinhaPet();
     else if (T.decor) g = modeloDecor(o.tipo);
     else g = modeloCercado(o.tipo, T.w, T.d);
+    { const ex = ENFEITES[o.tipo]; if (ex) ex.forEach(([k, x, z, ry, s]) => g.add(modeloGLB(k, x, z, ry, s))); } // enfeites dos packs em volta da construção
     if (o.tipo !== 'lote' && o.tipo !== 'lago') { const anim = new Set(); g.traverse(x => { if (fumacas.includes(x) || pasMoinho.includes(x) || fabRodas.includes(x) || x.userData.anim) anim.add(x); }); mesclar(g, anim); }
     let rot = null;
     if (T.fab) g.traverse(x => { if (fumacas.includes(x) || fabRodas.includes(x)) x.userData.tipo = o.tipo; if (pasMoinho.includes(x)) x.userData.oid = o.id; });
     if (T.abre || T.animal || T.fab) { rot = rotulo(T.nome); rot.position.set(0, T.animal ? 2.4 : o.tipo === 'celeiro' ? 5.4 : o.tipo === 'armazem' ? 4.6 : o.tipo === 'moinho' ? 6.4 : o.tipo === 'galpao' ? 3.3 : 4.3, T.animal ? -T.d * G / 2 + .3 : 0); rot.visible = false; g.add(rot); }
     const ph = o.tipo === 'lote' ? .5 : T.animal ? 1.6 : T.decor ? 1.6 : 4;
-    const pick = new THREE.Mesh(new THREE.BoxGeometry(T.w * G - .1, ph, T.d * G - .1), new THREE.MeshBasicMaterial({transparent:true, opacity:0, depthWrite:false}));
+    const pick = new THREE.Mesh(new THREE.BoxGeometry(T.w * G - .1, ph, T.d * G - .1), new THREE.MeshBasicMaterial({visible:false})); // só para o toque: não é desenhada
     pick.position.y = ph / 2; pick.userData.objId = o.id; g.add(pick); pickObjs.push(pick);
     scene.add(g);
     obj3D[o.id] = {g, pick, rot, ate:0};
@@ -3132,7 +3227,9 @@
         ${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
-        <div class="linha-cfg"><span>🌱 <b>Terrália Farm</b> · versão ${VERSAO}<br><small class="det">${novaVersao ? `Nova versão ${esc(novaVersao)} disponível!` : 'O jogo se atualiza sozinho quando abre.'}</small></span>
+        ${(() => { const b = lerBackup(); if (!b) return ''; const d = new Date(b.em);
+          return `<div class="linha-cfg"><span>🛟 Cópia de segurança<br><small class="det">${b.origem === 'nuvem' ? 'da nuvem' : 'deste aparelho'} · nível ${b.nivel} · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small></span><button class="btn" data-acao="restaurar-backup">Restaurar</button></div>`; })()}
+        <div class="linha-cfg"><span>🌱 <b>Terrália Farm</b> · versão ${VERSAO}<br><small class="det">${novaVersao ? `Versão ${esc(novaVersao)} no servidor, mas a atualização não completou.` : 'O jogo se atualiza sozinho.'}</small></span>
           <button class="btn ${novaVersao ? 'verde' : ''}" data-acao="${novaVersao ? 'atualizar-ja' : 'procurar-versao'}">${novaVersao ? 'Atualizar agora' : 'Procurar atualização'}</button></div>
         <p class="dica legal">🎵 Músicas e sons: Mixkit (licença livre), OpenGameArt (CC0) e Pixabay.</p>
         <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
@@ -3499,6 +3596,10 @@
     if (ac === 'atualizar-amigos') { carregarSocial(); if (SOC.aba === 'coop') carregarCoop(); }
     if (ac === 'voltar-visita') voltarDaVisita();
     if (ac === 'procurar-versao') procurarVersao(true);
+    if (ac === 'restaurar-backup') { const b = lerBackup(); if (!b) return;
+      if (!confirm('Trocar a fazenda atual pela cópia de segurança (nível ' + b.nivel + ')? A fazenda atual vira a nova cópia.')) return;
+      guardarBackup(S, 'aparelho'); const d = Object.assign({}, b.dados, {uid:S.uid, nuvemVer:S.nuvemVer, salvoEm:Date.now()});
+      carregarFazenda(d, '🛟 Cópia de segurança restaurada!'); return; }
     if (ac === 'atualizar-ja') atualizarJogo();
     if (ac === 'entrar-google') { fechar(); abrirLogin('inicio'); }
     if (ac === 'sair-conta') { fechar(); sairDaConta(); }
@@ -4077,23 +4178,38 @@
   }
 
   // ================= ATUALIZAÇÕES (versao.json no GitHub) =================
-  let novaVersao = null;
+  // atualização automática: achou versão nova → salva, mostra "Atualizando…" e reabre já na versão nova
+  let novaVersao = null, atualizando = false;
+  const lerUpd = () => { try { return JSON.parse(sessionStorage.getItem('terralia-upd') || '{}'); } catch (e) { return {}; } };
   async function procurarVersao(avisar) {
-    if (!/^https?:$/.test(location.protocol)) { if (avisar) toast('Só dá para procurar atualização pelo site do jogo'); return; }
+    if (!/^https?:$/.test(location.protocol) || atualizando) { if (avisar && !atualizando) toast('Só dá para procurar atualização pelo site do jogo'); return; }
     try {
       const r = await fetch('versao.json?t=' + Date.now(), {cache:'no-store'}); const j = await r.json();
-      if (j.versao && j.versao !== VERSAO) { novaVersao = j.versao; $('#avisoVersao').classList.add('on'); $('#avisoVersao b').textContent = j.versao; }
-      else if (avisar) toast('✅ Você já está na versão mais nova (' + VERSAO + ')', 'bom');
+      if (j.versao && j.versao !== VERSAO) {
+        novaVersao = j.versao; const u = lerUpd();
+        if (avisar || u.alvo !== j.versao || (u.n || 0) < 2) atualizarJogo(); // proteção: no máximo 2 tentativas para a mesma versão
+      } else { novaVersao = null; try { sessionStorage.removeItem('terralia-upd'); } catch (e) {} if (avisar) toast('✅ Você já está na versão mais nova (' + VERSAO + ')', 'bom'); }
     } catch (e) { if (avisar) toast('Sem internet para procurar atualização'); }
     if (janela === 'config') renderJanela();
   }
   async function atualizarJogo() {
-    toast('🌱 Atualizando…'); salvar();
-    try { if (ON.user && ON.sujo) await enviarSave(); } catch (e) {}
-    try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await reg.update(); } catch (e) {}
+    if (atualizando) return; atualizando = true;
+    const u = lerUpd(), n = u.alvo === novaVersao ? (u.n || 0) + 1 : 1;
+    try { sessionStorage.setItem('terralia-upd', JSON.stringify({alvo:novaVersao, n})); } catch (e) {}
+    let el = $('#telaAtualiza');
+    if (!el) { el = document.createElement('div'); el.id = 'telaAtualiza'; document.body.appendChild(el); }
+    el.innerHTML = `<div class="upd-caixa"><div class="upd-ic">🌱</div><h3>Atualizando o Terrália Farm</h3><p>Versão ${esc(novaVersao || '')}… sua fazenda já está salva.</p><div class="upd-barra"><i></i></div></div>`;
+    el.classList.add('on');
+    salvar();
+    const reabrir = () => location.replace(location.pathname + '?v=' + encodeURIComponent(novaVersao || Date.now()));
+    const limite = setTimeout(reabrir, 8000); // nunca fica preso na tela de atualização
+    try { if (ON.user && ON.sujo && !ON.expulso) await Promise.race([enviarSave(), new Promise(r => setTimeout(r, 4000))]); } catch (e) {}
     try { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); } catch (e) {}
-    location.reload();
+    try { const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration(); if (reg) await Promise.race([reg.update(), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
+    clearTimeout(limite); setTimeout(reabrir, 700);
   }
+  // depois de atualizar: tira o ?v= do endereço
+  if (/[?&]v=/.test(location.search)) try { history.replaceState(null, '', location.pathname); } catch (e) {}
 
   // ================= ONLINE (Supabase: login Google, save na nuvem, ranking) =================
   const SB_URL = 'https://oxnhimwkotsrfuxakazo.supabase.co', SB_KEY = 'sb_publishable_LFUz1Cn-9RouOGJbayeg1Q_YDrqcqOZ';
@@ -4190,8 +4306,17 @@
     if (S.nuvemVer == null && Math.abs((nv.salvoEm || 0) - (S.salvoEm || 0)) < 2000) S.nuvemVer = ver; // saves antigos
     const mudouAqui = (S.salvoEm || 0) > (S.nuvemVer || 0) + 2000; // jogou neste aparelho depois do último envio
     if (S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo) enviarSave(); return; } // tudo em dia
-    if (!mudouAqui) { carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); return; } // outro aparelho avançou
-    ON.nuvem = nv; ON.nuvemVer = ver; ON.pausado = true; ON.sincronizado = true; ON.motivo = 'outro'; abrir('nuvem');
+    // saves diferentes: fica o mais recente (o que tem a última coisa feita na fazenda), sem perguntar; o outro vira cópia de segurança
+    if ((nv.salvoEm || ver) >= (S.salvoEm || 0)) { guardarBackup(S, 'aparelho'); carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); return; }
+    guardarBackup(nv, 'nuvem'); ON.sincronizado = true; await enviarSave(false, true); // o deste aparelho é mais novo: sobe para a nuvem
+  }
+  // cópia de segurança do save que não foi usado (fica 7 dias no aparelho)
+  function guardarBackup(dados, origem) {
+    try { if (!dados || !dados.nivel) return; localStorage.setItem('terralia-backup', JSON.stringify({em:Date.now(), origem, nivel:dados.nivel, moedas:dados.moedas, dados})); } catch (e) {}
+  }
+  function lerBackup() {
+    try { const b = JSON.parse(localStorage.getItem('terralia-backup') || 'null'); if (!b) return null;
+      if (Date.now() - b.em > 7 * 24 * 3600 * 1000) { localStorage.removeItem('terralia-backup'); return null; } return b; } catch (e) { return null; }
   }
   function carregarDaNuvem(nv, ver) { carregarFazenda(Object.assign({}, nv, {uid:ON.user.id, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); }
   async function trocarConta(alvo) { // alvo: uid de uma conta lembrada, 'nova' (outra conta Google) ou 'convidado'
@@ -4271,7 +4396,9 @@
         const {data} = await lerNuvem('atualizado');
         if (data && verDe(data.atualizado) !== S.nuvemVer) {
           const r = await lerNuvem('dados, atualizado'); ON.enviando = false;
-          if (r.data) { ON.nuvem = r.data.dados; ON.nuvemVer = verDe(r.data.atualizado); ON.pausado = true; ON.motivo = 'outro'; abrir('nuvem'); }
+          if (r.data) { const nv = r.data.dados || {}, ver = verDe(r.data.atualizado);
+            if ((nv.salvoEm || ver) > (S.salvoEm || 0)) { guardarBackup(S, 'aparelho'); carregarDaNuvem(nv, ver); return; } // a nuvem está mais adiantada
+            guardarBackup(nv, 'nuvem'); setTimeout(() => enviarSave(false, true), 50); } // este aparelho está mais adiantado: sobrescreve
           return;
         }
       }
@@ -4526,12 +4653,12 @@
   atualizarProducao();
   tudo();
   requestAnimationFrame(animar);
+  carregarModelos().then(conferirNatureza); setInterval(conferirNatureza, 1500); // modelos dos packs: baixam em segundo plano
   iniciarOnline();
   iniciarVenda();
   if (VISITA) { document.body.classList.add('visitando'); renderVisita(); $('#barraVisita').addEventListener('click', e => { if (e.target.closest('[data-acao=voltar-visita]')) voltarDaVisita(); }); } else aplicarRecompensaVisita();
-  setTimeout(() => procurarVersao(false), 4000); setInterval(() => procurarVersao(false), 5 * 60 * 1000);
+  setTimeout(() => procurarVersao(false), 2500); setInterval(() => procurarVersao(false), 2 * 60 * 1000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) procurarVersao(false); });
-  $('#avisoVersao').addEventListener('click', atualizarJogo);
   try { const m = sessionStorage.getItem('terralia-msg'); if (m) { sessionStorage.removeItem('terralia-msg'); setTimeout(() => toast(m, 'bom'), 800); } } catch (e) {}
   $('#jcorpo').addEventListener('input', e => { const r = e.target.closest('[data-vol]'); if (!r) return; S.audio[r.dataset.vol] = +r.value; SOM.config(S.audio); });
   $('#jcorpo').addEventListener('change', e => { const r = e.target.closest('[data-vol]'); if (!r) return; salvar(); if (r.dataset.vol === 'efeitos') somT('vaca'); });
