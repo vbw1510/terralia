@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.47'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.48'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -379,6 +379,25 @@
   const temPet = () => Object.keys(PETS).some(k => S.amigos[k]);
   const petsComFome = () => temPet() && Date.now() - (S.petComeu || 0) > FOME_PET;
   const petOk = k => !!S.amigos[k] && !petsComFome();
+  let apitoAte = 0;
+  function apitar() { // 📯 acorda os pets e eles vêm correndo atrás do fazendeiro por 1 minuto
+    if (!Object.keys(pets).length) { toast('Você ainda não tem bichinhos. Adote em Animais 🐶'); return; }
+    apitoAte = Date.now() + 60000; somT('apito');
+    Object.values(pets).forEach(p => { if (p.zzz) { scene.remove(p.zzz); p.zzz = null; } p.modo = 'seguir'; flutuar(p.g.position.clone().add(V3(0, 1.3, 0)), '❗'); });
+    flutuar(heroi.g.position.clone().add(V3(0, 2.4, 0)), '📯'); toast(petsComFome() ? '📯 Eles acordaram, mas estão com fome! Dê ração na casinha 🦴' : '📯 Fiu-fiu! Os bichinhos vêm correndo', 'bom');
+  }
+  function menuCasinha(o) { // tocar na casinha: alimentar, apitar ou deixar seguindo
+    let el = $('#menuPet'); if (!el) { el = document.createElement('div'); el.id = 'menuPet'; el.className = 'menu-pet'; document.body.appendChild(el);
+      el.addEventListener('click', e => { const b = e.target.closest('[data-pet-ac]'); if (!b) return; const a = b.dataset.petAc; el.classList.remove('on');
+        if (a === 'comer') alimentarPets(); if (a === 'apito') apitar(); if (a === 'seguir') { S.seguir = !S.seguir; atualizarPets3D(); salvar(); toast(S.seguir ? '🐾 Seus bichinhos estão seguindo você' : '🐾 Bichinhos soltos para passear', 'bom'); } }); }
+    const fome = petsComFome(), r = S.celeiro.racaoPet || 0;
+    el.innerHTML = `<b>🏡 Casinha dos bichinhos</b><small>${fome ? '😢 Estão com fome' : '😊 Barriga cheia'} · ração de pet: ${r}</small>
+      <button class="btn ${fome ? 'verde' : ''}" data-pet-ac="comer">🦴 Alimentar</button><button class="btn laranja" data-pet-ac="apito">📯 Apito: chamar</button>
+      <button class="btn" data-pet-ac="seguir">${S.seguir ? '🐾 Soltar para passear' : '🐾 Seguir sempre'}</button>`;
+    const v = centro(o).add(V3(0, 2, 0)).project(camera); el.classList.add('on');
+    const w = el.offsetWidth, h = el.offsetHeight; el.style.left = Math.min(innerWidth - w - 8, Math.max(8, (v.x + 1) / 2 * innerWidth - w / 2)) + 'px'; el.style.top = Math.min(innerHeight - h - 8, Math.max(8, (1 - v.y) / 2 * innerHeight - h - 10)) + 'px';
+  }
+  document.addEventListener('pointerdown', e => { const m = $('#menuPet'); if (m && m.classList.contains('on') && !e.target.closest('#menuPet')) m.classList.remove('on'); }, true);
   function alimentarPets() {
     if (!petsComFome()) { toast(`🐾 Os pets estão de barriga cheia (fome de novo em ${fmtT((FOME_PET - (Date.now() - S.petComeu)) / 1000)})`); return; }
     if (!(S.celeiro.racaoPet > 0)) { const m = listaMoinhos()[0];
@@ -389,7 +408,7 @@
   }
   const velocidade = () => Math.pow(.9, S.upg.fertil || 0) * (petOk('raposa') ? 0.75 : 1); // cada nível de fertilizante: 10% mais rápido
   const eventoAtivo = () => S.evento && S.evento.ate > Date.now() ? S.evento : null;
-  function precoAtual(id) { let m = S.precos[id] || 1; const ev = eventoAtivo(); if (ev && ev.id === id) m *= 2; return Math.max(1, Math.round(item(id).preco * m)); }
+  function precoAtual(id) { return Math.max(1, Math.round(item(id).preco)); } // v0.48: preço fixo (comprar na loja custa o dobro: comprar e revender nunca dá lucro)
   const custoUpg = k => Math.round(UPG[k].base * Math.pow(UPG[k].mult, S.upg[k] || 0));
   const nTipo = t => S.objetos.filter(o => o.tipo === t).length;
   const custoLote = () => Math.round(150 * Math.pow(1.45, nTipo('lote') - 1));
@@ -1346,7 +1365,7 @@
     const pontoIlha = () => p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1));
     for (let i = 0; i < 1300; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.5)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); tufos.setColorAt(i, c.setHSL(rnd(.24, .3), rnd(.5, .7), rnd(.3, .45)).convertSRGBToLinear()); }
     { let cx = 0, cz = 0, cor = 0; for (let i = 0; i < 420; i++) { if (i % 14 === 0) { pontoIlha(); cx = p.x; cz = p.z; cor = coresF[Math.random() * 5 | 0]; } p.set(cx + rnd(-1.1, 1.1), .12, cz + rnd(-1.1, 1.1)); sc.setScalar(rnd(.8, 1.3)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(Math.random() < .8 ? cor : 0xffffff).convertSRGBToLinear()); } } // flores em canteirinhos
-    tufos.receiveShadow = true; scene.add(tufos, flores);
+    tufos.receiveShadow = true; scene.add(tufos); // v0.48: as bolinhas coloridas (flores) saíram: caíam dentro dos cercados e pesavam
     // sombra das nuvens passando devagar pelo chão
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g2 = cv.getContext('2d');
       for (let i = 0; i < 9; i++) { const x = rnd(20, 236), y = rnd(20, 236), r = rnd(30, 60), gr = g2.createRadialGradient(x, y, 4, x, y, r); gr.addColorStop(0, 'rgba(0,20,0,.55)'); gr.addColorStop(1, 'rgba(0,20,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 256, 256); }
@@ -2049,8 +2068,9 @@
     for (const k in pets) {
       const p = pets[k], g = p.g, gu = g.userData, voa = k === 'raposa' || k === 'papagaio';
       let mov = false;
-      if (petsComFome() && !S.seguir) { p.modo = 'dormir'; p.timer = 5; }
-      else if (S.seguir) {
+      const chamado = apitoAte > Date.now();
+      if (petsComFome() && !S.seguir && !chamado) { p.modo = 'dormir'; p.timer = 5; }
+      else if (S.seguir || chamado) {
         p.modo = 'seguir';
         const off = ({cachorro:V3(-.9, 0, -.7), raposa:V3(.9, 0, -.7), gato:V3(-.5, 0, -1.3), papagaio:V3(.5, 0, -1.3)}[k] || V3(0, 0, -1)).clone();
         const atras = off.applyAxisAngle(V3(0, 1, 0), h.rotation.y).add(h.position);
@@ -2273,19 +2293,24 @@
         ...DECOR.filter(c => c.nivel === S.nivel).map(c => [c.icone, TIPOS[c.tipo].nome])];
       CROPS.filter(c => c.nivel === S.nivel).forEach(c => { S.celeiro[c.id] = (S.celeiro[c.id] || 0) + 2; setTimeout(() => toast(`🎁 Ganhou 2 ${c.emoji} ${c.nome} para começar a plantar!`, 'bom'), 1500); });
     }
-    if (subiu) { atualizarPlacasTerra(); mostrarNivel(S.nivel, novos); setTimeout(() => lembrarConvidado(true), 3000); }
+    if (subiu) { const premio = Math.round(S.nivel * 50 / 10) * 10; S.moedas += premio; // prêmio por subir de nível
+      atualizarPlacasTerra(); mostrarNivel(S.nivel, novos, premio); setTimeout(() => lembrarConvidado(true), 3000); }
   }
   // ---------- tela de "subiu de nível": logo, estrela, fazendeiros, fogos e confete ----------
-  function mostrarNivel(nv, novos) {
+  function mostrarNivel(nv, novos, premio = 0) {
     let el = $('#telaNivel');
     if (!el) { el = document.createElement('div'); el.id = 'telaNivel'; document.body.appendChild(el);
       el.addEventListener('click', e => { if (e.target.closest('[data-nv-ok]') || e.target === el) fecharNivel(); }); }
-    el.innerHTML = `<canvas class="nv-fogos"></canvas><div class="nv-raios"></div>
-      <img class="nv-logo" src="assets/ui/logo.webp" alt=""><img class="nv-f1" src="assets/ui/fazendeiro.webp" alt=""><img class="nv-f2" src="assets/ui/fazendeira.webp" alt="">
-      <div class="nv-centro"><div class="nv-estrela"><img src="assets/ui/estrela.webp" alt=""><b>${nv}</b></div><div class="nv-par">PARABÉNS!</div>
-      <div class="nv-sub">Você chegou ao <b>nível ${nv}</b></div>
-      ${novos.length ? `<div class="nv-novos"><span>🔓 Liberou:</span>${novos.slice(0, 6).map(([i, n]) => `<span class="nv-item">${i} ${n}</span>`).join('')}</div>` : ''}
-      <button class="btn verde grande" data-nv-ok>Continuar</button></div>`;
+    // v0.48: virou uma janela do tamanho do celular (não cobre mais a tela toda)
+    el.innerHTML = `<canvas class="nv-fogos"></canvas>
+      <div class="nv-caixa"><div class="nv-topo"><img src="assets/ui/logo.webp" alt=""></div>
+        <div class="nv-meio"><img class="nv-f1" src="assets/ui/fazendeiro.webp" alt="">
+          <div class="nv-centro"><div class="nv-estrela"><img src="assets/ui/estrela.webp" alt=""><b>${nv}</b></div><div class="nv-par">PARABÉNS!</div>
+            <div class="nv-sub">Você chegou ao <b>nível ${nv}</b></div>
+            ${premio ? `<div class="nv-premio">🎁 Prêmio: ${UI('moeda', 'nv-img')} <b>${fmtN(premio)}</b> moedas</div>` : ''}
+            ${novos.length ? `<div class="nv-novos"><span>🔓 Liberou:</span>${novos.slice(0, 6).map(([i, n]) => `<span class="nv-item">${i} ${n}</span>`).join('')}</div>` : ''}
+          </div><img class="nv-f2" src="assets/ui/fazendeira.webp" alt=""></div>
+        <button class="btn verde grande" data-nv-ok>Continuar</button></div>`;
     el.classList.remove('saindo'); el.classList.add('on'); somT('nivel', 300); somT('fogos', 300);
     fogosNivel(el.querySelector('.nv-fogos'));
   }
@@ -2656,7 +2681,7 @@
   }
   function clicarConstrucao(o) {
     verBal[o.id] = Date.now() + 5000; setTimeout(atualizarBaloes, 50);
-    if (o.tipo === 'casinhaPet' && !VISITA && !editar.ativo) { alimentarPets(); return; }
+    if (o.tipo === 'casinhaPet' && !VISITA && !editar.ativo) { menuCasinha(o); return; }
     const T = TIPOS[o.tipo]; mostrarNome(o);
     if (T.animal && qtdAnimal(T.animal)) somT(T.animal, 700);
     if (VISITA) { if (T.animal && qtdAnimal(T.animal)) { somT(T.animal, 700); ajudarCercadoVisita(o); } return; } // visitando: só olha (e ajuda)
@@ -2749,6 +2774,7 @@
     return out;
   }
   function tickMercado() {
+    S.tend = {}; S.evento = null; return; // v0.48: sem oscilação e sem feira (fechava um furo de dinheiro infinito)
     for (const c of ITENS) {
       const m = S.precos[c.id] || 1;
       let n = m + (Math.random() - .5) * .3 + (1 - m) * .2;
@@ -3033,7 +3059,7 @@
   function renderMissoes() {
     encherMissoes();
     const prontas = S.missoes.ativas.filter(m => progMissao(m) >= m.n).length;
-    let h = `<button class="mis-topo" data-mis="toggle">📜 Missões ${prontas ? `<b class="mis-pronta">${prontas}</b>` : ''}<span>${missoesAbertas ? '▾' : '▸'}</span></button>`;
+    let h = `<button class="mis-ic ${missoesAbertas ? 'aberto' : ''}" data-mis="toggle"><img class="ui-img" src="assets/ui/b_mapa.webp" alt=""><small>Missões</small>${prontas ? `<b class="badge on">${prontas}</b>` : ''}</button><div class="mis-lista">`;
     const lista = missoesAbertas ? S.missoes.ativas : [];
     $('#missoes').classList.toggle('aberta', missoesAbertas);
     lista.forEach((m, i) => {
@@ -3042,9 +3068,9 @@
         <div class="mis-linha"><div class="mis-barra"><i style="width:${100 * p / m.n}%"></i></div><span>${fmtN(p)}/${fmtN(m.n)}</span></div>
         ${ok ? `<button class="btn verde mis-btn" data-mis="${i}">Resgatar ${moedaMini}${fmtN(m.r)}</button>` : `<div class="mis-premio">${moedaMini}${fmtN(m.r)} · ⭐${m.xp}</div>`}</div>`;
     });
-    const nlc = typeof CHAT !== 'undefined' ? totalNaoLidas() : 0;
-    h += `<button class="mis-topo chat-btn" data-chat-abrir="1">💬 Chat ${nlc ? `<b class="mis-pronta">${nlc}</b>` : ''}</button>`;
-    if (!VISITA && S.nivel >= NIVEL_PASSE) h += `<button class="mis-topo passe-btn ${passePode() ? 'brilha' : ''}" data-abrir="passe">🎁 Passe ${passePode() ? '<b class="mis-pronta">!</b>' : ''}</button>`;
+    h += '</div>';
+    const nlc = typeof CHAT !== 'undefined' ? totalNaoLidas() : 0, bc = $('#badgeChat'); if (bc) { bc.style.display = nlc ? 'block' : 'none'; bc.textContent = nlc > 99 ? '99+' : nlc; }
+    const bp = $('#btnPasse'); if (bp) { bp.style.display = !VISITA && S.nivel >= NIVEL_PASSE ? '' : 'none'; const pd = passePode(); bp.classList.toggle('brilha', pd); $('#badgePasse').style.display = pd ? 'block' : 'none'; }
     if (h !== missoesHTML) { missoesHTML = h; $('#missoes').innerHTML = h; }
   }
 
@@ -3134,13 +3160,13 @@
   // ================= INTERFACE =================
   const moedaMini = `<span class="m-ico">${ICO.moeda || '🪙'}</span>`;
   function renderHUD() {
-    $('#moedas').textContent = fmtN(S.moedas);
+    $('#moedas').textContent = fmtN(S.moedas); { const sj = $('#saldoJ b'); if (sj) sj.textContent = fmtN(S.moedas); }
     $('#nivel').textContent = S.nivel;
     const prox = xpProx(S.nivel);
     $('#xpbar').style.width = (100 * S.xp / prox) + '%';
     $('#xptxt').textContent = `${fmtN(S.xp)} / ${fmtN(prox)} XP`;
     const tot = VENDAVEIS.reduce((a, c) => a + (S.celeiro[c.id] || 0), 0);
-    const b = $('#badgeArmazem'); b.style.display = tot ? 'block' : 'none'; b.textContent = tot > 99 ? '99+' : tot; b.classList.toggle('cheio', usoArmazem() >= capArmazem());
+    const b = $('#badgeArmazem'), ch = usoArmazem() >= capArmazem(); b.style.display = ch ? 'block' : 'none'; b.textContent = 'cheio'; b.classList.add('cheio'); // só avisa quando o armazém lota
     const pend = S.objetos.filter(o => TIPOS[o.tipo].animal).reduce((a, o) => a + estadoCercado(o).prontos, 0);
     const ba = $('#badgeAnimais'); ba.style.display = pend ? 'block' : 'none'; ba.textContent = pend > 99 ? '99+' : pend;
     $('#dicaCampo').textContent = dicaFerramenta();
@@ -3240,6 +3266,7 @@
   function renderJanela() {
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
+    $('#saldoJ').innerHTML = ['config', 'reset', 'nome', 'nuvem', 'contas', 'nomeRank', 'perfil', 'ajuda'].includes(janela) ? '' : `${UI('moeda')}<b>${fmtN(S.moedas)}</b>`; // saldo sempre à vista dentro das janelas
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
     $('.janela').classList.toggle('ani', janela === 'animais'); $('.janela').classList.toggle('cfg', janela === 'config');
     $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca', 'passe'].includes(janela));
@@ -3347,7 +3374,7 @@
     }
     if (janela === 'animais') {
       atualizarProducao();
-      h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Cada animal come <b>1 ração</b> e produz. O fazendeiro coleta e alimenta.</p>${(() => { const c = resumoCuidar(); return `<button class="btn ${c.col || c.ali ? 'verde' : ''} mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos${c.col || c.ali ? `<small>${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' · ')}</small>` : c.semR.length ? '<small>falta ração</small>' : '<small>tudo em dia</small>'}</button>`; })()}${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
+      h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Ciclo: <b>🍽️ com fome</b> → dê ração → <b>⏳ produzindo</b> → <b>pronto</b> → colete. O botão de cada animal já faz o próximo passo.</p>${(() => { const c = resumoCuidar(); return `<button class="btn ${c.col || c.ali ? 'verde' : ''} mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos${c.col || c.ali ? `<small>${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' · ')}</small>` : c.semR.length ? '<small>falta ração</small>' : '<small>tudo em dia</small>'}</button>`; })()}${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
       for (const k in ANIMAIS) {
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
@@ -3358,14 +3385,14 @@
         else {
           let pr = 0, fome = 0, prod = 0; cercadosDe(k).forEach(o => { const e = estadoCercado(o); pr += e.prontos; fome += e.fome; prod += e.prod; });
           const temR = (S.celeiro[r.id] || 0) > 0;
-          status = n ? ([pr ? `${it.emoji} ${pr} pronto(s)` : '', fome ? `🍽️ ${fome} com fome` : '', prod ? `⏳ ${prod} produzindo` : ''].filter(Boolean).join(' · ') || 'Tudo certo') : 'Nenhum animal ainda';
-          status += `<span class="ani-racao ${(S.celeiro[r.id] || 0) ? '' : 'zero'}" data-info="${r.id}">${iconeItem(r, 'mini-ic')} Come ${r.nome.toLowerCase()} · tem <b>${S.celeiro[r.id] || 0}</b></span>`;
+          status = n ? `<div class="ciclo"><span class="cc fome ${fome ? 'on' : ''}">🍽️ Com fome <b>${fome}</b></span><i>›</i><span class="cc prod ${prod ? 'on' : ''}">⏳ Produzindo <b>${prod}</b></span><i>›</i><span class="cc pronto ${pr ? 'on' : ''}">${it.emoji} Pronto <b>${pr}</b></span></div>` : 'Nenhum animal ainda';
+          status += `<span class="ani-racao ${(S.celeiro[r.id] || 0) ? '' : 'zero'}" data-info="${r.id}">${iconeItem(r, 'mini-ic')} ${r.nome}: tem <b>${S.celeiro[r.id] || 0}</b> ${(S.celeiro[r.id] || 0) ? '' : '· toque para ver como fazer'}</span>`;
           if (!n) principal = `<button class="btn verde" data-animal="${k}" ${S.moedas < custoAnimal(k) ? 'disabled' : ''}>Comprar ${a.emoji} · ${moedaMini}${fmtN(custoAnimal(k))}</button>`;
           else if (cercadosDe(k).some(o => objNaFila(o.id))) principal = '<button class="btn" disabled>🚶 A caminho…</button>';
-          else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">Coletar ${pr} ${it.emoji}</button>`;
-          else if (fome && temR) principal = `<button class="btn verde" data-ir-cercado="${k}">Dar ração 🥣</button>`;
-          else if (fome) principal = `<button class="btn laranja" data-fazer-racao="${r.id}">Fazer ração 🌾</button>`;
-          else principal = `<button class="btn" data-ir-cercado="${k}">Ver ${nomeC}</button>`;
+          else if (pr) principal = `<button class="btn verde" data-ir-cercado="${k}">👉 Coletar ${pr} ${it.emoji}</button>`;
+          else if (fome && temR) principal = `<button class="btn verde" data-ir-cercado="${k}">👉 Dar ração a ${Math.min(fome, S.celeiro[r.id])} 🥣</button>`;
+          else if (fome) principal = `<button class="btn laranja" data-fazer-racao="${r.id}">👉 Fazer ração 🌾</button>`;
+          else principal = `<button class="btn" data-ir-cercado="${k}">✅ Tudo certo · ver</button>`;
           if (n) extras = `<div class="ani-mini"><button class="btn" data-animal="${k}" ${n >= mx || S.moedas < custoAnimal(k) ? 'disabled' : ''}>${n >= mx ? 'Cheio<small>precisa + cercado</small>' : `+1 ${a.emoji}<small>${moedaMini}${fmtN(custoAnimal(k))}</small>`}</button>${S.nivel < nvProx ? `<button class="btn" disabled>+ ${nomeC}<small>nível ${nvProx}</small></button>` : `<button class="btn" data-construir="${a.cercado}" ${S.moedas < cc ? 'disabled' : ''}>+ ${nomeC}<small>${moedaMini}${fmtN(cc)}</small></button>`}</div>`;
         }
         h += `<div class="ani-card ${trava ? 'trava' : ''}"><div class="ani-ic">${ic}</div><div class="ani-meio"><div class="ani-nome"><span>${a.plural}</span><span class="ani-n">${n}/${mx}</span></div><div class="ani-st">${status}</div></div><div class="ani-acoes">${principal}${extras}</div></div>`;
@@ -3809,6 +3836,9 @@
     const ct = e.target.closest('[data-conta]'); if (ct) { trocarConta(ct.dataset.conta); return; }
     const ca = e.target.closest('[data-cfg-aba]'); if (ca) { abaCfg = ca.dataset.cfgAba; renderJanela(); return; }
     const tu = e.target.closest('[data-tela-ui]'); if (tu) { TELA.ui = +tu.dataset.telaUi; salvarTela(); renderJanela(); return; }
+    const gb = e.target.closest('[data-gm]'); if (gb) { if (!ON.gm) return; const k = gb.dataset.gm; // só a conta GM (o servidor recusa o resto)
+      if (k === 'n1' || k === 'n10') { S.nivel += k === 'n1' ? 1 : 10; S.xp = 0; atualizarPlacasTerra(); } else S.moedas += k === 'm10k' ? 1e4 : 1e6;
+      salvar(); if (ON.user) enviarSave(); tudo(); renderJanela(); toast('🛡️ GM: feito', 'bom'); return; }
     const tj = e.target.closest('[data-tela-jogo]'); if (tj) { TELA.jogo = +tj.dataset.telaJogo; salvarTela(); renderJanela(); return; }
     const tt = e.target.closest('[data-tela-txt]'); if (tt) { TELA.txt = +tt.dataset.telaTxt; salvarTela(); renderJanela(); return; }
     const tf = e.target.closest('[data-tela-fonte]'); if (tf) { TELA.fonte = tf.dataset.telaFonte; salvarTela(); renderJanela(); return; }
@@ -4644,6 +4674,7 @@
     const {data, error} = await lerNuvem('dados, atualizado');
     if (error) { ON.erro = error.message; toast('☁️ Não deu para ler a nuvem agora'); setTimeout(sincronizarAoEntrar, 15000); return; } // tenta de novo depois; até lá não envia nada
     await assumirSessao(); // entrou aqui: o outro aparelho que estiver com a conta é desconectado
+    try { const {data:adm} = await ON.sb.from('admins').select('user_id').eq('user_id', uid).maybeSingle(); ON.gm = !!adm; } catch (e) { ON.gm = false; } // conta GM (só o servidor diz quem é)
     const nv = data && (data.dados || {}), ver = data ? verDe(data.atualizado) : 0;
     const localNovo = !S.colhidos && S.nivel <= 1 && !S.stats.vendeu;
     if (S.uid && S.uid !== uid) { // a fazenda aberta é de OUTRA conta: guarda ela e abre a desta conta
@@ -4958,7 +4989,9 @@
     if (!ON.user) return `<div class="linha-cfg"><span>☁️ Salve sua fazenda na nuvem e entre no ranking</span><button class="btn verde" data-acao="entrar-google">Entrar / criar conta</button></div>`
       + (listaContas().length ? '<div class="linha-cfg"><span>👥 Contas usadas neste aparelho</span><button class="btn" data-abrir="contas">Contas</button></div>' : '') + rank;
     const md = ON.user.user_metadata || {}, nome = md.full_name || md.name || ON.user.email || 'Sua conta';
-    return `<div class="linha-cfg"><span>☁️ ${esc(nome)}<br><small class="det">${ON.erro ? '⚠️ ' + esc(ON.erro) : ON.sujo ? 'salvando em instantes…' : 'salvo na nuvem às ' + hora(ON.ultimo || S.salvoEm)}</small></span>
+    const gm = ON.gm ? `<div class="linha-cfg col gm-painel"><span>🛡️ Painel GM (só esta conta) · fora do ranking</span><span class="botoes-cfg">
+      <button class="btn" data-gm="n1">+1 nível</button><button class="btn" data-gm="n10">+10 níveis</button><button class="btn" data-gm="m10k">+10 mil 🪙</button><button class="btn" data-gm="m1m">+1 milhão 🪙</button></span></div>` : '';
+    return gm + `<div class="linha-cfg"><span>☁️ ${esc(nome)}<br><small class="det">${ON.erro ? '⚠️ ' + esc(ON.erro) : ON.sujo ? 'salvando em instantes…' : 'salvo na nuvem às ' + hora(ON.ultimo || S.salvoEm)}</small></span>
       <span class="botoes-cfg"><button class="btn" data-acao="salvar-nuvem">Salvar agora</button></span></div>
       <div class="linha-cfg"><span>✏️ Nome no ranking: <b>${esc((S.perfil && S.perfil.nome) || 'Fazendeiro')}</b></span><button class="btn" data-acao="mudar-nome">Trocar</button></div>
       <div class="linha-cfg"><span>👥 Trocar de conta ou jogar sem conta</span><button class="btn" data-abrir="contas">Contas</button></div>
@@ -5252,7 +5285,7 @@
   });
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
-  window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
     _teste:{ olhar:id => { const c = centro(objPorId(id)), d = camera.position.clone().sub(controls.target); controls.target.copy(c); camera.position.copy(c).add(d); controls.update(); }, tocar:id => clicarConstrucao(objPorId(id)), expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), comprar:t => comprarConstrucao(t), cancelar:() => cancelarSel(), nivelTela:n => mostrarNivel(n, []), abrir:(n, sb) => abrir(n, sb), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),

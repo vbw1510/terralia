@@ -15,7 +15,7 @@
 <link rel="apple-touch-icon" href="assets/icones/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=0.47">
+<link rel="stylesheet" href="css/style.css?v=0.48">
 </head>
 <body>
 <canvas id="cena"></canvas>
@@ -84,12 +84,14 @@
 <!-- Botões de canto -->
 <div class="cantos esq">
   <button class="gbtn" data-abrir="loja"><i data-icone="loja"></i><span>Loja</span></button>
+  <button class="gbtn" data-abrir="armazem"><i data-icone="caixa"></i><span>Armazém</span><b class="badge" id="badgeArmazem"></b></button>
   <button class="gbtn" data-abrir="animais"><i class="emo-gbtn">🐾</i><span>Animais</span><b class="badge" id="badgeAnimais"></b></button>
 </div>
 <div class="cantos dir">
   <span id="fpsTeste">-- fps</span>
-  <button class="gbtn" data-abrir="armazem"><i data-icone="caixa"></i><span>Armazém</span><b class="badge" id="badgeArmazem"></b></button>
+  <button class="gbtn" data-abrir="passe" id="btnPasse"><i><img class="ui-img" src="assets/ui/presente.webp" alt=""></i><span>Passe</span><b class="badge" id="badgePasse">!</b></button>
 </div>
+<button class="aba-chat" data-chat-abrir="1" aria-label="Chat"><span>💬</span><i>›</i><b class="badge" id="badgeChat"></b></button>
 
 <div class="dica-campo" id="dicaCampo"></div>
 <div class="missoes" id="missoes"></div>
@@ -117,7 +119,7 @@
 <!-- Janelas -->
 <div class="fundo" id="fundo">
   <div class="janela">
-    <div class="jtopo"><h2 id="jtitulo"></h2><button class="fechar" data-acao="fechar">✕</button></div>
+    <div class="jtopo"><h2 id="jtitulo"></h2><span class="saldo-j" id="saldoJ"></span><button class="fechar" data-acao="fechar">✕</button></div>
     <div class="abas" id="jabas"></div>
     <div class="jcorpo" id="jcorpo"></div>
   </div>
@@ -129,7 +131,7 @@
 <script src="assets/lib/RoomEnvironment.js"></script>
 <script src="assets/lib/supabase.js"></script>
 <script src="js/icones.js"></script>
-<script src="js/audio.js?v=0.47"></script>
-<script src="js/game.js?v=0.47"></script>
+<script src="js/audio.js?v=0.48"></script>
+<script src="js/game.js?v=0.48"></script>
 </body>
 </html>

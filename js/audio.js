@@ -83,6 +83,7 @@ window.SOM = (() => {
     agua(t) { chiado(gSfx, t, .35, .16, 2500, 1.2, 'bandpass', 700); chiado(gSfx, t + .05, .25, .08, 4000, 2, 'bandpass', 1500); },
     moeda(t) { osc(gSfx, 'square', t, .08, [[0, 988]], .07, {f: 3000}); osc(gSfx, 'square', t + .07, .22, [[0, 1319]], .07, {f: 3000}); },
     nivel(t) { [523, 659, 784, 1047].forEach((f, i) => osc(gSfx, 'triangle', t + i * .1, .25, [[0, f]], .2)); },
+    apito(t) { osc(gSfx, 'sine', t, .22, [[0, 1900], [.2, 2500]], .16); osc(gSfx, 'sine', t + .3, .45, [[0, 2300], [.12, 2700], [.4, 2100]], .18); },
     erro(t) { osc(gSfx, 'square', t, .18, [[0, 180], [.15, 140]], .06, {f: 900}); },
     achou(t) { [784, 988, 1175, 1568].forEach((f, i) => osc(gSfx, 'sine', t + i * .06, .18, [[0, f]], .14)); },
     pop(t) { osc(gSfx, 'sine', t, .1, [[0, 300], [.08, 700]], .25); },
