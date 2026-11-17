@@ -86,6 +86,11 @@ window.SOM = (() => {
     erro(t) { osc(gSfx, 'square', t, .18, [[0, 180], [.15, 140]], .06, {f: 900}); },
     achou(t) { [784, 988, 1175, 1568].forEach((f, i) => osc(gSfx, 'sine', t + i * .06, .18, [[0, f]], .14)); },
     pop(t) { osc(gSfx, 'sine', t, .1, [[0, 300], [.08, 700]], .25); },
+    fogos(t) { // assobio subindo + estouro + estalinhos
+      osc(gSfx, 'sine', t, .32, [[0, 600], [.3, 1500]], .04);
+      chiado(gSfx, t + .32, .55, .38, 600, .7, 'lowpass', 160);
+      for (let k = 0; k < 7; k++) chiado(gSfx, t + .42 + k * .045 + Math.random() * .03, .035, .09, 3800 + Math.random() * 1500, 2);
+    },
     // bichos
     vaca(t) {
       const c = [[0, 105], [.25, 128], [.8, 118], [1.15, 92]];

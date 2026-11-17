@@ -835,3 +835,59 @@ body.editando #baloes{opacity:.35}
 #telaAtualiza .upd-barra i{display:block;height:100%;width:30%;background:linear-gradient(90deg,#6bc94a,#9be07a);border-radius:6px;animation:updBarra 1.1s ease-in-out infinite}
 @keyframes updBarra{0%{transform:translateX(-100%)}100%{transform:translateX(340%)}}
 @keyframes updPula{50%{transform:translateY(-6px)}}
+/* v0.44 — imagens desenhadas na interface */
+.ui-img{width:100%;height:100%;object-fit:contain;display:block;pointer-events:none}
+.estrela img.ui-img{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
+.m-ico .ui-img{display:inline-block;width:16px;height:16px}
+.pill-ico .ui-img{width:100%;height:100%}
+.it-img{display:inline-flex;align-items:center;justify-content:center}
+.it-img .ui-img{width:1.35em;height:1.35em}
+.it-img.grande .ui-img,.grande.it-img .ui-img{width:2.2em;height:2.2em}
+.img-g{display:flex;align-items:center;justify-content:center;width:clamp(56px,16vh,104px);height:clamp(56px,16vh,104px)}
+.img-g .ui-img{filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}
+.foto-g.recorte{background:radial-gradient(circle at 50% 45%,#fffdf5,#f3e2c0)!important}
+.foto-g.recorte img{object-fit:contain!important;padding:4px;box-sizing:border-box}
+.redondo .ui-img{width:115%;height:115%;margin:-7.5%}
+.gbtn i .ui-img{width:100%;height:100%}
+.mini .txt-ico .ui-img{width:34px;height:34px}
+.secao-loja{flex:0 0 auto;display:flex;align-items:center;justify-content:center;width:34px;align-self:stretch;margin:0 2px}
+.secao-loja span{writing-mode:vertical-rl;transform:rotate(180deg);background:#7a4a26;color:#fff3c4;font-weight:800;font-size:13px;border-radius:12px;padding:10px 4px;white-space:nowrap;box-shadow:0 3px 0 #4a2e17}
+/* v0.44 — tela de subiu de nível */
+#telaNivel{position:fixed;inset:0;z-index:350;display:none;overflow:hidden;background:radial-gradient(circle at 50% 50%,rgba(255,226,130,.6),rgba(30,18,4,.78) 72%)}
+#telaNivel.on{display:block;animation:nvEntra .35s ease-out}
+#telaNivel.saindo{animation:nvSai .35s ease-in forwards}
+@keyframes nvEntra{from{opacity:0}to{opacity:1}} @keyframes nvSai{to{opacity:0}}
+.nv-fogos{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}
+.nv-raios{position:absolute;left:50%;top:50%;width:170vmax;height:170vmax;margin:-85vmax 0 0 -85vmax;border-radius:50%;background:repeating-conic-gradient(rgba(255,240,170,.22) 0 10deg,transparent 10deg 20deg);animation:nvGira 18s linear infinite}
+@keyframes nvGira{to{transform:rotate(360deg)}}
+.nv-logo{position:absolute;left:50%;top:calc(4px + var(--safe-t,0px));transform:translateX(-50%);height:min(30vh,150px);z-index:2;animation:nvCai .6s cubic-bezier(.2,1.6,.4,1)}
+.nv-f1,.nv-f2{position:absolute;bottom:-2vh;height:min(78vh,330px);z-index:2;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.nv-f1{left:max(10px,4vw);animation:nvEsq .6s ease-out}.nv-f2{right:max(10px,4vw);animation:nvDir .6s ease-out}
+@keyframes nvEsq{from{transform:translateX(-120%)}} @keyframes nvDir{from{transform:translateX(120%)}} @keyframes nvCai{from{transform:translate(-50%,-140%)}}
+.nv-centro{position:absolute;left:50%;top:calc(min(30vh,150px) + 2px);transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:4px;z-index:4;width:min(520px,60vw)}
+.nv-estrela{position:relative;width:min(24vh,118px);height:min(24vh,118px);animation:nvPula 1.1s ease-in-out infinite}
+.nv-estrela img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35))}
+.nv-estrela b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding-top:8%;font-size:min(8.5vh,42px);font-weight:900;color:#fff;-webkit-text-stroke:2px #8a4b12;text-shadow:0 3px 0 #8a4b12}
+@keyframes nvPula{50%{transform:scale(1.08) rotate(-4deg)}}
+.nv-par{font-size:min(9vh,40px);font-weight:900;color:#ffe066;-webkit-text-stroke:2px #6b3a10;text-shadow:0 3px 0 #6b3a10;letter-spacing:1px}
+.nv-sub{background:#fff8ea;border:3px solid #7a4a26;border-radius:14px;padding:4px 14px;font-weight:700;color:#4a2e17;font-size:15px}
+.nv-novos{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:100%}
+.nv-novos>span:first-child{color:#fff;font-weight:800;text-shadow:0 1px 2px #000;font-size:13px;align-self:center}
+.nv-item{background:rgba(255,248,234,.95);border:2px solid #7a4a26;border-radius:10px;padding:1px 8px;font-size:13px;font-weight:700;color:#4a2e17;display:inline-flex;align-items:center;gap:3px}
+.nv-img{width:18px;height:18px;object-fit:contain}
+.nv-centro .btn{margin-top:4px;min-width:180px}
+@media (max-height:420px){.nv-novos{display:none}.nv-sub{font-size:13px}}
+/* v0.44 — tamanho da interface, do texto e fonte (Configurações > Tela e texto) */
+.topo,.lateral,.cantos,.missoes,.barra-edicao{zoom:var(--esc-ui,1)}
+#jcorpo,#jtitulo,.chat{zoom:var(--esc-txt,1)}
+body.fonte-legivel,body.fonte-legivel button,body.fonte-legivel input{font-family:Verdana,Tahoma,'Segoe UI',sans-serif;letter-spacing:-.2px}
+body.fonte-simples,body.fonte-simples button,body.fonte-simples input{font-family:Arial,'Helvetica Neue',sans-serif}
+body.sem-fps #fpsTeste{display:none}
+.linha-cfg.col{flex-direction:column;align-items:stretch;gap:6px}
+.linha-cfg.col .botoes-cfg{flex-wrap:wrap;justify-content:flex-start}
+.cfg-abas{margin-bottom:6px}
+#filaUI{display:none!important} /* v0.44: lista de afazeres removida */
+/* v0.44 — colocando uma compra: sem a barra do modo edição */
+body.colocando .barra-edicao,body.colocando #barraConstrucao{display:none!important}
+body.colocando #ferrEdicao [data-ed=vender]{display:none!important}
+#barraConstrucao{display:none!important}
