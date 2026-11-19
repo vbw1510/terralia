@@ -1134,3 +1134,5 @@ img.it-mini{width:1.35em;height:1.35em;object-fit:contain;vertical-align:-.3em;d
 .fab-troca b{font-size:16px;color:var(--texto);min-width:130px;text-align:center}
 .fab-troca .btn{min-width:46px;font-size:18px;padding:4px 10px}
 #btnColetar .emo-gbtn{font-size:26px}
+.filtro-lib{margin-left:auto;border:2px solid #d8c39a;background:#fff8e6;border-radius:14px;padding:4px 10px;font-weight:700;font-size:12px;color:#6b4a2b;white-space:nowrap}
+.filtro-lib.on{background:#e3f6d8;border-color:#8ccf6a;color:#2f6a1c}
