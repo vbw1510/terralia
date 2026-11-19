@@ -71,6 +71,8 @@
     {id:'leiteCabra', nome:'Leite de cabra', emoji:'🍼', preco:793, xp:79, rar:'lendario', animal:'cabra'},
     {id:'leiteBufala', nome:'Leite de búfala', emoji:'🧴', preco:1257, xp:126, rar:'lendario', animal:'bufalo'},
     {id:'peixe', nome:'Peixe', emoji:'🐟', preco:300, xp:20, rar:'raro', rede:true},
+    {id:'ferro',  nome:'Ferro',  emoji:'⛓️', preco:600, xp:20, rar:'raro', mina:true},
+    {id:'carvao', nome:'Carvão', emoji:'⚫', preco:400, xp:15, rar:'raro', mina:true},
   ];
   // frutas das árvores do pomar (plantou uma vez, colhe sempre)
   const FRUTAS = [
@@ -82,6 +84,12 @@
     {id:'manga',   nome:'Manga',   emoji:'🥭', preco:700, nivel:34, arvore:'mangueira',  tempo:7200, rende:4, cor:0xffb02e},
     {id:'cacau',   nome:'Cacau',   emoji:'🫘', preco:950, nivel:36, arvore:'cacaueiro',  tempo:9000, rende:4, cor:0xd2691e},
     {id:'acai',    nome:'Açaí',    emoji:'🫐', preco:1100, nivel:39, arvore:'acaizeiro', tempo:10800, rende:5, cor:0x4b1d5e},
+    // 🏰 Ilha Medieval: nada de plantar, tudo se coleta (a mina e o bosque voltam a encher sozinhos)
+    {id:'pedra',     nome:'Pedra',      emoji:'🪨', preco:250, nivel:45, arvore:'mina',          tempo:5400, rende:4, cor:0x9a9a9a, extra:{ferro:2, carvao:2}, raroMed:.08},
+    {id:'madeira',   nome:'Madeira',    emoji:'🪵', preco:280, nivel:45, arvore:'bosque',        tempo:3600, rende:5, cor:0x8b5a2b},
+    {id:'amora',     nome:'Amora',      emoji:'🫐', preco:300, nivel:45, arvore:'amoreira',      tempo:2400, rende:4, cor:0x3a1e5e},
+    {id:'cogumelo',  nome:'Cogumelo',   emoji:'🍄', preco:330, nivel:46, arvore:'cogumelos',     tempo:2700, rende:4, cor:0xe2352a},
+    {id:'framboesa', nome:'Framboesa',  emoji:'🍓', preco:360, nivel:47, arvore:'framboeseira',  tempo:3000, rende:4, cor:0xd8204a},
   ];
   // rações: feitas no moinho, servem para alimentar os animais (não são vendidas)
   const RACOES = [
@@ -155,6 +163,19 @@
     {id:'essencia',    nome:'Essência de baunilha',emoji:'🧪',fab:'perfumaria',  ing:{baunilha:2},                      tempo:2400, preco:9168, xp:611, rar:'lendario', nivel:40},
     {id:'colonia',     nome:'Colônia tropical',  emoji:'🫧', fab:'perfumaria',   ing:{gengibre:2, maracuja:1},          tempo:10800, preco:9104,  xp:607, rar:'lendario', nivel:40},
     {id:'perfumeOuro', nome:'Perfume dourado',   emoji:'✨', fab:'perfumaria',   ing:{essencia:1, orquidea:2},          tempo:10800, preco:37202, xp:2480, rar:'lendario', nivel:41},
+    // 🏰 oficinas da Ilha Medieval
+    {id:'ferradura',   nome:'Ferradura',          emoji:'🧲', fab:'ferraria',    ing:{ferro:2, carvao:1},            tempo:5400,  preco:2880,  xp:192, rar:'lendario', nivel:45},
+    {id:'ferramentas', nome:'Caixa de ferramentas',emoji:'🛠️', fab:'ferraria',   ing:{ferro:1, madeira:2},           tempo:5400,  preco:2088,  xp:139, rar:'lendario', nivel:46},
+    {id:'armadurinha', nome:'Armadurinha de brinquedo',emoji:'🛡️', fab:'ferraria',ing:{ferro:3, carvao:2},           tempo:7500,  preco:4680,  xp:312, rar:'lendario', nivel:48},
+    {id:'escudo',      nome:'Escudo de madeira',  emoji:'🔰', fab:'carpintaria', ing:{madeira:3, ferro:1},           tempo:5400,  preco:2592,  xp:173, rar:'lendario', nivel:45},
+    {id:'cavalinho',   nome:'Cavalinho de pau',   emoji:'🐴', fab:'carpintaria', ing:{madeira:4},                    tempo:5400,  preco:2016,  xp:134, rar:'lendario', nivel:46},
+    {id:'bau',         nome:'Baú do tesouro',     emoji:'🧰', fab:'carpintaria', ing:{madeira:3, ferro:1, pedra:2},  tempo:5580,  preco:3492,  xp:233, rar:'lendario', nivel:47},
+    {id:'tortaAmora',  nome:'Torta de amora',     emoji:'🥧', fab:'cozinhaReal', ing:{amora:3, trigo:2, ovo:1},      tempo:5400,  preco:1665,  xp:111, rar:'lendario', nivel:45},
+    {id:'sopaCogumelo',nome:'Sopa de cogumelo',   emoji:'🍲', fab:'cozinhaReal', ing:{cogumelo:3, leite:1},          tempo:5400,  preco:1849,  xp:123, rar:'lendario', nivel:46},
+    {id:'geleiaFramboesa',nome:'Geleia de framboesa',emoji:'🍯',fab:'cozinhaReal',ing:{framboesa:3, acucar:1},       tempo:5400,  preco:3375,  xp:225, rar:'lendario', nivel:47},
+    {id:'anel',        nome:'Anel de ouro',       emoji:'💍', fab:'joalheria',   ing:{ouro:1, ferro:1},              tempo:10380, preco:6480,  xp:432, rar:'lendario', nivel:48},
+    {id:'colar',       nome:'Colar de rubi',      emoji:'📿', fab:'joalheria',   ing:{ouro:1, rubi:1},               tempo:10800, preco:16200, xp:1080, rar:'lendario', nivel:49},
+    {id:'coroa',       nome:'Coroa real',         emoji:'👑', fab:'joalheria',   ing:{ouro:2, rubi:1, safira:1},     tempo:10800, preco:37800, xp:2520, rar:'lendario', nivel:50},
   ];
   const FABRICAS = {
     moinho:    {nome:'Moinho',     emoji:'🌾', receitas:RACOES},
@@ -171,12 +192,19 @@
     quiosque:  {nome:'Quiosque da praia', emoji:'🍲', receitas:PRODUTOS.filter(p => p.fab === 'quiosque')},
     acaiteria: {nome:'Açaiteria', emoji:'🍧', receitas:PRODUTOS.filter(p => p.fab === 'acaiteria')},
     perfumaria:{nome:'Perfumaria', emoji:'✨', receitas:PRODUTOS.filter(p => p.fab === 'perfumaria')},
+    ferraria:  {nome:'Ferraria', emoji:'🔨', receitas:PRODUTOS.filter(p => p.fab === 'ferraria')},
+    carpintaria:{nome:'Carpintaria', emoji:'🪚', receitas:PRODUTOS.filter(p => p.fab === 'carpintaria')},
+    cozinhaReal:{nome:'Cozinha do castelo', emoji:'🍲', receitas:PRODUTOS.filter(p => p.fab === 'cozinhaReal')},
+    joalheria: {nome:'Joalheria', emoji:'💍', receitas:PRODUTOS.filter(p => p.fab === 'joalheria')},
   };
   // ✨ achados raros da Ilha Tropical: caem na colheita e na rede de pesca (não se compram)
   const ACHADOS = [
     {id:'concha',  nome:'Concha dourada',     emoji:'🐚', preco:1500, xp:0, rar:'lendario', achado:true},
     {id:'perola',  nome:'Pérola',             emoji:'🦪', preco:4000, xp:0, rar:'lendario', achado:true},
     {id:'cristal', nome:'Cristal do vulcão',  emoji:'💎', preco:8000, xp:0, rar:'lendario', achado:true},
+    {id:'ouro',    nome:'Pepita de ouro',     emoji:'🪙', preco:3000, xp:0, rar:'lendario', achado:true, med:true},
+    {id:'rubi',    nome:'Rubi',               emoji:'❤️‍🔥', preco:6000, xp:0, rar:'lendario', achado:true, med:true},
+    {id:'safira',  nome:'Safira',             emoji:'🔷', preco:9000, xp:0, rar:'lendario', achado:true, med:true},
   ];
   const ITENS = [...CROPS, ...EXTRAS, ...FRUTAS, ...RACOES, ...PRODUTOS, ...ACHADOS];
   const VENDAVEIS = ITENS.filter(i => !i.racao);
@@ -278,10 +306,20 @@
     cacaueiro:  {nome:'Cacaueiro', w:1, d:1, obst:true, fruta:'cacau'},
     acaizeiro:  {nome:'Açaizeiro', w:1, d:1, obst:true, fruta:'acai'},
     bufalario:  {nome:'Curral de búfalos', w:3, d:3, animal:'bufalo'},
+    mina:       {nome:'Mina', w:2, d:2, obst:true, fruta:'pedra', fem:true, coleta:true},
+    bosque:     {nome:'Bosque', w:2, d:2, obst:true, fruta:'madeira', coleta:true},
+    amoreira:   {nome:'Pé de amora', w:1, d:1, obst:true, fruta:'amora'},
+    cogumelos:  {nome:'Canteiro de cogumelos', w:1, d:1, obst:true, fruta:'cogumelo'},
+    framboeseira:{nome:'Pé de framboesa', w:1, d:1, obst:true, fruta:'framboesa'},
+    ferraria:   {nome:'Ferraria', w:2, d:2, obst:true, fab:true, fem:true},
+    carpintaria:{nome:'Carpintaria', w:2, d:2, obst:true, fab:true, fem:true},
+    cozinhaReal:{nome:'Cozinha do castelo', w:2, d:2, obst:true, fab:true, fem:true},
+    joalheria:  {nome:'Joalheria', w:2, d:2, obst:true, fab:true, fem:true},
     farol:      {nome:'Farol', w:1, d:1, decor:true, obst:true},
     cabanaTiki: {nome:'Cabana tiki', w:2, d:2, decor:true, obst:true, fem:true},
     estatuaConcha:{nome:'Estátua de concha', w:1, d:1, decor:true, obst:true, fem:true},
     flamingo:   {nome:'Flamingo de jardim', w:1, d:1, decor:true},
+    arvoreEncantada:{nome:'Árvore encantada', w:2, d:2, decor:true, obst:true, fem:true},
     feiraMed:   {nome:'Barraca de feira', w:2, d:2, decor:true, obst:true, fem:true},
     casaMed:    {nome:'Casa medieval', w:2, d:2, decor:true, obst:true, fem:true},
     pracaMed:   {nome:'Praça do chafariz', w:3, d:3, decor:true, obst:true, fem:true},
@@ -344,6 +382,7 @@
     {tipo:'torreMed', icone:'🛡️', preco:12000, nivel:35}, {tipo:'muralhaMed', icone:'🧱', preco:15000, nivel:40}, {tipo:'moinhoMed', icone:'⚙️', preco:20000, nivel:45},
     {tipo:'temploMed', icone:'⛪', preco:30000, nivel:50}, {tipo:'casteloMed', icone:'🏰', preco:50000, nivel:55},
     // 🏝️ exclusivas da Ilha Tropical: pedem achados raros
+    {tipo:'arvoreEncantada', icone:'🌳', preco:0, nivel:999, premio:true},
     {tipo:'flamingo', icone:'🦩', preco:1500, nivel:30, ilha:'tropical', itens:{concha:1}}, {tipo:'cabanaTiki', icone:'🛖', preco:3000, nivel:30, ilha:'tropical', itens:{concha:2}},
     {tipo:'farol', icone:'🗼', preco:5000, nivel:31, ilha:'tropical', itens:{concha:3, perola:1}}, {tipo:'estatuaConcha', icone:'🗿', preco:8000, nivel:32, ilha:'tropical', itens:{perola:2, cristal:1}},
   ];
@@ -377,25 +416,30 @@
   let ANEL = (() => { try { return Math.max(0, Math.min(6, (VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1'))).expansao | 0)); } catch (e) { return 0; } })();
   const MAX_ANEL = 6;
   // 🏝️ ilhas (v0.53): o jogo carrega só a ilha em que você está; as outras ficam guardadas em S.outras
-  const ILHA = (() => { try { const d = VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1')); return d && d.ilha === 'tropical' ? 'tropical' : 'principal'; } catch (e) { return 'principal'; } })();
-  const TROP = ILHA === 'tropical', NIVEL_PORTO = 30, CUSTO_PORTO = 25000;
+  const ILHA = (() => { try { const d = VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1')); return d && (d.ilha === 'tropical' || d.ilha === 'medieval') ? d.ilha : 'principal'; } catch (e) { return 'principal'; } })();
+  const TROP = ILHA === 'tropical', MED = ILHA === 'medieval', NIVEL_PORTO = 30, NIVEL_MEDIEVAL = 45, CUSTO_PORTO = 25000;
+  const NIVEL_ILHA = {principal:1, tropical:NIVEL_PORTO, medieval:NIVEL_MEDIEVAL};
   const ILHA_CHAVES = ['objetos', 'plots', 'zonas', 'expansao', 'moinhos', 'fab', 'pomar', 'ani', 'animais', 'prod'];
-  const NOME_ILHA = {principal:'Ilha Principal', tropical:'Ilha Tropical'};
-  const podeAqui = x => !x || !x.ilha || x.ilha === ILHA; // planta ou construção desta ilha
-  if (TROP) ANEL = 0; // a Ilha Tropical é redonda e não tem expansão
+  const NOME_ILHA = {principal:'Ilha Principal', tropical:'Ilha Tropical', medieval:'Ilha Medieval'}, ICO_ILHA = {principal:'🏡', tropical:'🏝️', medieval:'🏰'};
+  const podeAqui = x => (MED && x && x.tipo === 'lote') ? false : !x || !x.ilha || x.ilha === ILHA; // planta ou construção desta ilha (a medieval não tem plantação)
+  if (TROP || MED) ANEL = 0; // as ilhas novas têm formato próprio e não têm expansão
   const ZONA = 5; let OFF = 12 + 5 * ANEL, NZ = 5 + 2 * ANEL; // células de -OFF a OFF, terras de 5×5 células
   // 🏝️ Ilha Tropical redonda: lagoa no meio, um anel de dentro (2 fatias, já suas) e um anel de fora (8 fatias para liberar)
   const R_ILHA = 12.3, R_LAGOA = 2.2, R_ANEL = 7.6;
-  let MEIA = TROP ? (R_ILHA + .5) * G + 1.4 : (OFF + .5) * G + 1.6; // metade do lado da ilha quadrada (ou o raio da redonda)
+  // 🏰 Ilha Medieval hexagonal: castelo no meio (com fosso) e 6 fatias, uma em cada lado do hexágono
+  const R_HEX = 12.8, AP_HEX = R_HEX * Math.cos(Math.PI / 6), R_CASTELO = 3.3, NORM_HEX = [Math.PI / 6, Math.PI / 2, Math.PI * 5 / 6];
+  const dentroHex = (x, z, ap) => NORM_HEX.every(t => Math.abs(x * Math.cos(t) + z * Math.sin(t)) <= ap);
+  let MEIA = TROP ? (R_ILHA + .5) * G + 1.4 : MED ? (R_HEX + .5) * G + 1.4 : (OFF + .5) * G + 1.6; // metade do lado da ilha quadrada (ou o raio da redonda)
   const fatiaDe = (cx, cz) => { const d = Math.hypot(cx, cz), a = (Math.atan2(cz, cx) + Math.PI * 2 + .001) % (Math.PI * 2); return d < R_ANEL ? [0, Math.floor(a / Math.PI) % 2] : [1, Math.floor(a / (Math.PI / 4)) % 8]; };
-  const zonaDe = (cx, cz) => TROP ? fatiaDe(cx, cz) : [Math.floor((cx + 12) / ZONA), Math.floor((cz + 12) / ZONA)]; // chaves das terras não mudam quando a ilha cresce
+  const fatiaHex = (cx, cz) => [0, Math.floor(((Math.atan2(cz, cx) + Math.PI * 2 + .001) % (Math.PI * 2)) / (Math.PI / 3)) % 6];
+  const zonaDe = (cx, cz) => MED ? fatiaHex(cx, cz) : TROP ? fatiaDe(cx, cz) : [Math.floor((cx + 12) / ZONA), Math.floor((cz + 12) / ZONA)]; // chaves das terras não mudam quando a ilha cresce
   const zKey = (zx, zz) => zx + ',' + zz;
-  const celulaUtil = (cx, cz) => TROP ? (Math.hypot(cx, cz) <= R_ILHA && Math.hypot(cx, cz) > R_LAGOA) : Math.abs(cx) <= OFF && Math.abs(cz) <= OFF;
+  const celulaUtil = (cx, cz) => MED ? (Math.hypot(cx, cz) > R_CASTELO && dentroHex(cx, cz, AP_HEX)) : TROP ? (Math.hypot(cx, cz) <= R_ILHA && Math.hypot(cx, cz) > R_LAGOA) : Math.abs(cx) <= OFF && Math.abs(cz) <= OFF;
   const ZONAS = []; // terras que existem (com espaço suficiente dentro da ilha)
-  const ZONAS_TROP_INICIAIS = ['0,0', '0,1'];
+  const ZONAS_TROP_INICIAIS = ['0,0', '0,1'], ZONAS_MED_INICIAIS = ['0,0', '0,1'];
   function calcZonas() { ZONAS.length = 0;
-  if (TROP) { const m = {};
-    for (let cx = -13; cx <= 13; cx++) for (let cz = -13; cz <= 13; cz++) if (celulaUtil(cx, cz)) { const [r, f] = fatiaDe(cx, cz), k = zKey(r, f); (m[k] = m[k] || {key:k, zx:r, zz:f, cel:[], anel:r, inicial:r === 0}).cel.push([cx, cz]); }
+  if (TROP || MED) { const m = {};
+    for (let cx = -13; cx <= 13; cx++) for (let cz = -13; cz <= 13; cz++) if (celulaUtil(cx, cz)) { const [r, f] = zonaDe(cx, cz), k = zKey(r, f); (m[k] = m[k] || {key:k, zx:r, zz:f, cel:[], anel:r, inicial:MED ? ZONAS_MED_INICIAIS.includes(k) : r === 0}).cel.push([cx, cz]); }
     Object.values(m).sort((a, b) => a.zx - b.zx || a.zz - b.zz).forEach(z => ZONAS.push(z)); return; }
   for (let zx = -ANEL; zx < 5 + ANEL; zx++) for (let zz = -ANEL; zz < 5 + ANEL; zz++) {
     const cel = [];
@@ -412,7 +456,10 @@
   let S;
   let proxId = 1;
   function layoutInicial(ilha) {
-    const L = (ilha || ILHA) === 'tropical' ? [ // tudo no anel de dentro, em volta da lagoa
+    const L = (ilha || ILHA) === 'medieval' ? [ // 🏰 nas duas fatias da frente; já vem com uma mina, um bosque e um pé de amora para começar
+      {tipo:'celeiro', ox:7, oz:0}, {tipo:'armazem', ox:0, oz:6}, {tipo:'loja', ox:4, oz:4}, {tipo:'galpao', ox:-3, oz:7}, {tipo:'poco', ox:8, oz:4},
+      {tipo:'mina', ox:4, oz:0}, {tipo:'bosque', ox:1, oz:9}, {tipo:'amoreira', ox:6, oz:8},
+    ] : (ilha || ILHA) === 'tropical' ? [ // tudo no anel de dentro, em volta da lagoa
       {tipo:'lote', ox:1, oz:3, li:0}, {tipo:'celeiro', ox:-6, oz:-2}, {tipo:'armazem', ox:-2, oz:-7}, {tipo:'loja', ox:2, oz:-6}, {tipo:'poco', ox:-3, oz:4}, {tipo:'galpao', ox:4, oz:-1},
     ] : [
       {tipo:'lago', ox:-7, oz:3}, {tipo:'lote', ox:-1, oz:-1, li:0},
@@ -440,11 +487,11 @@
         if (S.upg.cesta || S.upg.regadorG) { S.upg.maos = Math.max(S.upg.maos || 0, S.upg.cesta || 0); if (S.upg.regadorG) S.moedas += 350; delete S.upg.cesta; delete S.upg.regadorG; }
         // saves antigos: plantação fixa → lotes de 4 canteiros
         const lotes = S.objetos.filter(o => o.tipo === 'lote').length + (S.guardados || []).filter(g => g.tipo === 'lote').length; // terras guardadas contam
-        const precisa = Math.max(1, Math.ceil(S.plots.length / 4));
+        const precisa = MED ? 0 : Math.max(1, Math.ceil(S.plots.length / 4)); // a Ilha Medieval não tem canteiros
         if (S.tut == null || (S.tut === 0 && S.colhidos > 0)) S.tut = S.colhidos > 0 ? -1 : 0;
         S.stats = Object.assign({colheu:{}, plantou:{}, coletou:{}, vendeu:0, compras:0, fez:{}, alimentou:0}, S.stats);
         S.cap = Object.assign({armazem:0, celeiro:0}, S.cap); S.fab = S.fab || {};
-        if (TROP) { const ok = new Set(ZONAS.map(z => z.key)); S.zonas = [...new Set([...ZONAS_TROP_INICIAIS, ...(S.zonas || []).filter(k => ok.has(k))])]; S.expansao = 0; // ilha redonda: só fatias que existem
+        if (TROP || MED) { const ok = new Set(ZONAS.map(z => z.key)); S.zonas = [...new Set([...(MED ? ZONAS_MED_INICIAIS : ZONAS_TROP_INICIAIS), ...(S.zonas || []).filter(k => ok.has(k))])]; S.expansao = 0; // ilha redonda: só fatias que existem
           S.objetos = S.objetos.filter(o => o.tipo === 'lote' || celulas(o).every(([cx, cz]) => celulaUtil(cx, cz))); } // (algo de uma versão de teste fora da ilha redonda sai)
         if (VISITA) { // v0.45: bichinho só aparece na fazenda dos amigos (vira ajuda da visita)
           let sem = [...(VISITA.uid || 'x') + new Date().toDateString()].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -524,7 +571,7 @@
     S.celeiro.racaoPet--; S.petComeu = Date.now(); somT('cachorro'); toast('🦴 Os pets comeram e estão felizes! Habilidades ativas por 6 horas', 'bom');
     Object.values(pets).forEach(p => { p.modo = 'parado'; p.timer = .5; flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); }); salvar(); atualizarBaloes();
   }
-  const velocidade = () => Math.pow(.9, S.upg.fertil || 0) * (petOk('raposa') ? 0.75 : 1); // cada nível de fertilizante: 10% mais rápido
+  const velocidade = () => Math.pow(.9, S.upg.fertil || 0) * (petOk('raposa') ? 0.75 : 1) * (S.nivel <= 3 ? .5 : S.nivel <= 5 ? .75 : 1); // começo mais rápido: até o nível 3 tudo cresce na metade do tempo // cada nível de fertilizante: 10% mais rápido
   const eventoAtivo = () => S.evento && S.evento.ate > Date.now() ? S.evento : null;
   function precoAtual(id) { return Math.max(1, Math.round(item(id).preco)); } // v0.48: preço fixo (comprar na loja custa o dobro: comprar e revender nunca dá lucro)
   const custoUpg = k => Math.round(UPG[k].base * Math.pow(UPG[k].mult, S.upg[k] || 0));
@@ -569,12 +616,22 @@
     {tipo:'acaiteria',  icone:'🍧', nivel:39, base:38000, desc:'Açaiteria: tigela de açaí, sorvete de açaí e picolé de manga.', unico:true, ilha:'tropical'},
     {tipo:'acaizeiro', mult:1.35, icone:'🫐', nivel:39, base:22000, desc:'Açaizeiro: dá 5 açaís a cada 3 horas.', ilha:'tropical'},
     {tipo:'perfumaria', icone:'✨', nivel:40, base:45000, desc:'Perfumaria: essência de baunilha, colônia e o raríssimo perfume dourado.', unico:true, ilha:'tropical'},
+    // 🏰 só na Ilha Medieval (sem plantação: mina, bosque e arbustos que voltam a encher)
+    {tipo:'mina',        icone:'⛏️', nivel:45, base:40000, mult:1.6, desc:'Mina: dá pedra, ferro e carvão a cada 1h30. Às vezes sai ouro, rubi ou safira!', ilha:'medieval'},
+    {tipo:'bosque',      icone:'🌲', nivel:45, base:25000, mult:1.5, desc:'Bosque: dá 5 madeiras a cada 1 hora.', ilha:'medieval'},
+    {tipo:'amoreira',    icone:'🫐', nivel:45, base:15000, mult:1.35, desc:'Pé de amora: dá 4 amoras a cada 40 min.', ilha:'medieval'},
+    {tipo:'ferraria',    icone:'🔨', nivel:45, base:35000, desc:'Ferraria: ferraduras, ferramentas e armadurinha de brinquedo.', unico:true, ilha:'medieval'},
+    {tipo:'carpintaria', icone:'🪚', nivel:45, base:30000, desc:'Carpintaria: escudo de madeira, cavalinho de pau e baú do tesouro.', unico:true, ilha:'medieval'},
+    {tipo:'cozinhaReal', icone:'🍲', nivel:45, base:32000, desc:'Cozinha do castelo: torta de amora, sopa de cogumelo e geleia de framboesa.', unico:true, ilha:'medieval'},
+    {tipo:'cogumelos',   icone:'🍄', nivel:46, base:16000, mult:1.35, desc:'Canteiro de cogumelos: nascem sozinhos, 4 a cada 45 min.', ilha:'medieval'},
+    {tipo:'framboeseira',icone:'🍓', nivel:47, base:18000, mult:1.35, desc:'Pé de framboesa: dá 4 framboesas a cada 50 min.', ilha:'medieval'},
+    {tipo:'joalheria',   icone:'💍', nivel:48, base:60000, desc:'Joalheria: anel, colar e coroa com o ouro e as gemas da mina.', unico:true, ilha:'medieval'},
   ];
   const consDe = t => CONSTRUCOES.find(c => c.tipo === t);
   const decDe = t => DECOR.find(c => c.tipo === t);
   // quantas de cada construção dá para ter, conforme o nível
   const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 8, 18, 30], aprisco:[33, 36, 40], bufalario:[37, 40, 44]};
-  const TETO = {aprisco:3, bufalario:3, coqueiro:6, mangueira:6, bananeira:6, cacaueiro:6, acaizeiro:6, galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
+  const TETO = {mina:3, bosque:4, amoreira:6, cogumelos:6, framboeseira:6, aprisco:3, bufalario:3, coqueiro:6, mangueira:6, bananeira:6, cacaueiro:6, acaizeiro:6, galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
   const maxPermitido = t => { if (TETO[t] != null && t !== 'lote') return Math.min(TETO[t], maxPermitido_(t)); return maxPermitido_(t); };
   const maxPermitido_ = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
@@ -686,8 +743,8 @@
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
   const C = h => new THREE.Color(h).convertSRGBToLinear();
   const scene = new THREE.Scene();
-  scene.background = C(TROP ? 0xa8eeff : 0xbfe6ff);
-  scene.fog = new THREE.Fog(C(TROP ? 0xc4f4ff : 0xcdeeff), 70, 150);
+  scene.background = C(TROP ? 0xa8eeff : MED ? 0xb4d2ec : 0xbfe6ff);
+  scene.fog = new THREE.Fog(C(TROP ? 0xc4f4ff : MED ? 0xc6dcef : 0xcdeeff), 70, 150);
   const ceuBase = scene.background.clone(), ceuChuva = C(0x8fa9b8);
   if (THREE.RoomEnvironment) { const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new THREE.RoomEnvironment(), .04).texture; }
   const camera = new THREE.PerspectiveCamera(42, 1, .1, 170);
@@ -976,7 +1033,7 @@
       g.add(mesh(new THREE.SphereGeometry(w / 2, 10, 6, 0, Math.PI), 0, x - larg / 2 + w / 2 + i * w, y - .18, z + .38, false, liso(i % 2 ? c2 : c1)));
     }
   }
-  const FAB_KK = {sucos:'casaSucos', chocolateria:'chocoFab', tapiocaria:'tapiocaFab', quiosque:'quiosqueFab', acaiteria:'acaiFab', perfumaria:'perfumeFab', padaria:'casaPadaria', cozinha:'tavernaFab', engenho:'moinhoAgua', laticinio:'mercadoAzul', tecelagem:'mercadoVerde', docaria:'mercadoAmarelo', sorveteria:'mercadoVermelho'};
+  const FAB_KK = {sucos:'casaSucos', chocolateria:'chocoFab', tapiocaria:'tapiocaFab', quiosque:'quiosqueFab', acaiteria:'acaiFab', perfumaria:'perfumeFab', ferraria:'ferrariaFab', carpintaria:'carpintariaFab', cozinhaReal:'cozinhaRealFab', joalheria:'joalheriaFab', padaria:'casaPadaria', cozinha:'tavernaFab', engenho:'moinhoAgua', laticinio:'mercadoAzul', tecelagem:'mercadoVerde', docaria:'mercadoAmarelo', sorveteria:'mercadoVermelho'};
   const FUMACA_KK = {padaria:[-.55, 3.7, -.85], cozinha:[.6, 4.3, -.9]}; // de onde sai a fumaça quando está produzindo
   function fumacaSolta(g, x, y, z) { // só a fumaça (a chaminé já vem no modelo)
     const f = new THREE.Group(); f.position.set(x, y, z); g.add(f);
@@ -1130,6 +1187,25 @@
     if (o.tipo === 'coqueiro') { // palmeira com cocos
       const g = palmeira(1.25); g.rotation.y = 0; const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
       for (let i = 0; i < 5; i++) { const a = i * 1.25; fr.add(bola(.15, 0x7a5233, .3 + Math.cos(a) * .2, 3.35, Math.sin(a) * .2, 8)); }
+      frutosArv[o.id] = fr; return g; }
+    if (o.tipo === 'mina' || o.tipo === 'bosque') { // 🏰 modelos do pack medieval; o "pronto" aparece como pedrinhas/toras na frente
+      const g = new THREE.Group(); g.add(THREE.GLTFLoader ? modeloGLB(o.tipo === 'mina' ? 'qMina' : 'qBosque', 0, 0, 0, 1) : (o.tipo === 'mina' ? pedra(2.2) : arvore(1.2)));
+      const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
+      if (o.tipo === 'mina') { [[-.6, 1.1, 0x9a9a9a], [-.1, 1.3, 0x5a5a66], [.5, 1.1, 0x2a2a2a], [.2, 1.5, 0xffc83a]].forEach(([x, z, c]) => fr.add(bola(.2, c, x, .18, z, 7))); }
+      else for (let i = 0; i < 3; i++) { const t = cil(.14, .14, 1.1, 0x8b5a2b, -.4 + i * .4, .16, 1.2, 8); t.rotation.z = Math.PI / 2; fr.add(t); }
+      frutosArv[o.id] = fr; return g; }
+    if (o.tipo === 'amoreira' || o.tipo === 'framboeseira') { // arbusto com frutinhas
+      const g = new THREE.Group(), cor = o.tipo === 'amoreira' ? 0x3a1e5e : 0xd8204a;
+      [[0, 0, .55], [-.3, .2, .42], [.3, -.1, .45], [.1, .35, .38]].forEach(([x, z, r]) => g.add(blob(r, 0x3f8a34, x, .45 + r * .3, z)));
+      const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
+      for (let i = 0; i < 12; i++) { const a = i * 2.4; fr.add(bola(.07, cor, Math.cos(a) * .5, .35 + (i % 4) * .14, Math.sin(a) * .5, 6)); }
+      frutosArv[o.id] = fr; return g; }
+    if (o.tipo === 'cogumelos') { // tronquinho com cogumelos vermelhos de bolinha
+      const g = new THREE.Group(); const t = cil(.22, .26, 1.0, 0x6b4a2b, 0, .22, 0, 9); t.rotation.z = Math.PI / 2; g.add(t);
+      const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
+      [[-.35, .25, .9], [.05, .3, 1.1], [.4, .2, .8], [-.1, -.3, .7]].forEach(([x, z, sc]) => { fr.add(cil(.05 * sc, .06 * sc, .3 * sc, 0xf4ecd8, x, .15 * sc, z, 6));
+        const ch = mesh(new THREE.SphereGeometry(.18 * sc, 10, 6, 0, Math.PI * 2, 0, Math.PI / 2), 0, x, .28 * sc, z, true, liso(0xe2352a)); fr.add(ch);
+        fr.add(bola(.03 * sc, 0xffffff, x + .07 * sc, .4 * sc, z + .06 * sc, 4)); });
       frutosArv[o.id] = fr; return g; }
     if (o.tipo === 'acaizeiro') { // palmeira fininha com cachos roxos
       const g = palmeira(1.15); g.rotation.y = 0; g.scale.x = g.scale.z = .8; const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
@@ -1329,13 +1405,14 @@
   // tamanho: altura (a) ou largura (l) desejada, em unidades do mundo
   const MODELOS = {
     moinho:{f:'hex/building_windmill_red', l:3.9}, mercado:{f:'hex/building_market_red', l:6.1}, poco:{f:'hex/building_well_red', l:1.95},
-    moinhoAgua:{f:'hex/building_watermill_red', l:3.7}, serraria:{f:'hex/building_lumbermill_red', l:3.9}, casaPadaria:{f:'hex/building_home_A_red', l:3.6}, casaSucos:{f:'hex/building_home_B_yellow', l:3.6}, chocoFab:{f:'hex/building_tavern_yellow', l:3.9}, tapiocaFab:{f:'hex/building_home_A_green', l:3.6}, quiosqueFab:{f:'hex/building_home_B_blue', l:3.6}, acaiFab:{f:'hex/building_tavern_blue', l:3.9}, perfumeFab:{f:'hex/building_tower_A_blue', l:2.6}, tavernaFab:{f:'hex/building_tavern_red', l:3.9},
+    moinhoAgua:{f:'hex/building_watermill_red', l:3.7}, serraria:{f:'hex/building_lumbermill_red', l:3.9}, casaPadaria:{f:'hex/building_home_A_red', l:3.6}, casaSucos:{f:'hex/building_home_B_yellow', l:3.6}, chocoFab:{f:'hex/building_tavern_yellow', l:3.9}, tapiocaFab:{f:'hex/building_home_A_green', l:3.6}, quiosqueFab:{f:'hex/building_home_B_blue', l:3.6}, acaiFab:{f:'hex/building_tavern_blue', l:3.9}, perfumeFab:{f:'hex/building_tower_A_blue', l:2.6}, ferrariaFab:{f:'hex/building_blacksmith_red', l:3.7}, carpintariaFab:{f:'hex/building_lumbermill_blue', l:3.9}, cozinhaRealFab:{f:'hex/building_tavern_green', l:3.9}, joalheriaFab:{f:'quat/TowerHouse_SecondAge', l:3.4}, tavernaFab:{f:'hex/building_tavern_red', l:3.9},
     mercadoAzul:{f:'hex/building_market_blue', l:3.9}, mercadoVerde:{f:'hex/building_market_green', l:3.9}, mercadoAmarelo:{f:'hex/building_market_yellow', l:3.9}, mercadoVermelho:{f:'hex/building_market_red', l:3.9},
     casaA:{f:'hex/building_home_A_red', l:3.9},
     // 🏰 pack medieval (Quaternius, CC0)
     qFeira:{f:'quat/Market_FirstAge_Level1', l:3.9}, qCasa:{f:'quat/Houses_SecondAge_1_Level1', l:3.7}, qPraca:{f:'quat/TownCenter_SecondAge_Level1', l:6.1},
     qTorre:{f:'quat/WatchTower_SecondAge_Level1', l:1.9}, qMuralha:{f:'quat/WallTowers_SecondAge', l:6.3}, qMoinho:{f:'quat/Windmill_SecondAge', l:3.6},
-    qTemplo:{f:'quat/Temple_SecondAge_Level2', l:5.6}, qCastelo:{f:'quat/Temple_SecondAge_Level3', l:6.2}, qPorto:{f:'quat/Port_SecondAge_Level1', l:9}, casaB:{f:'hex/building_home_B_red', l:3.9}, taverna:{f:'hex/building_tavern_red', l:6},
+    qTemplo:{f:'quat/Temple_SecondAge_Level2', l:5.6}, qCastelo:{f:'quat/Temple_SecondAge_Level3', l:6.2}, qPorto:{f:'quat/Port_SecondAge_Level1', l:9}, qMina:{f:'quat/Mine', l:3.6}, qPinho1:{f:'quat/Resource_PineTree', a:3.6}, qPinho2:{f:'quat/Resource_Tree1', a:3.2}, qPinho3:{f:'quat/Resource_PineTree', a:4.4}, qBosque:{f:'quat/Resource_Tree_Group', l:3.8},
+    qCast1:{f:'quat/Wonder_SecondAge_Level1', l:7}, qCast2:{f:'quat/Wonder_SecondAge_Level2', l:7.6}, qCast3:{f:'quat/Wonder_SecondAge_Level3', l:7.6}, casaB:{f:'hex/building_home_B_red', l:3.9}, taverna:{f:'hex/building_tavern_red', l:6},
     cerca:{f:'hex/fence_wood_straight', l:2.15}, porteira:{f:'hex/fence_wood_straight_gate', l:2.15},
     barril:{f:'hex/barrel', a:.8}, caixaG:{f:'hex/crate_A_big', l:.8}, caixaP:{f:'hex/crate_A_small', l:.55}, caixaAberta:{f:'hex/crate_open', l:.8},
     saco:{f:'hex/sack', a:.5}, carrinhoMao:{f:'hex/wheelbarrow', l:1.5}, baldeAgua:{f:'hex/bucket_water', a:.42}, lenha:{f:'hex/resource_lumber', l:1},
@@ -1385,7 +1462,7 @@
   let natureza = [], natAssinatura = '';
   const NAT_PESOS = [['capim1', 4], ['capim2', 4], ['arbusto1', 2], ['arbusto2', 2], ['arbusto3', 2], ['arbusto4', 1.5], ['pedra1', 1], ['pedra2', 1.2], ['pedra3', .8]];
   const NAT_ARV = ['arv1', 'arv1b', 'arv2', 'arv2c', 'arv3', 'arv4'];
-  const NAT_SOMBRA = {palma:1, arbusto1:1, arbusto2:1, arbusto3:1, arbusto4:1, pedra1:1, pedra2:1, pedra3:1, arv1:1, arv1b:1, arv2:1, arv2c:1, arv3:1, arv4:1};
+  const NAT_SOMBRA = {qPinho1:1, qPinho2:1, qPinho3:1, palma:1, arbusto1:1, arbusto2:1, arbusto3:1, arbusto4:1, pedra1:1, pedra2:1, pedra3:1, arv1:1, arv1b:1, arv2:1, arv2c:1, arv3:1, arv4:1};
   let posBordaArv = []; // lugares das árvores da borda da ilha (guardados ao montar a ilha)
   function cachePalma() { // palmeira pronta para desenhar muitas de uma vez (InstancedMesh), como as árvores do KayKit
     if (glb.cache.palma) return; const pm = palmeira(1.15); pm.rotation.y = 0; mesclar(pm); pm.updateMatrixWorld(true); const partes = [];
@@ -1401,7 +1478,7 @@
         for (const [cx, cz] of z.cel) {
           if (ocup.has(cx + ',' + cz)) continue;
           Math.random = sorteio((cx + 99) * 7919 + (cz + 99) * 104729);
-          if (!livre && Math.random() < .3) { const k = TROP ? 'palma' : NAT_ARV[Math.random() * NAT_ARV.length | 0]; (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * .8, cz * G + (Math.random() - .5) * .8, Math.random() * 6.28, .85 + Math.random() * .35]); continue; } // terra bloqueada: mata
+          if (!livre && Math.random() < .3) { const k = TROP ? 'palma' : MED ? 'qPinho' + (1 + (Math.random() * 3 | 0)) : NAT_ARV[Math.random() * NAT_ARV.length | 0]; (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * .8, cz * G + (Math.random() - .5) * .8, Math.random() * 6.28, .85 + Math.random() * .35]); continue; } // terra bloqueada: mata
           const n = Math.random() < (livre ? .1 : .32) ? 1 + (Math.random() < .35 ? 1 : 0) : 0;
           for (let i = 0; i < n; i++) {
             let r = Math.random() * total, k = NAT_PESOS[0][0]; for (const [kk, w] of NAT_PESOS) { if ((r -= w) <= 0) { k = kk; break; } }
@@ -1410,7 +1487,7 @@
           }
         }
       }
-      posBordaArv.forEach(([x, z, i]) => { const k = TROP ? 'palma' : NAT_ARV[i % NAT_ARV.length]; (lista[k] = lista[k] || []).push([x, z, i * 1.7, .9 + (i % 5) * .08]); }); // árvores da borda
+      posBordaArv.forEach(([x, z, i]) => { const k = TROP ? 'palma' : MED ? 'qPinho' + (1 + i % 3) : NAT_ARV[i % NAT_ARV.length]; (lista[k] = lista[k] || []).push([x, z, i * 1.7, .9 + (i % 5) * .08]); }); // árvores da borda
     } finally { Math.random = mr; }
     if (bordaArv) bordaArv.visible = false; // as árvores antigas da borda dão lugar às do KayKit
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), eixo = V3(0, 1, 0);
@@ -1446,6 +1523,11 @@
       for (let i = 0; i < 7; i++) { const c = mesh(new THREE.CylinderGeometry(.02, .1, .8, 5), 0, 0, 1.05, 0, true, ouro); c.rotation.z = (i - 3) * .32; c.translateY(.25); g.add(c); }
       const base = mesh(new THREE.SphereGeometry(.42, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), 0, 0, .7, 0, true, ouro); base.scale.set(1, .9, .45); g.add(base);
       g.add(bola(.08, 0xffffff, 0, .95, .22, 10)); return g; }
+    if (t === 'arvoreEncantada') { // prêmio do álbum completo: árvore brilhante com vaga-lumes
+      g.add(cil(.22, .32, 1.8, 0x6b4a8a, 0, .9, 0, 8));
+      [[0, 2.3, 0, 1.1], [-.6, 1.9, .3, .75], [.6, 2.0, -.2, .8], [.1, 2.8, .2, .7]].forEach(([x, y, z, r]) => { const b = bola(r, 0xb07ae0, x, y, z, 12); b.material = new THREE.MeshStandardMaterial({color:C(0xc49af0), emissive:C(0x7a3ad0), emissiveIntensity:.45, roughness:.6}); g.add(b); });
+      for (let i = 0; i < 9; i++) { const v = bola(.07, 0xfff3a0, Math.cos(i * .7) * 1.2, 1.4 + (i % 3) * .5, Math.sin(i * .7) * 1.2, 6); v.material = new THREE.MeshStandardMaterial({color:C(0xfff3a0), emissive:C(0xffd23a), emissiveIntensity:1}); g.add(v); }
+      return g; }
     if (t === 'flamingo') { // flamingo rosa de jardim
       g.add(cil(.015, .015, .7, 0x333333, 0, .35, 0, 4)); const cp = bola(.2, 0xff7eb6, 0, .82, 0, 10); cp.scale.set(.8, .75, 1.3); g.add(cp);
       const pe = cil(.035, .04, .45, 0xff7eb6, 0, 1.08, .18, 6); pe.rotation.x = -.35; g.add(pe); g.add(bola(.09, 0xff7eb6, 0, 1.32, .26, 8));
@@ -1499,6 +1581,7 @@
   function formaQuadrada(h, r) {
     const f = new THREE.Shape();
     if (TROP) { f.absarc(0, 0, h, 0, Math.PI * 2, false); return f; } // 🏝️ ilha redonda
+    if (MED) { for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; i ? f.lineTo(Math.cos(a) * h, Math.sin(a) * h) : f.moveTo(h, 0); } f.closePath(); return f; } // 🏰 hexágono
     f.moveTo(-h + r, -h); f.lineTo(h - r, -h); f.quadraticCurveTo(h, -h, h, -h + r); f.lineTo(h, h - r); f.quadraticCurveTo(h, h, h - r, h);
     f.lineTo(-h + r, h); f.quadraticCurveTo(-h, h, -h, h - r); f.lineTo(-h, -h + r); f.quadraticCurveTo(-h, -h, -h + r, -h);
     return f;
@@ -1517,8 +1600,8 @@
   let porto3D = null, barco3D = null;
   function montarPorto() {
     if (porto3D) { scene.remove(porto3D); porto3D = null; barco3D = null; }
-    if (VISITA || !(TROP || S.porto)) return;
-    const g = new THREE.Group(), z0 = MEIA - .6, madeira = 0xb98552, escura = 0x7a5233, med = !TROP && THREE.GLTFLoader;
+    if (VISITA || !(TROP || MED || S.porto)) return;
+    const g = new THREE.Group(), z0 = (MED ? MEIA * Math.cos(Math.PI / 6) : MEIA) - .6, madeira = 0xb98552, escura = 0x7a5233, med = !TROP && THREE.GLTFLoader;
     if (med) g.add(modeloGLB('qPorto', .6, z0 + 3.4, 0, 1)); // 🏰 porto medieval na ilha principal
     if (!med) for (let i = 0; i < 9; i++) g.add(mesh(new THREE.BoxGeometry(2.6, .14, .62), 0, 0, -.12, z0 + i * .66, true, liso(i % 2 ? madeira : 0xc6935e))); // tábuas do píer
     if (!med) { [-1.2, 1.2].forEach(x => { for (let i = 0; i < 4; i++) g.add(cil(.12, .14, 2, escura, x, -1.05, z0 + .3 + i * 1.7, 7)); });
@@ -1537,7 +1620,7 @@
     b.add(mesh(new THREE.BoxGeometry(1.7, .14, 3.7), 0, 0, .62, 0, true, liso(0xf4f0e4)).translateY(-.02).translateY(0));
     b.add(cil(.06, .07, 2.6, escura, 0, 1.9, .2, 6));
     const vela = mesh(new THREE.PlaneGeometry(1.5, 1.7), 0, 0, 2.1, .25, true, new THREE.MeshStandardMaterial({color:C(0xfff8e8), side:THREE.DoubleSide, roughness:.9})); vela.rotation.y = Math.PI / 2; b.add(vela);
-    const band = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('🏝️'), depthTest:true})); band.position.set(0, 3.35, .2); band.scale.setScalar(.55); b.add(band);
+    const band = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('⛵'), depthTest:true})); band.position.set(0, 3.35, .2); band.scale.setScalar(.55); b.add(band);
     [[-.3, .5], [.35, -.4]].forEach(([x, z]) => b.add(mesh(new THREE.BoxGeometry(.5, .45, .5), 0, x, .9, z, true, liso(0xa8743f))));
     g.add(b); barco3D = b;
     const pick = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3, 9.5), new THREE.MeshBasicMaterial({visible:false})); pick.position.set(1, 0, z0 + 3.5); g.add(pick); g.userData.pick = pick;
@@ -1549,24 +1632,25 @@
   function montarIlha() {
     const antes = new Set(scene.children);
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
-    aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(TROP ? 0x2cc8d2 : 0x56b4e6), roughness:.3, metalness:.05})); // mar azul-turquesa na ilha tropical
+    aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(TROP ? 0x2cc8d2 : MED ? 0x3d86d0 : 0x56b4e6), roughness:.3, metalness:.05})); // mar azul-turquesa na ilha tropical
     aguaMar.position.y = -1.55; scene.add(aguaMar);
     const areia = new THREE.ExtrudeGeometry(formaQuadrada(MEIA + 2.4, 6), {depth:1.6, bevelEnabled:true, bevelThickness:.4, bevelSize:.9, bevelSegments:2, curveSegments:10});
     areia.rotateX(-Math.PI / 2);
-    const ma = new THREE.Mesh(areia, liso(TROP ? 0xfff0cc : 0xeedba0)); ma.position.y = -2.15; ma.receiveShadow = true; scene.add(ma);
+    const ma = new THREE.Mesh(areia, liso(TROP ? 0xfff0cc : MED ? 0xcfc4a8 : 0xeedba0)); ma.position.y = -2.15; ma.receiveShadow = true; scene.add(ma);
     const terra = new THREE.ExtrudeGeometry(formaQuadrada(MEIA, 4), {depth:1, bevelEnabled:true, bevelThickness:.2, bevelSize:.25, bevelSegments:2, curveSegments:10});
     terra.rotateX(-Math.PI / 2);
-    const mt = new THREE.Mesh(terra, liso(TROP ? 0x8fcc45 : 0x6cb84c)); mt.position.y = -1.2; mt.receiveShadow = true; scene.add(mt);
+    const mt = new THREE.Mesh(terra, liso(TROP ? 0x8fcc45 : MED ? 0x5f9a42 : 0x6cb84c)); mt.position.y = -1.2; mt.receiveShadow = true; scene.add(mt);
     // grama com tons variados
     const geo = new THREE.PlaneGeometry(2 * MEIA, 2 * MEIA, 70, 70); geo.rotateX(-Math.PI / 2);
     const cores = [], c = new THREE.Color(), pos = geo.attributes.position, R = 4, K = MEIA - R;
     for (let i = 0; i < pos.count; i++) {
       let x = pos.getX(i), z = pos.getZ(i);
       if (TROP) { const d = Math.hypot(x, z); if (d > MEIA) { x *= MEIA / d; z *= MEIA / d; pos.setX(i, x); pos.setZ(i, z); } }
+      else if (MED) { const apw = MEIA * Math.cos(Math.PI / 6), hh = Math.max(...NORM_HEX.map(t => Math.abs(x * Math.cos(t) + z * Math.sin(t)))); if (hh > apw) { x *= apw / hh; z *= apw / hh; pos.setX(i, x); pos.setZ(i, z); } }
       else if (Math.abs(x) > K && Math.abs(z) > K) { const cx = Math.sign(x) * K, cz = Math.sign(z) * K, dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz); if (d > R) { x = cx + dx / d * R; z = cz + dz / d * R; pos.setX(i, x); pos.setZ(i, z); } }
       const n = Math.sin(x * .23) * Math.cos(z * .19) + Math.sin((x + z) * .11) * .7 + Math.sin(x * .7 + z * .5) * .15;
       const m = Math.sin(x * .05 + 1.3) * Math.cos(z * .06 - .4); // manchas grandes: grama mais clara e mais escura
-      c.setHSL((TROP ? .19 : .265) + n * .018 - m * .015, (TROP ? .72 : .62) + n * .05, (TROP ? .44 : .40) + n * .05 + m * .045).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
+      c.setHSL((TROP ? .19 : MED ? .29 : .265) + n * .018 - m * .015, (TROP ? .72 : MED ? .48 : .62) + n * .05, (TROP ? .44 : MED ? .37 : .40) + n * .05 + m * .045).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
     const tg = document.createElement('canvas'); tg.width = tg.height = 256; const gg = tg.getContext('2d');
@@ -1579,7 +1663,7 @@
     const tufos = new THREE.InstancedMesh(tufoGeo, new THREE.MeshStandardMaterial({roughness:.8, envMapIntensity:.25}), 1300);
     const flores = new THREE.InstancedMesh(new THREE.SphereGeometry(.12, 6, 5), new THREE.MeshStandardMaterial({roughness:.8}), 420);
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), coresF = [0xff3f7f, 0xffc21a, 0xb06bff, 0xff7a2f, 0xff5fb0];
-    const pontoIlha = () => { do p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1)); while (TROP && (Math.hypot(p.x, p.z) > MEIA - 1 || Math.hypot(p.x, p.z) < (R_LAGOA + 1) * G)); return p; };
+    const pontoIlha = () => { do p.set(rnd(-MEIA + 1, MEIA - 1), 0, rnd(-MEIA + 1, MEIA - 1)); while ((TROP && (Math.hypot(p.x, p.z) > MEIA - 1 || Math.hypot(p.x, p.z) < (R_LAGOA + 1) * G)) || (MED && (!dentroHex(p.x, p.z, MEIA * .866 - 1) || Math.hypot(p.x, p.z) < (R_CASTELO + .6) * G))); return p; };
     for (let i = 0; i < 1300; i++) { pontoIlha(); q.setFromAxisAngle(V3(Math.random() - .5, 0, Math.random() - .5).normalize(), rnd(-.3, .3)); sc.setScalar(rnd(.7, 1.5)); tufos.setMatrixAt(i, m4.compose(p, q, sc)); tufos.setColorAt(i, c.setHSL(rnd(.24, .3), rnd(.5, .7), rnd(.3, .45)).convertSRGBToLinear()); }
     { let cx = 0, cz = 0, cor = 0; for (let i = 0; i < 420; i++) { if (i % 14 === 0) { pontoIlha(); cx = p.x; cz = p.z; cor = coresF[Math.random() * 5 | 0]; } p.set(cx + rnd(-1.1, 1.1), .12, cz + rnd(-1.1, 1.1)); sc.setScalar(rnd(.8, 1.3)); q.identity(); flores.setMatrixAt(i, m4.compose(p, q, sc)); flores.setColorAt(i, c.setHex(Math.random() < .8 ? cor : 0xffffff).convertSRGBToLinear()); } } // flores em canteirinhos
     tufos.receiveShadow = true; scene.add(tufos); // v0.48: as bolinhas coloridas (flores) saíram: caíam dentro dos cercados e pesavam
@@ -1587,7 +1671,7 @@
     { const cv = document.createElement('canvas'); cv.width = cv.height = 256; const g2 = cv.getContext('2d');
       for (let i = 0; i < 9; i++) { const x = rnd(20, 236), y = rnd(20, 236), r = rnd(30, 60), gr = g2.createRadialGradient(x, y, 4, x, y, r); gr.addColorStop(0, 'rgba(0,20,0,.55)'); gr.addColorStop(1, 'rgba(0,20,0,0)'); g2.fillStyle = gr; g2.fillRect(0, 0, 256, 256); }
       const tx = new THREE.CanvasTexture(cv); tx.wrapS = tx.wrapT = THREE.RepeatWrapping; tx.repeat.set(2, 2);
-      sombraNuvens = new THREE.Mesh((TROP ? new THREE.CircleGeometry(MEIA, 48) : new THREE.PlaneGeometry(2 * MEIA, 2 * MEIA)).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({map:tx, transparent:true, opacity:.22, depthWrite:false}));
+      sombraNuvens = new THREE.Mesh((TROP ? new THREE.CircleGeometry(MEIA, 48) : MED ? new THREE.ShapeGeometry(formaQuadrada(MEIA)).rotateX(Math.PI / 2).rotateX(-Math.PI / 2) : new THREE.PlaneGeometry(2 * MEIA, 2 * MEIA)).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({map:tx, transparent:true, opacity:.22, depthWrite:false}));
       sombraNuvens.position.y = .06; sombraNuvens.renderOrder = 1; scene.add(sombraNuvens); }
     // borboletas
     for (let i = 0; i < 7; i++) {
@@ -1603,6 +1687,8 @@
       const lado = i % 4, t = rnd(-MEIA + 2, MEIA - 2), o = MEIA - rnd(.3, .9), ang = i / 64 * Math.PI * 2 + rnd(-.03, .03);
       let x = lado === 0 ? t : lado === 1 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
       if (TROP) { if (Math.abs(ang - Math.PI / 2) < .12) continue; x = Math.cos(ang) * o; z = Math.sin(ang) * o; } // na redonda: em volta do círculo (com um vão no porto)
+      if (MED) { const k = i / 64 * 6, v = Math.floor(k), fr = k - v, a1 = v * Math.PI / 3, a2 = (v + 1) * Math.PI / 3, rr = o * .985; // em volta do hexágono
+        x = (Math.cos(a1) * (1 - fr) + Math.cos(a2) * fr) * rr; z = (Math.sin(a1) * (1 - fr) + Math.sin(a2) * fr) * rr; if (v === 1 && Math.abs(fr - .5) < .12) continue; }
       const a = Math.random() < .35 ? pinheiro(rnd(.85, 1.2)) : Math.random() < .25 ? arbusto(rnd(1, 1.3)) : arvore(rnd(.8, 1.1), Math.random() < .2 ? 0xe83b2c : null);
       a.position.set(x, 0, z); bordaArv.add(a); posBordaArv.push([x, z, i]);
     }
@@ -1611,6 +1697,7 @@
       const lado = i % 4, t = rnd(-MEIA, MEIA), o = MEIA + rnd(1.2, 2.2), ang = i / 14 * Math.PI * 2 + .2;
       let x = lado < 2 ? t : lado === 2 ? -o : o, z = lado === 0 ? -o : lado === 1 ? o : t;
       if (TROP) { x = Math.cos(ang) * o; z = Math.sin(ang) * o; }
+      if (MED) { const pd = pedra(rnd(1.2, 2)); pd.position.set(Math.cos(ang) * o, -.3, Math.sin(ang) * o); borda.add(pd); continue; } // pedras na praia de cascalho
       const pm = palmeira(rnd(.9, 1.2)); pm.position.set(x, -.2, z); borda.add(pm);
     }
     scene.add(borda); mesclar(borda); congelar(borda);
@@ -1629,10 +1716,151 @@
       const tras = new THREE.Mesh(new THREE.BoxGeometry(3.3, 1.1, .08), liso(0x6b3d17)); tras.position.set(0, 1.55, -.06); placa.add(tras);
       [-1.25, 1.25].forEach(x => placa.add(cil(.09, .11, 2.1, 0x6b3d17, x, 1.05, -.06, 7)));
       [-1.6, 1.6].forEach(x => { const f = arbusto(.55); f.position.set(x, 0, .15); placa.add(f); });
-      if (TROP) placa.position.set(MEIA * .7, -.05, MEIA * .7); else placa.position.set(MEIA - .3, -.05, MEIA - .3); placa.rotation.y = Math.PI / 4; placa.scale.setScalar(1.5); scene.add(placa);
+      if (TROP) placa.position.set(MEIA * .7, -.05, MEIA * .7); else if (MED) placa.position.set(MEIA * .62, -.05, MEIA * .36); else placa.position.set(MEIA - .3, -.05, MEIA - .3); placa.rotation.y = Math.PI / 4; placa.scale.setScalar(1.5); scene.add(placa);
       if (document.fonts) document.fonts.ready.then(() => { desenhar(); tx.needsUpdate = true; }); }
     if (TROP) montarCenarioTropical();
+    if (MED) setTimeout(montarCastelo, 0); // depois do S carregado
     ilhaObjs = scene.children.filter(o => !antes.has(o));
+  }
+  // 💡 ajudante: quando o jogador fica parado, mostra uma coisa útil que dá para fazer agora (com a mãozinha apontando)
+  let ultimoToque = Date.now(), ultimaDica = Date.now(), tipoDicaAnt = '';
+  window.addEventListener('pointerdown', () => { ultimoToque = Date.now(); const d = $('#dicaAjuda'); if (d) d.classList.remove('on'); }, true);
+  const prontoFab = r => r.nivel <= S.nivel && Object.entries(r.ing).every(([k, q]) => estoque(k) >= q);
+  function acharDicas() {
+    const L = [], lojaEl = (sub, tipo) => () => janela === 'loja' ? (subLoja === sub ? $(`[data-construir=${tipo}]`) : $(`[data-sub=${sub}]`)) : janela ? null : $('.cantos [data-abrir=loja]');
+    if (S.nivel >= NIVEL_PASSE && passePode()) L.push({k:'passe', txt:'🎁 Tem <b>presente</b> esperando no Passe!', el:() => janela === 'passe' ? null : $('#btnPasse')});
+    S.objetos.forEach(o => { const T = TIPOS[o.tipo]; if (!T.fab || o.tipo === 'moinho' || o.pend) return; const f = fabEstado(o.tipo); if (f.fila.length) return;
+      const r = (FABRICAS[o.tipo].receitas || []).find(prontoFab); if (r) L.push({k:'fab' + o.tipo, txt:`🏭 A <b>${T.nome}</b> está parada. Toque nela e faça <b>${r.nome}</b>!`, p3:() => centro(o).add(V3(0, 3.2, 0)), el:() => janela ? null : undefined}); });
+    for (const k in ANIMAIS) { const a = ANIMAIS[k]; if (!nTipo(a.cercado) || qtdAnimal(k) >= maxAnimal(k) || S.moedas < custoAnimal(k) * 1.5 || S.nivel < a.nivel) continue;
+      L.push({k:'ani' + k, txt:`${a.emoji} Cabe mais <b>${a.nome.toLowerCase()}</b> no ${TIPOS[a.cercado].nome.toLowerCase()}! Compre em Animais e produza mais.`, el:() => janela === 'animais' ? $(`[data-animal=${k}]`) : janela ? null : $('.cantos [data-abrir=animais]')}); }
+    const nova = CONSTRUCOES.find(c => c.tipo !== 'lote' && podeAqui(c) && nPosse(c.tipo) === 0 && S.nivel >= nivelConstrucao(c.tipo) && S.moedas >= custoConstrucao(c.tipo));
+    if (nova) { const sub = subDe(nova.tipo); L.push({k:'nova' + nova.tipo, txt:`🏗️ Você já pode ter: <b>${TIPOS[nova.tipo].nome}</b>! Veja em Loja › ${SUBLOJA[sub]}.`, el:lojaEl(sub, nova.tipo)}); }
+    const mais = CONSTRUCOES.find(c => TIPOS[c.tipo].fruta && podeAqui(c) && nPosse(c.tipo) > 0 && !noMaximo(c.tipo) && nPosse(c.tipo) < maxPermitido(c.tipo) && S.nivel >= nivelConstrucao(c.tipo) && S.moedas >= custoConstrucao(c.tipo) * 2);
+    if (mais) L.push({k:'mais' + mais.tipo, txt:`${mais.icone} Que tal mais um(a) <b>${TIPOS[mais.tipo].nome.toLowerCase()}</b>? Produz sozinho para sempre!`, el:lojaEl('fazenda', mais.tipo)});
+    if (ZONAS.some(z => !S.zonas.includes(z.key)) && S.nivel >= nivelZona() && S.moedas >= custoZona()) L.push({k:'terra', txt:'🌳 Dá para liberar <b>mais terra</b>! Toque na placa 🔒.', fn:guiarTerra});
+    const pr = S.plots.findIndex(pronto); if (pr >= 0) L.push({k:'colher', txt:'🌾 Tem planta <b>pronta</b>! Toque nela para colher.', p3:() => posTile(pr).add(V3(0, 1.2, 0)), el:() => janela ? null : undefined});
+    const vz = S.plots.findIndex(p => !p.c); if (vz >= 0 && !MED) L.push({k:'plantar', txt:'🌱 Tem <b>canteiro vazio</b>. Toque nele e plante algo!', p3:() => posTile(vz).add(V3(0, 1, 0)), el:() => janela ? null : undefined});
+    if (MED && estCacada().redes) L.push({k:'cacada', txt:'🦋 Suas redinhas estão prontas: que tal uma <b>Caçada mágica</b>?', el:() => janela ? null : $('#btnCacada')});
+    return L;
+  }
+  function mostrarDica(forcar) {
+    const L = acharDicas(); if (!L.length) { if (forcar) toast('💡 Tudo em dia por aqui! Siga as Missões para crescer.'); return; }
+    const d = L.find(x => x.k !== tipoDicaAnt) || L[0]; tipoDicaAnt = d.k; ultimaDica = Date.now();
+    let el = $('#dicaAjuda'); if (!el) { el = document.createElement('div'); el.id = 'dicaAjuda'; document.body.appendChild(el); }
+    el.innerHTML = `<span class="da-ic">💡</span><span>${d.txt}</span>`; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 9000);
+    if (d.fn) d.fn(); else apontar_(d.el, d.p3, 9000);
+  }
+  function tickDica() {
+    if (VISITA || S.dicas === false || S.tut !== -1 || janela || tutAtual() || editar.ativo || seletorAberto || $('#jogoCacada')) return;
+    const ag = Date.now(); if (ag - ultimoToque > 22000 && ag - ultimaDica > 45000 && ag - ultimoToque < 15 * 60000) mostrarDica();
+  }
+  // 🦋 Caçada mágica (Ilha Medieval): pegar criaturinhas com a redinha, guardar no álbum e soltar de volta. Ninguém se machuca!
+  const CRIATURAS = [
+    {id:'borboleta', nome:'Borboleta azul',   emoji:'🦋', peso:30, vel:1,   pts:20},
+    {id:'joaninha',  nome:'Joaninha dourada', emoji:'🐞', peso:25, vel:.8,  pts:20},
+    {id:'vagalume',  nome:'Vaga-lume',        emoji:'✨', peso:20, vel:1.3, pts:30},
+    {id:'sapinho',   nome:'Sapinho-príncipe', emoji:'🐸', peso:12, vel:1,   pts:50, coroa:true},
+    {id:'coruja',    nome:'Coruja sábia',     emoji:'🦉', peso:8,  vel:1.2, pts:70},
+    {id:'fadinha',   nome:'Fadinha da floresta', emoji:'🧚', peso:6, vel:1.5, pts:100},
+    {id:'unicornio', nome:'Unicórnio bebê',   emoji:'🦄', peso:3,  vel:1.6, pts:150},
+    {id:'dragaozinho', nome:'Dragãozinho',    emoji:'🐲', peso:1.5, vel:1.8, pts:250},
+  ];
+  const REDES_MAX = 3, REDE_RECARGA = 2 * 3600 * 1000, CACADA_SEG = 30;
+  function estCacada() { const c = S.cacada = S.cacada || {redes:REDES_MAX, t:Date.now(), album:{}, premio:{}};
+    while (c.redes < REDES_MAX && Date.now() - c.t >= REDE_RECARGA) { c.redes++; c.t += REDE_RECARGA; } if (c.redes >= REDES_MAX) c.t = Date.now(); return c; }
+  function htmlCacada() {
+    const c = estCacada(), falta = c.redes < REDES_MAX ? REDE_RECARGA - (Date.now() - c.t) : 0, n = CRIATURAS.filter(k => c.album[k.id]).length;
+    return `<div class="porto-viagem"><div class="pv-ic">🦋</div><div class="pv-txt"><b>Caçada mágica</b><small>Pegue as criaturinhas da floresta com a redinha antes que elas se escondam! Depois elas voltam felizes para a floresta 💚</small></div></div>
+      <div class="cac-redes">${'🥅'.repeat(c.redes)}${'<i>🥅</i>'.repeat(REDES_MAX - c.redes)} <span>${c.redes}/${REDES_MAX} redinhas${falta ? ` · próxima em ${fmtT(falta / 1000)}` : ''}</span></div>
+      <div class="barco-premio"><button class="btn verde" data-acao="cacada-ir" ${c.redes ? '' : 'disabled'}>🦋 Começar (30 s)</button> <button class="btn" data-abrir="album">📖 Álbum ${n}/${CRIATURAS.length}</button></div>`;
+  }
+  function htmlAlbum() {
+    const c = estCacada(), n = CRIATURAS.filter(k => c.album[k.id]).length;
+    return `<p class="dica">Pegue cada criatura pelo menos uma vez. Cada nova vale <b>⭐ 500 XP</b>, e o álbum completo dá um prêmio especial: a <b>🌳 Árvore encantada</b>!</p>
+      <div class="album">${CRIATURAS.map(k => c.album[k.id] ? `<div class="alb ok"><span class="alb-e">${k.emoji}${k.coroa ? '<i>👑</i>' : ''}</span><b>${k.nome}</b><small>pegou ${fmtN(c.album[k.id])}×</small></div>`
+        : `<div class="alb"><span class="alb-e">❔</span><b>???</b><small>${k.peso <= 3 ? 'raríssima' : k.peso <= 8 ? 'rara' : 'comum'}</small></div>`).join('')}</div>
+      <p class="dica">${n}/${CRIATURAS.length} criaturas${c.completo ? ' · 🏆 álbum completo!' : ''}</p>`;
+  }
+  function comecarCacada() {
+    const c = estCacada(); if (!c.redes) return; c.redes--; if (c.redes === REDES_MAX - 1) c.t = Date.now(); fechar(); salvar();
+    const ov = document.createElement('div'); ov.id = 'jogoCacada';
+    ov.innerHTML = `<div class="cac-topo"><b>🦋 Caçada mágica</b><div class="cac-tempo"><i></i></div><span class="cac-n">0</span></div><div class="cac-area"></div><div class="cac-dica">Toque nas criaturinhas!</div>`;
+    document.body.appendChild(ov); const area = ov.querySelector('.cac-area'), barra = ov.querySelector('.cac-tempo i'), cont = ov.querySelector('.cac-n');
+    for (let i = 0; i < 14; i++) { const d = document.createElement('span'); d.className = 'cac-arv'; d.textContent = ['🌲', '🌳', '🌿', '🍄', '🌸'][i % 5]; d.style.left = (i * 7.3 + rnd(-2, 2)) + '%'; d.style.top = rnd(10, 85) + '%'; d.style.fontSize = rnd(30, 56) + 'px'; area.appendChild(d); }
+    const pegos = [], vivos = [], ini = performance.now(), tot = CRIATURAS.reduce((a, k) => a + k.peso, 0); let prox = ini + 400, fim = false;
+    const nova = () => { let r = Math.random() * tot, k = CRIATURAS[0]; for (const x of CRIATURAS) { if ((r -= x.peso) <= 0) { k = x; break; } }
+      const el = document.createElement('button'); el.className = 'cac-bicho'; el.innerHTML = k.emoji + (k.coroa ? '<i>👑</i>' : '');
+      const W = area.clientWidth, H = area.clientHeight, b = {el, k, x:rnd(.1, .9) * W, y:rnd(.15, .85) * H, vx:rnd(-1, 1), vy:rnd(-.6, .6), nasc:performance.now(), vida:rnd(2200, 3400) / k.vel, fase:rnd(0, 6)};
+      el.addEventListener('pointerdown', ev => { ev.stopPropagation(); if (b.pego || fim) return; b.pego = true; pegos.push(k); cont.textContent = pegos.length; somT('achou');
+        el.classList.add('pego'); const rd = document.createElement('span'); rd.className = 'cac-rede'; rd.textContent = '✨'; rd.style.left = b.x + 'px'; rd.style.top = b.y + 'px'; area.appendChild(rd); setTimeout(() => rd.remove(), 700); setTimeout(() => el.remove(), 350); });
+      area.appendChild(el); vivos.push(b); };
+    const passo = t => { if (fim) return; const dec = (t - ini) / 1000, W = area.clientWidth, H = area.clientHeight;
+      barra.style.width = Math.max(0, 100 - dec / CACADA_SEG * 100) + '%';
+      if (t >= prox) { nova(); prox = t + rnd(450, 900); }
+      for (let i = vivos.length - 1; i >= 0; i--) { const b = vivos[i]; if (b.pego) { vivos.splice(i, 1); continue; }
+        const vida = (t - b.nasc) / b.vida, sp = 70 * b.k.vel; b.x += (b.vx * sp + Math.sin(t / 300 + b.fase) * 30) / 60; b.y += (b.vy * sp + Math.cos(t / 260 + b.fase) * 24) / 60;
+        if (b.x < 30 || b.x > W - 30) b.vx *= -1; if (b.y < 30 || b.y > H - 30) b.vy *= -1;
+        b.el.style.transform = `translate(${b.x}px, ${b.y}px) scale(${vida < .15 ? vida / .15 : vida > .85 ? Math.max(0, (1 - vida) / .15) : 1})`;
+        if (vida >= 1) { b.el.remove(); vivos.splice(i, 1); } }
+      if (dec >= CACADA_SEG) { fim = true; terminarCacada(ov, pegos); return; } requestAnimationFrame(passo); };
+    requestAnimationFrame(passo);
+  }
+  function terminarCacada(ov, pegos) {
+    const c = estCacada(), por = {}, novas = []; let moedas = 0, xp = 0;
+    pegos.forEach(k => { por[k.id] = (por[k.id] || 0) + 1; moedas += k.pts * 15; xp += k.pts * 2; if (!c.album[k.id]) novas.push(k); c.album[k.id] = (c.album[k.id] || 0) + 1; });
+    novas.forEach(() => xp += 500); let completo = false;
+    if (!c.completo && CRIATURAS.every(k => c.album[k.id])) { c.completo = completo = true; moedas += 20000; xp += 5000; S.guardados = S.guardados || []; S.guardados.push({uid:'g' + Date.now(), tipo:'arvoreEncantada'}); }
+    S.moedas += moedas; ganharXp(xp); S.stats.cacadas = (S.stats.cacadas || 0) + 1; salvar(); tudo();
+    ov.querySelector('.cac-area').innerHTML = `<div class="cac-fim"><h3>${pegos.length ? `Você pegou ${pegos.length} criaturinha${pegos.length > 1 ? 's' : ''}!` : 'Elas foram rápidas desta vez!'}</h3>
+      <div class="cac-lista">${CRIATURAS.filter(k => por[k.id]).map(k => `<span>${k.emoji} ${por[k.id]}×</span>`).join('') || '🌿'}</div>
+      ${novas.length ? `<p>📖 Novas no álbum: ${novas.map(k => k.emoji + ' ' + k.nome).join(', ')}</p>` : ''}
+      ${completo ? '<p class="cac-ouro">🏆 Álbum completo! Você ganhou a 🌳 Árvore encantada (Loja › 📦 Guardados)</p>' : ''}
+      <p>💚 Todas voltaram felizes para a floresta.</p><p class="cac-premio">+${fmtN(moedas)} 🪙 · +${fmtN(xp)} XP</p>
+      <button class="btn verde" data-cac-sair>Voltar</button></div>`;
+    ov.querySelector('.cac-dica').textContent = '';
+    ov.querySelector('[data-cac-sair]').addEventListener('click', () => { ov.remove(); abrir('cacada'); });
+  }
+  // 🏰 castelo do jogador no meio da Ilha Medieval: começa em ruínas e evolui em 3 níveis
+  const CASTELO = [
+    {nome:'Castelo restaurado', moedas:60000,  itens:{pedra:30, madeira:30, ferro:10}, xp:5000, bonus:1},
+    {nome:'Castelo com torres', moedas:150000, itens:{pedra:60, madeira:50, ferro:25, ouro:2}, xp:15000, bonus:2},
+    {nome:'Grande castelo',     moedas:400000, itens:{pedra:100, madeira:80, ferro:40, ouro:4, rubi:2, safira:2}, xp:40000, bonus:3},
+  ];
+  let castelo3D = null;
+  function montarCastelo() {
+    if (castelo3D) { scene.remove(castelo3D); castelo3D = null; }
+    const g = new THREE.Group(), RH = (R_CASTELO - .9) * G, RF = (R_CASTELO - .25) * G;
+    g.add(mesh(new THREE.CylinderGeometry(RF + .5, RF + .5, .1, 36), 0, 0, .02, 0, false, liso(0x9a9a8a))); // borda de pedra do fosso
+    g.add(mesh(new THREE.CylinderGeometry(RF, RF, .14, 36), 0, 0, .05, 0, false, new THREE.MeshStandardMaterial({color:C(0x2f7fc4), roughness:.35, metalness:0, envMapIntensity:.2}))); // fosso
+    g.add(mesh(new THREE.CylinderGeometry(RH, RH + .3, .7, 28), 0, 0, .35, 0, true, liso(0x7da84e))); // morro
+    g.add(mesh(new THREE.BoxGeometry(1.5, .16, RF - RH + 1.2), 0, 0, .3, RH + (RF - RH) / 2, true, liso(0x9a6a3a))); // ponte
+    [-.7, .7].forEach(x => g.add(mesh(new THREE.BoxGeometry(.1, .35, RF - RH + 1.2), 0, x, .5, RH + (RF - RH) / 2, true, liso(0x6b4a2b))));
+    const n = S.castelo || 0;
+    if (n && THREE.GLTFLoader) { const cm = modeloGLB('qCast' + n, 0, -.2, 0, 1); cm.position.y = .68; g.add(cm); }
+    else { // ruínas: pedras, andaime e a placa
+      [[-1.5, -.8, 1.6], [1.2, -1.2, 1.3], [.3, .9, 1.1], [-.6, 1.4, .9], [1.6, .6, 1]].forEach(([x, z, sc]) => { const pd = pedra(sc); pd.position.set(x, .68, z); g.add(pd); });
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([x, z]) => g.add(cil(.07, .07, 2.4, 0x8b5a2b, x * .9, 1.9, z * .9 - .3, 5)));
+      g.add(mesh(new THREE.BoxGeometry(2.1, .1, 2.1), 0, 0, 2.6, -.3, true, liso(0xb98552)));
+      const pl = rotulo('🔨 Restaure o castelo', '#6b4a2b'); pl.position.set(0, 3.6, 0); pl.scale.multiplyScalar(.7); g.add(pl); }
+    [[-RH + .4, -RH * .3], [RH - .4, -RH * .3]].forEach(([x, z]) => { g.add(cil(.05, .05, 2.2, 0x5a3a1f, x, 1.8, z, 5)); const b = mesh(new THREE.PlaneGeometry(.8, .5), 0, x + .4, 2.65, z, false, new THREE.MeshStandardMaterial({color:C(0xd8443a), side:THREE.DoubleSide})); g.add(b); });
+    const pick = new THREE.Mesh(new THREE.CylinderGeometry(RH + .4, RH + .4, 6, 16), new THREE.MeshBasicMaterial({visible:false})); pick.position.y = 2; g.add(pick); g.userData.pick = pick;
+    scene.add(g); castelo3D = g;
+  }
+  function htmlCastelo() {
+    const n = S.castelo || 0, prox = CASTELO[n];
+    let h = `<div class="porto-viagem"><div class="pv-ic">🏰</div><div class="pv-txt"><b>${n ? CASTELO[n - 1].nome : 'Castelo em ruínas'} · nível ${n}/3</b>
+      <small>${n ? `Bônus: a mina e o bosque dão <b>+${CASTELO[n - 1].bonus}</b> a cada coleta.` : 'Restaure o castelo com pedra, madeira e ferro. Cada nível deixa a mina e o bosque mais generosos!'}</small></div></div>`;
+    if (!prox) return h + '<p class="dica">👑 Seu castelo está completo! Você é a realeza da Ilha Medieval.</p>';
+    const ok = temItens(prox.itens) && S.moedas >= prox.moedas;
+    h += `<div class="secao-titulo">🔨 Próximo: ${prox.nome}</div><div class="barco-caixas">${Object.entries(prox.itens).map(([k, q]) => { const tem = estoque(k);
+      return `<div class="bx ${tem >= q ? 'feito' : ''}"><div class="bx-ic" data-info="${k}">${iconeItem(item(k), 'e')}</div><b>${q} ${esc(item(k).nome)}</b><small class="${tem >= q ? 'tem' : 'falta'}">você tem ${fmtN(tem)}</small></div>`; }).join('')}</div>
+      <div class="barco-premio">Custa ${moedaMini}<b>${fmtN(prox.moedas)}</b> · ganha ⭐ <b>${fmtN(prox.xp)} XP</b> <button class="btn ${ok ? 'verde' : ''}" data-acao="castelo-subir" ${ok ? '' : 'disabled'}>Construir</button></div>`;
+    return h;
+  }
+  function subirCastelo() {
+    const n = S.castelo || 0, prox = CASTELO[n]; if (!prox || !temItens(prox.itens) || S.moedas < prox.moedas) return;
+    S.moedas -= prox.moedas; for (const k in prox.itens) mudarEstoque(k, -prox.itens[k]); S.castelo = n + 1;
+    ganharXp(prox.xp); montarCastelo(); somT('nivel'); toast(`🏰 ${prox.nome} pronto! A mina e o bosque agora dão +${prox.bonus} por coleta`, 'ouro'); salvar(); tudo();
   }
   // 🌧️ chuva tropical: de vez em quando rega tudo e adianta 20% do que está crescendo
   let chuva3D = null;
@@ -2808,9 +3036,12 @@
   const restaPomar = o => Math.max(0, fruta(o).tempo * 1000 * velocidade() - (Date.now() - tPomar(o)));
   function colherPomar(o) {
     if (restaPomar(o) > 0) return;
-    const f = fruta(o), n = Math.min(f.rende, livreCeleiro()); if (n < 1) { avisarCheio('celeiro'); return; }
+    const f = fruta(o), n = Math.min(f.rende + (MED && TIPOS[o.tipo].coleta ? (CASTELO[(S.castelo || 0) - 1] || {bonus:0}).bonus : 0), livreCeleiro()); if (n < 1) { avisarCheio('celeiro'); return; }
     S.celeiro[f.id] = (S.celeiro[f.id] || 0) + n; S.stats.colheu[f.id] = (S.stats.colheu[f.id] || 0) + n; S.pomar[o.id] = Date.now();
-    flutuar(centro(o).add(V3(0, 2.5, 0)), `+${n} ${f.emoji}`); ganharXp(Math.round(n * f.preco / 25)); acharMaterial(centro(o), .12); if (TROP) acharRaro(centro(o), .04);
+    let txt = `+${n} ${f.emoji}`; if (f.extra) for (const k in f.extra) { S.celeiro[k] = (S.celeiro[k] || 0) + f.extra[k]; txt += ` +${f.extra[k]} ${item(k).emoji}`; }
+    if (f.raroMed && Math.random() < f.raroMed) { const r = Math.random(), k = r < .6 ? 'ouro' : r < .85 ? 'rubi' : 'safira'; S.celeiro[k] = (S.celeiro[k] || 0) + 1; S.stats.raros = (S.stats.raros || 0) + 1;
+      setTimeout(() => { somT('achou'); toast(`✨ Achou na mina: ${item(k).emoji} ${item(k).nome}!`, 'ouro'); }, 800); }
+    flutuar(centro(o).add(V3(0, 2.5, 0)), `${txt}  +${fmtN(Math.round(n * f.preco / 25))} XP`); ganharXp(Math.round(n * f.preco / 25)); acharMaterial(centro(o), .12); if (TROP) acharRaro(centro(o), .04);
   }
   function estadoCercado(o) {
     const L = animaisDoCercado(o), a = ANIMAIS[TIPOS[o.tipo].animal], agora = Date.now();
@@ -3060,7 +3291,7 @@
     if (VISITA) { if (T.animal && qtdAnimal(T.animal)) { somT(T.animal, 700); ajudarCercadoVisita(o); } return; } // visitando: só olha (e ajuda)
     if (T.abre) { const c = centro(o), [, D] = dims(o); irPara(V3(c.x, 0, c.z + D * G / 2 + .8)); abrir(T.abre); return; }
     if (objNaFila(o.id)) return;
-    if (T.fruta) { const r = restaPomar(o); if (r > 0) toast(`${fruta(o).emoji} ${TIPOS[o.tipo].nome}: frutas em ${fmtT(r / 1000)}`); else enfileirar({tipo:'pomar', oid:o.id}); return; }
+    if (T.fruta) { const r = restaPomar(o); if (r > 0) toast(`${fruta(o).emoji} ${TIPOS[o.tipo].nome}: ${T.coleta ? 'pronto' : 'frutas'} em ${fmtT(r / 1000)}`); else enfileirar({tipo:'pomar', oid:o.id}); return; }
     if (T.animal) {
       if (!qtdAnimal(T.animal)) { abrir('animais'); return; }
       { atualizarProducao(); const e = estadoCercado(o), a = ANIMAIS[T.animal];
@@ -3509,6 +3740,18 @@
   ];
   // ===== Novidades de cada atualização: resumo + mini tutorial (adicione a nova versão no topo) =====
   const NOVIDADES = [
+    {v:'0.53', id:'medieval', titulo:'🏰 Chegou a Ilha Medieval!', nivel:NIVEL_MEDIEVAL,
+      itens:['⛵ No <b>Porto</b>, a partir do nível 45, viaje para uma ilha <b>hexagonal</b> com um castelo no meio',
+        '⛏️ <b>Sem plantação</b>: tudo se coleta. A <b>mina</b> dá pedra, ferro e carvão; o <b>bosque</b> dá madeira; e tem amora, framboesa e cogumelos',
+        '🔨 Oficinas novas: <b>Ferraria</b>, <b>Carpintaria</b>, <b>Cozinha do castelo</b> e <b>Joalheria</b> (com ouro, rubi e safira da mina)',
+        '🏰 Restaure o <b>castelo</b> em 3 níveis: cada nível faz a mina e o bosque darem mais',
+        '🦋 <b>Caçada mágica</b>: pegue criaturinhas com a redinha, complete o <b>álbum</b> e ganhe a Árvore encantada',
+        '💡 Um <b>ajudante</b> agora dá dicas quando você fica parado sem saber o que fazer'],
+      passos:[
+        {txt:'Para ir à Ilha Medieval você precisa do <b>⚓ Porto</b>. Abra a <b>Loja</b>.', el:() => janela === 'loja' ? null : janela ? $('#jabas [data-abrir=loja]') : $('.cantos [data-abrir=loja]'), ok:() => S.porto || TROP || MED || janela === 'loja'},
+        {txt:'Vá na aba <b>Fazenda</b> e compre o Porto.', el:() => { if (janela === 'loja' && subLoja === 'fazenda') { const b = $('[data-acao=comprar-porto]'); if (b) b.scrollIntoView({block:'nearest', inline:'center'}); return b; } return janela === 'loja' ? $('[data-sub=fazenda]') : $('.cantos [data-abrir=loja]'); }, ok:() => !!S.porto || TROP || MED},
+        {txt:'Agora toque no <b>⚓ Porto</b> lá na praia.', entrar:() => { fechar(); if (porto3D) focar(porto3D.userData.pick.getWorldPosition(V3())); }, el:() => janela ? null : undefined, p3:() => porto3D ? porto3D.userData.pick.getWorldPosition(V3()).add(V3(0, 2, -2)) : null, ok:() => janela === 'porto'},
+        {txt:'Toque em <b>Viajar</b> na Ilha Medieval! 🏰', el:() => janela === 'porto' ? $('[data-acao=viajar][data-ilha=medieval]') : null, ok:() => MED, botao:'Depois'}]},
     {v:'0.53', titulo:'🏝️ Chegou a Ilha Tropical!', nivel:NIVEL_PORTO,
       itens:['⚓ <b>Porto</b> (nível 30): compre na Loja › Fazenda e viaje de barco para uma ilha <b>redonda</b>, com lagoa, cachoeira e vulcão',
         '🌿 Plantas só de lá: <b>mandioca, batata-doce, abacaxi, maracujá, gengibre, pimenta e baunilha</b>',
@@ -3528,7 +3771,28 @@
         {txt:'Agora toque no <b>⚓ Porto</b> lá na praia.', entrar:() => { fechar(); if (porto3D) focar(porto3D.position.clone().add(V3(1, 0, MEIA + 1))); }, el:() => janela ? null : undefined, p3:() => porto3D ? V3(1.65, 1.6, MEIA - .4) : null, ok:() => janela === 'porto'},
         {txt:'Aqui você <b>viaja</b> para a Ilha Tropical, recolhe a <b>rede de pesca</b> e entrega o <b>pedido do barco</b>. Tudo de novo só existe lá! 🏝️', botao:'Entendi!', el:() => janela === 'porto' ? $('[data-acao=viajar]') : null}]},
   ];
-  const novidadePasso = () => { const n = NOVIDADES.find(n => n.v === S.tutNv); return n && n.passos ? n.passos : []; };
+  // tutoriais extras: chegada na Ilha Medieval e o passeio pelos menus para quem está começando
+  const TUT_EXTRA = {
+    medChegada:[
+      {txt:'Bem-vindo à <b>Ilha Medieval</b>! 🏰 Aqui não se planta: tudo se <b>coleta</b>. Toque na <b>Mina</b> ⛏️ para pegar pedra, ferro e carvão.', p3:() => { const o = S.objetos.find(o => o.tipo === 'mina'); return o ? centro(o).add(V3(0, 2.4, 0)) : null; }, el:() => janela ? null : undefined, ok:() => (S.stats.colheu.pedra || 0) > 0},
+      {txt:'Isso! A mina, o <b>bosque</b> 🌲 e os pés de frutinhas voltam a encher sozinhos. Toque no <b>bosque</b> para pegar madeira.', p3:() => { const o = S.objetos.find(o => o.tipo === 'bosque'); return o ? centro(o).add(V3(0, 2.6, 0)) : null; }, el:() => janela ? null : undefined, ok:() => (S.stats.colheu.madeira || 0) > 0},
+      {txt:'No meio da ilha fica o seu <b>castelo em ruínas</b>. Toque nele para ver o que precisa para restaurar!', entrar:() => focar(V3(0, 0, 0)), p3:() => V3(0, 3, 0), el:() => janela ? null : undefined, ok:() => janela === 'castelo'},
+      {txt:'Pedra, madeira e ferro restauram o castelo, e cada nível deixa a mina e o bosque mais generosos. 💪', botao:'Legal!', el:() => janela === 'castelo' ? $('[data-acao=castelo-subir]') : null},
+      {txt:'Agora a diversão: a <b>Caçada mágica</b> 🦋! Toque no botão aqui embaixo.', entrar:() => fechar(), el:() => janela === 'cacada' ? $('[data-acao=cacada-ir]') : $('#btnCacada'), ok:() => janela === 'cacada' || (S.stats.cacadas || 0) > 0},
+      {txt:'Pegue as criaturinhas com a redinha e complete o <b>álbum</b>! Na Loja › Produção tem a <b>Ferraria</b>, a <b>Carpintaria</b> e a <b>Cozinha do castelo</b>. Divirta-se! 🏰', botao:'Bora!'},
+    ],
+    tour:[
+      {txt:'Vou te mostrar os botões! 👀 Esta é a <b>Loja</b>: sementes, construções, animais e decorações.', el:() => $('.cantos [data-abrir=loja]'), botao:'Próximo'},
+      {txt:'No <b>Armazém</b> você vende o que produziu e ganha moedas 🪙.', el:() => $('.cantos [data-abrir=armazem]'), botao:'Próximo'},
+      {txt:'Em <b>Animais</b> você cuida dos bichinhos e compra mais para produzir mais.', el:() => $('.cantos [data-abrir=animais]'), botao:'Próximo'},
+      {txt:'As <b>Missões</b> dizem o que fazer e dão prêmios. Toque nelas para a mãozinha mostrar o caminho!', el:() => $('#missoes'), botao:'Próximo'},
+      {txt:'O <b>Passe</b> 🎁 tem um presente por dia. Quando ele brilhar, tem prêmio para pegar!', el:() => $('#btnPasse'), botao:'Próximo'},
+      {txt:'Na <b>engrenagem</b> ⚙️ ficam o som, o tamanho dos textos, sua conta e as novidades.', el:() => $('[data-abrir=config]'), botao:'Próximo'},
+      {txt:'E em <b>Social</b> 👥 você visita amigos, ajuda e vê o ranking. Agora é com você! 🌻', el:() => $('[data-grupo=social]'), botao:'Bora jogar!'},
+    ],
+  };
+  const novidadePasso = () => { if (TUT_EXTRA[S.tutNv]) return TUT_EXTRA[S.tutNv]; const n = NOVIDADES.find(n => (n.id || n.v) === S.tutNv); return n && n.passos ? n.passos : []; };
+  function iniciarTutExtra(k) { if (VISITA || tutAtual()) return; S.tutNv = k; S.tutN = 0; const T = tutAtual(); if (T && T.lista[0].entrar) T.lista[0].entrar(); mostrarTutorial(); salvar(); }
   function novidadesNaoVistas() { const v = S.novVista || '0'; return NOVIDADES.filter(n => parseFloat(n.v) > parseFloat(v) && parseFloat(n.v) <= parseFloat(VERSAO)); }
   function mostrarNovidades() { // ao entrar depois de atualizar: abre o resumo (1× por versão)
     if (VISITA || !S.perfil || S.tut !== -1 || janela || tutAtual()) return false;
@@ -3536,12 +3800,12 @@
     abrir('novidades'); return true;
   }
   function htmlNovidades() {
-    const lista = novidadesNaoVistas().length ? novidadesNaoVistas() : NOVIDADES.slice(0, 1);
+    const lista = (novidadesNaoVistas().length ? novidadesNaoVistas() : NOVIDADES.slice(0, 2)).slice().sort((a, b) => (S.nivel >= (b.nivel || 1)) - (S.nivel >= (a.nivel || 1))); // o que já dá para usar vem primeiro
     let h = '';
     lista.forEach((n, i) => {
       const pode = S.nivel >= (n.nivel || 1);
       h += `<div class="nov-bloco"><div class="nov-cab"><span class="nov-v">Versão ${n.v}</span><b>${n.titulo}</b></div><ul class="nov-lista">${n.itens.map(t => `<li>${t}</li>`).join('')}</ul>`
-        + (n.passos ? (pode ? `<button class="btn verde" data-acao="nov-tut" data-v="${n.v}">👉 Me mostra como</button>` : `<div class="nov-trava">🔒 Libera no nível ${n.nivel} · faltam ${n.nivel - S.nivel} níveis</div>`) : '') + '</div>';
+        + (n.passos ? (pode ? `<button class="btn verde" data-acao="nov-tut" data-v="${n.id || n.v}">👉 Me mostra como</button>` : `<div class="nov-trava">🔒 Libera no nível ${n.nivel} · faltam ${n.nivel - S.nivel} níveis</div>`) : '') + '</div>';
     });
     return h + `<div class="nov-rodape"><button class="btn" data-acao="nov-ok">Fechar</button></div>`;
   }
@@ -3554,7 +3818,7 @@
   const balao = $('#tutorial'), mao = $('#maozinha');
   function mostrarTutorial() {
     const T = S.perfil ? tutAtual() : null, ativo = !!T;
-    document.body.classList.toggle('em-tutorial', ativo && T.i < T.lista.length - 1);
+    document.body.classList.toggle('em-tutorial', ativo && T.chave !== 'tutN' && T.i < T.lista.length - 1); // os tutoriais extras não escondem os botões (eles são o assunto)
     balao.style.display = ativo ? 'flex' : 'none';
     if (!ativo) { mao.style.display = 'none'; return; }
     const st = T.lista[T.i];
@@ -3564,7 +3828,7 @@
   function avancarTutorial() {
     const T = tutAtual(); if (!T) return;
     S[T.chave]++;
-    if (S[T.chave] >= T.lista.length) { S[T.chave] = -1; if (T.chave === 'tut') S.novVista = VERSAO; /* quem acabou de começar não precisa das novidades antigas */ toast(T.chave === 'tut' ? '🎉 Tutorial concluído! Bom jogo!' : T.chave === 'tutN' ? '🎉 Pronto! Aproveite a novidade.' : '🎉 Agora você sabe cuidar dos animais!', 'ouro'); }
+    if (S[T.chave] >= T.lista.length) { S[T.chave] = -1; if (T.chave === 'tut') { S.novVista = VERSAO; S.tourVisto = 1; setTimeout(() => iniciarTutExtra('tour'), 2500); } /* quem acabou de começar não precisa das novidades antigas; ganha o passeio pelos menus */ toast(T.chave === 'tut' ? '🎉 Tutorial concluído! Bom jogo!' : T.chave === 'tutN' ? (S.tutNv === 'tour' ? '🌻 Agora você conhece os menus!' : '🎉 Pronto! Aproveite a novidade.') : '🎉 Agora você sabe cuidar dos animais!', 'ouro'); }
     else if (T.lista[S[T.chave]].entrar) T.lista[S[T.chave]].entrar();
     mostrarTutorial(); salvar();
   }
@@ -3622,6 +3886,7 @@
     const tot = VENDAVEIS.reduce((a, c) => a + (S.celeiro[c.id] || 0), 0);
     const b = $('#badgeArmazem'), ch = usoArmazem() >= capArmazem(); b.style.display = ch ? 'block' : 'none'; b.textContent = 'cheio'; b.classList.add('cheio'); // só avisa quando o armazém lota
     const pend = S.objetos.filter(o => TIPOS[o.tipo].animal).reduce((a, o) => a + estadoCercado(o).prontos, 0);
+    { const bc = $('#badgeCacada'); if (bc) { const r = estCacada().redes; bc.style.display = r ? 'block' : 'none'; bc.textContent = r; } }
     const ba = $('#badgeAnimais'); ba.style.display = pend ? 'block' : 'none'; ba.textContent = pend > 99 ? '99+' : pend;
     $('#dicaCampo').textContent = dicaFerramenta();
   }
@@ -3691,12 +3956,12 @@
   }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {novidades:'🎉 Novidades', fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', porto:'⚓ Porto', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
+  const TITULOS = {castelo:'🏰 Castelo', cacada:'🦋 Caçada mágica', album:'📖 Álbum de criaturas', novidades:'🎉 Novidades', fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', porto:'⚓ Porto', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
   const SUBLOJA = {sementes:'🌱 Plantas', producao:'🏭 Produção', animais:'🐄 Animais', fazenda:'🏡 Fazenda', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', insumos:'🧪 Adubos', materiais:'🧰 Materiais', guardados:'📦 Guardados'};
   // em qual aba da loja fica cada construção
-  const GRUPO_LOJA = {producao:['moinho', 'padaria', 'laticinio', 'tecelagem', 'cozinha', 'engenho', 'docaria', 'sorveteria', 'sucos', 'tapiocaria', 'chocolateria', 'quiosque', 'acaiteria', 'perfumaria'],
+  const GRUPO_LOJA = {producao:['moinho', 'padaria', 'laticinio', 'tecelagem', 'cozinha', 'engenho', 'docaria', 'sorveteria', 'sucos', 'tapiocaria', 'chocolateria', 'quiosque', 'acaiteria', 'perfumaria', 'ferraria', 'carpintaria', 'cozinhaReal', 'joalheria'],
     animais:['galinheiro', 'curral', 'pasto', 'coelheira', 'lagoinha', 'chiqueiro', 'apiario', 'aprisco', 'bufalario', 'casinhaPet']};
   const SECOES_DECOR = [['🌿 Natureza', ['flores', 'jardim', 'arvoreDec']], ['🪵 Cercas e caminhos', ['caminho', 'cercaDec', 'cercaMadeira', 'porteira']],
     ['🛢️ Enfeites', ['banco', 'bancoRustico', 'espantalho', 'poste', 'caixotes', 'barris', 'carroca', 'tecidos', 'carrinho', 'fonte']], ['🏠 Casas', ['casinhaA', 'casinhaB', 'taverna']], ['🏰 Medieval', ['feiraMed', 'casaMed', 'pracaMed', 'torreMed', 'muralhaMed', 'moinhoMed', 'temploMed', 'casteloMed']], ['🏝️ Ilha Tropical · achados raros', ['flamingo', 'cabanaTiki', 'farol', 'estatuaConcha']]];
@@ -3736,6 +4001,7 @@
         decoracao:'Só deixam a fazenda mais bonita. Dá para vender pela metade no modo edição.', melhorias:'Fazem você ganhar mais e trabalhar mais rápido.', materiais:'Só para testes: materiais pelo dobro do preço de venda.'};
       h += `<div class="loja-topo"><div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}${subLoja === 'fazenda' ? '<button class="editar-sub" data-acao="editar">✏️ Editar fazenda</button>' : ''}</div>
         <p class="dica">${DICAS[subLoja]}</p></div><div class="vitrine">`;
+      if (subLoja === 'sementes' && MED) h += '<div class="tile larga"><div class="t-ic"><span class="emo-g">🏰</span></div><div class="t-nome">Aqui não se planta!</div><div class="t-info"><span class="desc">Na Ilha Medieval tudo se coleta: mina, bosque e pés de frutinhas voltam a encher sozinhos. Veja em Loja › Fazenda.</span></div><div class="t-acao"></div></div>';
       if (subLoja === 'sementes') [...CROPS].sort((a, b) => podeAqui(b) - podeAqui(a)).forEach(c => {
         const trava = S.nivel < c.nivel, t = c.tempo * velocidade(), q = S.celeiro[c.id] || 0;
         h += tile({trava, cls:c.id === destaqueSem ? 'destaque' : '', attr:`data-card-sem="${c.id}"`,
@@ -3772,7 +4038,7 @@
         h += secaoLoja('🌾 Plantio');
         CONSTRUCOES.filter(c => subDe(c.tipo) === 'fazenda').sort(ordemNv).forEach(c => h += cardCons(c));
         h += secaoLoja('🗺️ Terras e ilha');
-        if (!TROP) h += tile({trava:S.nivel < NIVEL_PORTO, selo:S.porto ? '✓ Construído' : S.nivel < NIVEL_PORTO ? `🔒 Nível ${NIVEL_PORTO}` : 'Novo!', seloCls:S.nivel < NIVEL_PORTO ? 'trava' : '', ic:'<span class="emo-g">⚓</span>', nome:'Porto',
+        if (!TROP && !MED) h += tile({trava:S.nivel < NIVEL_PORTO, selo:S.porto ? '✓ Construído' : S.nivel < NIVEL_PORTO ? `🔒 Nível ${NIVEL_PORTO}` : 'Novo!', seloCls:S.nivel < NIVEL_PORTO ? 'trava' : '', ic:'<span class="emo-g">⚓</span>', nome:'Porto',
           info:'<span class="desc">Fica na praia. O barco leva você até a 🏝️ Ilha Tropical e traz pedidos grandes.</span>',
           acao:S.porto ? '<button class="btn" data-abrir="porto">Abrir</button>' : S.nivel < NIVEL_PORTO ? '' : `<button class="btn verde" data-acao="comprar-porto">${moedaMini}${fmtN(CUSTO_PORTO)}</button>`});
         h += tile({selo:`${S.zonas.length}/${ZONAS.length}`, ic:'<span class="emo-g">🌳</span>', nome:'Terras',
@@ -3959,6 +4225,8 @@
       if (abaCfg === 'conta') h += `${htmlOnlineCfg()}
         <div class="linha-cfg"><span>❓ Como jogar</span><button class="btn" data-abrir="ajuda">Abrir</button></div>
         <div class="linha-cfg"><span>🎉 Novidades da versão ${VERSAO}</span><button class="btn" data-abrir="novidades">Ver</button></div>
+        <div class="linha-cfg"><span>💡 Dicas do ajudante quando você fica parado</span><button class="btn ${S.dicas === false ? '' : 'verde'}" data-acao="dicas-tg">${S.dicas === false ? 'Desligadas' : 'Ligadas'}</button></div>
+        <div class="linha-cfg"><span>👀 Ver de novo o passeio pelos botões</span><button class="btn" data-acao="tour-de-novo">Mostrar</button></div>
         <div class="linha-cfg"><span>📊 ${fmtN(S.colhidos)} colhidos · ${fmtN(S.ganho)} moedas ganhas</span></div>
         ${(() => { const b = lerBackup(); if (!b) return ''; const d = new Date(b.em);
           return `<div class="linha-cfg"><span>🛟 Cópia de segurança<br><small class="det">${b.origem === 'nuvem' ? 'da nuvem' : 'deste aparelho'} · nível ${b.nivel} · ${d.toLocaleDateString('pt-BR')} ${d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'})}</small></span><button class="btn" data-acao="restaurar-backup">Restaurar</button></div>`; })()}
@@ -3973,6 +4241,9 @@
     if (janela === 'passe') h += htmlPasse();
     if (janela === 'porto') h += htmlPorto();
     if (janela === 'novidades') h += htmlNovidades();
+    if (janela === 'castelo') h += htmlCastelo();
+    if (janela === 'album') h += htmlAlbum();
+    if (janela === 'cacada') h += htmlCacada();
     if (janela === 'banca') h += htmlBanca();
     if (janela === 'amigos') h += (ON.user ? `<div class="subabas"><button data-social="amigos" class="${SOC.aba !== 'coop' ? 'ativa' : ''}">👥 Amigos</button><button data-social="coop" class="${SOC.aba === 'coop' ? 'ativa' : ''}">🤝 Cooperativa</button></div>` : '') + (SOC.aba === 'coop' && ON.user ? htmlCoop() : htmlAmigos());
     if (janela === 'nuvem') h += htmlNuvem();
@@ -4205,6 +4476,7 @@
     for (const k in pets) if (ray.intersectObject(pets[k].g, true).length) { const p = pets[k]; if (p.rot) { p.rot.visible = true; clearTimeout(p.rotT); p.rotT = setTimeout(() => { if (p.rot) p.rot.visible = false; }, 3000); } flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); somT(k, 600); if (petsComFome() && !VISITA) alimentarPets(); return; }
     if (tonho && ray.intersectObject(tonho, true).length) { irPara(tonho.position.clone().add(V3(.8, 0, .8))); abrir('ajuda'); return; }
     if (porto3D && ray.intersectObject(porto3D.userData.pick).length) { abrir('porto'); return; } // ⚓
+    if (castelo3D && ray.intersectObject(castelo3D.userData.pick).length) { abrir('castelo'); return; } // 🏰
     const o = pickConstrucao(false); if (clicavel(o)) { clicarConstrucao(o); return; }
     const z = pickTerra(); if (z) { const tg = terras[z]; if (tg && tg.userData.rotulo) { const r = tg.userData.rotulo; r.visible = true; clearTimeout(r.userData.t); r.userData.t = setTimeout(() => r.visible = false, 3500); } zonaSel = z; abrir('zona'); return; }
     const p = pontoChao(); if (p) { const d = ajustarDestino(p.clone()); if (!enfileirar({tipo:'andar', pos:d})) return; marcador.position.set(d.x, .06, d.z); marcador.visible = true; marcadorT = 1; }
@@ -4333,6 +4605,10 @@
     if (ac === 'nov-ok') { S.novVista = VERSAO; salvar(); fechar(); setTimeout(() => { try { lembrarPasse(); } catch (e) {} }, 600); return; }
     if (ac === 'nov-tut') { S.novVista = VERSAO; S.tutNv = a.dataset.v; S.tutN = 0; fechar(); salvar(); const T = tutAtual(); if (T && T.lista[0].entrar) T.lista[0].entrar(); mostrarTutorial(); verificarTutorial(); return; }
     if (ac === 'rede') { recolherRede(); return; }
+    if (ac === 'castelo-subir') { subirCastelo(); return; }
+    if (ac === 'dicas-tg') { S.dicas = S.dicas === false ? true : false; salvar(); renderJanela(); toast(S.dicas === false ? '💡 Dicas desligadas' : '💡 Dicas ligadas', 'bom'); return; }
+    if (ac === 'tour-de-novo') { fechar(); iniciarTutExtra('tour'); return; }
+    if (ac === 'cacada-ir') { comecarCacada(); return; }
     if (ac === 'barco-trocar') { S.barco = null; S.barcoVolta = Date.now() + 3600 * 1000; salvar(); renderJanela(); toast('🚢 Pedido dispensado. Um barco novo chega em 1 hora'); return; }
     if (ac === 'cuidar-todos') {
       const c = resumoCuidar();
@@ -4433,6 +4709,7 @@
       if (petOk('cachorro')) mudou = cachorroAjuda() || mudou;
       if (atualizarProducao()) mudou = true;
       if (TROP && tickChuva()) mudou = true;
+      tickDica();
       if (S.evento && !eventoAtivo()) { S.evento = null; mudou = true; }
       if (S.nivel >= NIVEL_PEDIDOS && garantirPedidos()) mudou = true;
       if (janela === 'pedidos' && !mudou && Math.floor(t / 1000) !== Math.floor((t - 260) / 1000)) renderJanela();
@@ -4631,21 +4908,21 @@
     return h + `</div><p class="dica passe-dica">Cada dia do mês libera um prêmio. Faltou alguns dias? Pegue tudo de uma vez até o fim do mês. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
   }
   // ================= ILHAS E BARCO (v0.53) =================
-  function ilhaNova() { return {objetos:layoutInicial('tropical'), plots:Array.from({length:4}, () => ({c:null})), zonas:ZONAS_TROP_INICIAIS.slice(), expansao:0, moinhos:{}, fab:{}, pomar:{}, ani:{}, animais:{}, prod:{}}; }
+  function ilhaNova(dest) { const med = dest === 'medieval', objs = layoutInicial(med ? 'medieval' : 'tropical'); return {objetos:objs, plots:med ? [] : Array.from({length:4}, () => ({c:null})), zonas:(med ? ZONAS_MED_INICIAIS : ZONAS_TROP_INICIAIS).slice(), expansao:0, moinhos:{}, fab:{}, pomar:Object.fromEntries(objs.filter(o => TIPOS[o.tipo].fruta).map(o => [o.id, 1])), ani:{}, animais:{}, prod:{}}; } // na medieval, a mina e o bosque já chegam prontos para coletar
   function viajar(dest) {
     if (dest === ILHA || VISITA) return;
-    if (S.nivel < NIVEL_PORTO) { toast(`🏝️ A Ilha Tropical libera no nível ${NIVEL_PORTO}`); return; }
+    if (S.nivel < (NIVEL_ILHA[dest] || NIVEL_PORTO)) { toast(`${ICO_ILHA[dest]} A ${NOME_ILHA[dest]} libera no nível ${NIVEL_ILHA[dest]}`); return; }
     if (editar.ativo) sairEdicao(); fechar(); salvar();
     const d = JSON.parse(JSON.stringify(S)), atual = {};
     ILHA_CHAVES.forEach(k => { if (k in d) atual[k] = d[k]; delete d[k]; });
     d.outras = d.outras || {}; d.outras[ILHA] = atual;
-    const alvo = d.outras[dest] || ilhaNova(); delete d.outras[dest];
+    const alvo = d.outras[dest] || ilhaNova(dest); delete d.outras[dest];
     Object.assign(d, alvo); d.ilha = dest; d.rev = (S.rev || 0) + 1; d.salvoEm = Date.now(); // conta como progresso: sobe para a nuvem ao chegar
     let el = $('#telaViagem'); if (!el) { el = document.createElement('div'); el.id = 'telaViagem'; document.body.appendChild(el); }
-    el.innerHTML = `<div class="via-mar"><div class="via-barco">⛵</div><div class="via-onda"></div></div><h3>Viajando para a ${NOME_ILHA[dest]}…</h3><p>${dest === 'tropical' ? '🏝️ Lagoa, cachoeira, vulcão e muita coisa nova esperando por você!' : '🏡 Voltando para casa'}</p>`;
+    el.innerHTML = `<div class="via-mar"><div class="via-barco">⛵</div><div class="via-onda"></div></div><h3>Viajando para a ${NOME_ILHA[dest]}…</h3><p>${dest === 'medieval' ? '🏰 Um castelo para restaurar, mina, bosque e criaturas mágicas!' : dest === 'tropical' ? '🏝️ Lagoa, cachoeira, vulcão e muita coisa nova esperando por você!' : '🏡 Voltando para casa'}</p>`;
     el.classList.add('on'); somT('abrir');
     ON.recarregando = true; try { localStorage.setItem(KEY, JSON.stringify(d)); sessionStorage.setItem(ON.user ? 'terralia-entrar' : 'terralia-entrar-conv', '1'); } catch (e) {} // ao chegar, entra direto no jogo
-    setTimeout(() => carregarFazenda(d, dest === 'tropical' ? '🏝️ Bem-vindo à Ilha Tropical!' : '🏡 De volta à Ilha Principal!'), 2600);
+    setTimeout(() => carregarFazenda(d, dest === 'principal' ? '🏡 De volta à Ilha Principal!' : `${ICO_ILHA[dest]} Bem-vindo à ${NOME_ILHA[dest]}!`), 2600);
   }
   // pedidos do barco: 3 caixas grandes, um barco a cada 6 horas
   const BARCO_INTERVALO = 6 * 3600 * 1000;
@@ -4660,7 +4937,7 @@
     S.barco = {caixas:esc, especial, moedas:Math.round(valor * 2 / 10) * 10, xp:Math.round(xp * .8 + 20), chegou:Date.now()}; S.barcoVolta = null;
   }
   function barcoAtual() { // o barco chega sozinho quando dá a hora
-    if (!S.porto && !TROP) return null;
+    if (!S.porto && !TROP && !MED) return null;
     if (!S.barco && (!S.barcoVolta || Date.now() >= S.barcoVolta)) { gerarBarco(); salvar(); }
     return S.barco;
   }
@@ -4681,10 +4958,14 @@
     toast(`🎣 Rede recolhida: ${ganhou.join(' · ')}!`, ganhou.length > 1 ? 'ouro' : 'bom'); salvar(); tudo();
   }
   function htmlPorto() {
-    const outra = TROP ? 'principal' : 'tropical', b = barcoAtual();
-    let h = `<div class="porto-viagem"><div class="pv-ic">${TROP ? '🏡' : '🏝️'}</div><div class="pv-txt"><b>${TROP ? 'Voltar para a Ilha Principal' : 'Viajar para a Ilha Tropical'}</b>
-      <small>${TROP ? 'Sua fazenda de casa continua produzindo enquanto você está aqui.' : 'Ilha redonda com plantas, árvores, animais e fábricas que só existem lá. Celeiro e Armazém são os mesmos nas duas ilhas.'}</small></div>
-      <button class="btn verde" data-acao="viajar" data-ilha="${outra}">⛵ ${TROP ? 'Voltar' : 'Viajar'}</button></div>`;
+    const b = barcoAtual(), DESC = {principal:'Sua fazenda de casa, com plantações, animais e as fábricas de sempre.',
+      tropical:'Ilha redonda com plantas, árvores, animais e fábricas que só existem lá.', medieval:'Ilha hexagonal sem plantação: mina, bosque, oficinas, castelo e a caçada mágica.'};
+    let h = '';
+    ['principal', 'tropical', 'medieval'].filter(k => k !== ILHA).forEach(k => { const nv = NIVEL_ILHA[k], trava = S.nivel < nv;
+      h += `<div class="porto-viagem ${trava ? 'trava' : ''}"><div class="pv-ic">${ICO_ILHA[k]}</div><div class="pv-txt"><b>${k === 'principal' ? 'Voltar para a ' : 'Viajar para a '}${NOME_ILHA[k]}</b>
+        <small>${DESC[k]}${trava ? ` <b>Libera no nível ${nv}.</b>` : ''}</small></div>
+        ${trava ? `<span class="nov-trava">🔒 ${nv}</span>` : `<button class="btn verde" data-acao="viajar" data-ilha="${k}">⛵ ${k === 'principal' ? 'Voltar' : 'Viajar'}</button>`}</div>`; });
+    h += '<p class="dica">📦 Celeiro, armazém, moedas e nível são os mesmos em todas as ilhas.</p>';
     { const r = Math.max(0, (S.redeEm || 0) - Date.now()); // 🎣 rede de pesca do píer
       h += `<div class="rede-pesca"><div class="pv-ic">🎣</div><div class="pv-txt"><b>Rede de pesca</b><small>${r ? `A rede está na água. Recolha em <b>${fmtT(r / 1000)}</b>` : 'A rede está cheia! Vem peixe e, com sorte, conchas, pérolas e cristais.'}</small></div>
         <button class="btn ${r ? '' : 'verde'}" data-acao="rede" ${r ? 'disabled' : ''}>Recolher</button></div>`; }
@@ -5677,7 +5958,13 @@
   function iniciarJogo(comGesto) {
     if (jogoIniciado) return; jogoIniciado = true;
     try { sessionStorage.removeItem('terralia-entrar'); } catch (e) {}
-    setTimeout(() => { try { if (!mostrarNovidades()) lembrarPasse(); } catch (e) {} }, 4500);
+    setTimeout(() => { try {
+      if (VISITA) return;
+      if (MED && !S.medTut && S.tut === -1) { S.medTut = 1; iniciarTutExtra('medChegada'); } // primeira vez na Ilha Medieval
+      else if (!S.tourVisto && S.tut === -1 && S.nivel <= 10) { S.tourVisto = 1; iniciarTutExtra('tour'); } // quem está começando ganha o passeio pelos menus
+      else if (!mostrarNovidades()) lembrarPasse(); } catch (e) {} }, 4500);
+    if (MED && !VISITA && !$('#btnCacada')) { const b = document.createElement('button'); b.className = 'gbtn'; b.id = 'btnCacada'; b.dataset.abrir = 'cacada';
+      b.innerHTML = '<i class="emo-gbtn">🦋</i><span>Caçada</span><b class="badge" id="badgeCacada"></b>'; $('.cantos.esq').appendChild(b); }
     $('#telaLogin').classList.remove('on');
     if (MOBILE && comGesto) {
       try {
@@ -5845,7 +6132,7 @@
 
   // atalhos para testes no console: Terralia.dar(1000), Terralia.nivel(5)
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
-    _teste:{ olhar:id => { const c = centro(objPorId(id)), d = camera.position.clone().sub(controls.target); controls.target.copy(c); camera.position.copy(c).add(d); controls.update(); }, tocar:id => clicarConstrucao(objPorId(id)), colher:i => { colher(i); tudo(); }, foco:(x, z) => { const d = camera.position.clone().sub(controls.target); controls.target.set(x, 0, z); camera.position.copy(controls.target).add(d); controls.update(); }, expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
+    _teste:{ olhar:id => { const c = centro(objPorId(id)), d = camera.position.clone().sub(controls.target); controls.target.copy(c); camera.position.copy(c).add(d); controls.update(); }, tocar:id => clicarConstrucao(objPorId(id)), colher:i => { colher(i); tudo(); }, dica:() => mostrarDica(true), pomar:id => { colherPomar(objPorId(id)); tudo(); }, foco:(x, z) => { const d = camera.position.clone().sub(controls.target); controls.target.set(x, 0, z); camera.position.copy(controls.target).add(d); controls.update(); }, expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
       editar:() => entrarEdicao(), comprar:t => comprarConstrucao(t), cancelar:() => cancelarSel(), nivelTela:n => mostrarNivel(n, [], premiosNivel(n)), abrir:(n, sb) => abrir(n, sb), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
