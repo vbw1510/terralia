@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.53'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.54'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname); // só no computador de desenvolvimento (no site, o Recomeçar é só da conta GM)
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -491,6 +491,9 @@
         if (S.tut == null || (S.tut === 0 && S.colhidos > 0)) S.tut = S.colhidos > 0 ? -1 : 0;
         S.stats = Object.assign({colheu:{}, plantou:{}, coletou:{}, vendeu:0, compras:0, fez:{}, alimentou:0}, S.stats);
         S.cap = Object.assign({armazem:0, celeiro:0}, S.cap); S.fab = S.fab || {};
+        { const limpa = (pl, onde) => (pl || []).forEach((q, i) => { if (q && q.c && !crop(q.c)) { if (item(q.c)) S.celeiro[q.c] = (S.celeiro[q.c] || 0) + 2; pl[i] = {c:null}; if (onde) S.devolvidos = (S.devolvidos || 0) + 1; } });
+          limpa(S.plots, 1); Object.values(S.outras || {}).forEach(o => limpa(o.plots, 1)); // v0.53: banana e cacau viraram árvores; quem tinha plantado recebe 2 de volta por canteiro
+          if (S.devolvidos) { const n = S.devolvidos; delete S.devolvidos; setTimeout(() => toast(`🌳 Banana e cacau agora dão em árvores! Seus ${n} canteiros foram liberados e você recebeu as frutas de volta.`, 'ouro'), 5000); } }
         if (TROP || MED) { const ok = new Set(ZONAS.map(z => z.key)); S.zonas = [...new Set([...(MED ? ZONAS_MED_INICIAIS : ZONAS_TROP_INICIAIS), ...(S.zonas || []).filter(k => ok.has(k))])]; S.expansao = 0; // ilha redonda: só fatias que existem
           S.objetos = S.objetos.filter(o => o.tipo === 'lote' || celulas(o).every(([cx, cz]) => celulaUtil(cx, cz))); } // (algo de uma versão de teste fora da ilha redonda sai)
         if (VISITA) { // v0.45: bichinho só aparece na fazenda dos amigos (vira ajuda da visita)
@@ -578,7 +581,10 @@
   const nTipo = t => S.objetos.filter(o => o.tipo === t).length;
   const qtdGuardado = t => (S.guardados || []).filter(g => g.tipo === t).length;
   const nPosse = t => nTipo(t) + qtdGuardado(t);
-  const noMaximo = t => TETO[t] != null && nPosse(t) >= TETO[t]; // chegou no teto: o jogo cresce com coisas novas, não com mais do mesmo
+  const TETO_ILHA = {tropical:{lote:8, aprisco:2, bufalario:1, bananeira:3, coqueiro:3, mangueira:3, cacaueiro:3, acaizeiro:3, moinho:1},
+    medieval:{mina:2, bosque:2, amoreira:3, cogumelos:3, framboeseira:3, moinho:1}};
+  const teto = t => { const ti = TETO_ILHA[ILHA]; return ti && ti[t] != null ? ti[t] : TETO[t]; };
+  const noMaximo = t => teto(t) != null && nPosse(t) >= teto(t); // chegou no teto: o jogo cresce com coisas novas, não com mais do mesmo
   const custoLote = () => Math.round(150 * Math.pow(Math.max(1, nPosse('lote')), 1.8) / 10) * 10;
   const CONSTRUCOES = [
     {tipo:'lote',       icone:'🟫', desc:'4 canteiros para plantar.'},
@@ -633,7 +639,7 @@
   const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 8, 18, 30], aprisco:[33, 36, 40], bufalario:[37, 40, 44]};
   const TETO = {mina:3, bosque:4, amoreira:6, cogumelos:6, framboeseira:6, aprisco:3, bufalario:3, coqueiro:6, mangueira:6, bananeira:6, cacaueiro:6, acaizeiro:6, galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
-  const maxPermitido = t => { if (TETO[t] != null && t !== 'lote') return Math.min(TETO[t], maxPermitido_(t)); return maxPermitido_(t); };
+  const maxPermitido = t => { if (teto(t) != null && (t !== 'lote' || TETO_ILHA[ILHA])) return Math.min(teto(t), maxPermitido_(t)); return maxPermitido_(t); };
   const maxPermitido_ = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
   const nivelLote = k => k < 2 ? 1 : k <= 10 ? k : 10 + 2 * (k - 10); // nível do lote nº k+1
   const nivelConstrucao = t => t === 'lote' ? nivelLote(nPosse('lote')) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nPosse(t)) : consDe(t).nivel;
@@ -1969,7 +1975,7 @@
       const mx = z.cel.reduce((a, c) => a + c[0], 0) / z.cel.length * G, mz = z.cel.reduce((a, c) => a + c[1], 0) / z.cel.length * G;
       const r = rotulo(`🔒 Nível ${nivelZona()}`, '#6b4a2b'); r.position.set(mx, 2.3, mz); r.scale.multiplyScalar(.62); g.add(r);
       g.userData.rotulo = r; r.visible = false;
-      if (TROP) { const mt = new THREE.MeshBasicMaterial({visible:false}), bg = new THREE.BoxGeometry(G, .6, G); // fatia: uma caixinha de toque por célula
+      if (TROP || MED) { const mt = new THREE.MeshBasicMaterial({visible:false}), bg = new THREE.BoxGeometry(G, .6, G); // fatia: uma caixinha de toque por célula
         z.cel.forEach(([cx, cz]) => { const cb = new THREE.Mesh(bg, mt); cb.position.set(cx * G, .3, cz * G); cb.userData.zona = z.key; g.add(cb); clicaveisTerra.push(cb); }); }
       else { const caixa = new THREE.Mesh(new THREE.BoxGeometry(ZONA * G, .6, ZONA * G), new THREE.MeshBasicMaterial({visible:false})); // só para o toque: não é desenhada
       caixa.position.set((z.zx * ZONA - 12 + 2) * G, .3, (z.zz * ZONA - 12 + 2) * G); caixa.userData.zona = z.key; g.add(caixa); clicaveisTerra.push(caixa); }
@@ -2969,7 +2975,7 @@
     const cd = consDe(tipo) || decDe(tipo);
     if (!podeAqui(cd)) { toast(`${cd.ilha === 'tropical' ? '🏝️' : '🏡'} Essa construção é da ${NOME_ILHA[cd.ilha]}: viaje pelo ⚓ Porto`); return; }
     if (!doBau && cd && cd.itens && !temItens(cd.itens)) { toast(`✨ Faltam achados raros: ${txtItens(cd.itens)}. Eles caem nas colheitas e na rede de pesca da Ilha Tropical`); return; }
-    if (!doBau && noMaximo(tipo)) { toast(`Você já tem o máximo de ${TIPOS[tipo].nome.toLowerCase()} (${TETO[tipo]}). Melhore com as Melhorias da Loja!`); return; }
+    if (!doBau && noMaximo(tipo)) { toast(`Você já tem o máximo de ${TIPOS[tipo].nome.toLowerCase()} (${teto(tipo)}). Melhore com as Melhorias da Loja!`); return; }
     if (!doBau && S.nivel < nivelConstrucao(tipo)) { toast(`Libera no nível ${nivelConstrucao(tipo)}`); return; }
     if (!doBau && ehUnico(tipo) && nPosse(tipo)) { toast(qtdGuardado(tipo) ? 'Ela está guardada: coloque pela Loja › 📦 Guardados' : 'Você já tem essa construção'); return; }
     if (S.moedas < custo) { toast('Moedas insuficientes'); return; }
@@ -3034,6 +3040,11 @@
   const fruta = o => item(TIPOS[o.tipo].fruta);
   function tPomar(o) { if (!S.pomar) S.pomar = {}; if (!S.pomar[o.id]) S.pomar[o.id] = Date.now(); return S.pomar[o.id]; }
   const restaPomar = o => Math.max(0, fruta(o).tempo * 1000 * velocidade() - (Date.now() - tPomar(o)));
+  const prontosPomar = () => S.objetos.filter(o => TIPOS[o.tipo].fruta && !o.pend && restaPomar(o) <= 0);
+  function coletarTudo() { // 🧺 pega tudo que está pronto (mina, bosque, árvores e arbustos) de uma vez
+    let n = 0; for (const o of prontosPomar()) { if (livreCeleiro() < 1) { avisarCheio('celeiro'); break; } colherPomar(o); n++; }
+    if (n) { toast(`🧺 Coletou ${n} de uma vez!`, 'bom'); somT('colher'); } tudo(); salvar();
+  }
   function colherPomar(o) {
     if (restaPomar(o) > 0) return;
     const f = fruta(o), n = Math.min(f.rende + (MED && TIPOS[o.tipo].coleta ? (CASTELO[(S.castelo || 0) - 1] || {bonus:0}).bonus : 0), livreCeleiro()); if (n < 1) { avisarCheio('celeiro'); return; }
@@ -3646,7 +3657,7 @@
   function rolarAte(sel) { setTimeout(() => { const e = $(sel); if (e) e.scrollIntoView({block:'center', behavior:'smooth'}); }, 60); }
   function focar(p) { focoCam = p.clone(); }
   function guiarTerra() {
-    const cen = z => z.cel.reduce((a, c) => a + Math.hypot(c[0], c[1]), 0) / z.cel.length, z = ZONAS.filter(z => !S.zonas.includes(z.key)).sort((a, b) => TROP ? a.zz - b.zz : Math.hypot(a.zx - 2, a.zz - 2) - Math.hypot(b.zx - 2, b.zz - 2))[0];
+    const cen = z => z.cel.reduce((a, c) => a + Math.hypot(c[0], c[1]), 0) / z.cel.length, z = ZONAS.filter(z => !S.zonas.includes(z.key)).sort((a, b) => TROP || MED ? a.zx - b.zx || a.zz - b.zz : Math.hypot(a.zx - 2, a.zz - 2) - Math.hypot(b.zx - 2, b.zz - 2))[0];
     if (!z) return;
     const mx = z.cel.reduce((a, c) => a + c[0], 0) / z.cel.length * G, mz = z.cel.reduce((a, c) => a + c[1], 0) / z.cel.length * G;
     focar(V3(mx, 0, mz)); apontar_(null, () => V3(mx, 1.4, mz));
@@ -3740,13 +3751,21 @@
   ];
   // ===== Novidades de cada atualização: resumo + mini tutorial (adicione a nova versão no topo) =====
   const NOVIDADES = [
+    {v:'0.54', titulo:'🔧 Ajustes nas ilhas', itens:[
+        '🧺 Botão <b>Coletar</b>: pega de uma vez tudo que está pronto (mina, bosque, árvores e arbustos)',
+        '◀ ▶ Setas na janela do <b>Moinho</b> para trocar entre os seus moinhos',
+        '🛒 Em cada ilha, a <b>Loja</b>, os <b>Animais</b> e o <b>Moinho</b> mostram só o que dá para usar lá',
+        '🏝️🏰 As ilhas novas ficaram mais enxutas: até 8 lotes, 1 ou 2 cercados e menos árvores, minas e bosques',
+        '🌳 Banana e cacau agora dão em árvores: quem tinha plantado recebeu as frutas de volta',
+        '🏰 Agora dá para liberar todas as terras da Ilha Medieval']},
     {v:'0.53', id:'medieval', titulo:'🏰 Chegou a Ilha Medieval!', nivel:NIVEL_MEDIEVAL,
       itens:['⛵ No <b>Porto</b>, a partir do nível 45, viaje para uma ilha <b>hexagonal</b> com um castelo no meio',
         '⛏️ <b>Sem plantação</b>: tudo se coleta. A <b>mina</b> dá pedra, ferro e carvão; o <b>bosque</b> dá madeira; e tem amora, framboesa e cogumelos',
         '🔨 Oficinas novas: <b>Ferraria</b>, <b>Carpintaria</b>, <b>Cozinha do castelo</b> e <b>Joalheria</b> (com ouro, rubi e safira da mina)',
         '🏰 Restaure o <b>castelo</b> em 3 níveis: cada nível faz a mina e o bosque darem mais',
         '🦋 <b>Caçada mágica</b>: pegue criaturinhas com a redinha, complete o <b>álbum</b> e ganhe a Árvore encantada',
-        '💡 Um <b>ajudante</b> agora dá dicas quando você fica parado sem saber o que fazer'],
+        '💡 Um <b>ajudante</b> agora dá dicas quando você fica parado sem saber o que fazer',
+],
       passos:[
         {txt:'Para ir à Ilha Medieval você precisa do <b>⚓ Porto</b>. Abra a <b>Loja</b>.', el:() => janela === 'loja' ? null : janela ? $('#jabas [data-abrir=loja]') : $('.cantos [data-abrir=loja]'), ok:() => S.porto || TROP || MED || janela === 'loja'},
         {txt:'Vá na aba <b>Fazenda</b> e compre o Porto.', el:() => { if (janela === 'loja' && subLoja === 'fazenda') { const b = $('[data-acao=comprar-porto]'); if (b) b.scrollIntoView({block:'nearest', inline:'center'}); return b; } return janela === 'loja' ? $('[data-sub=fazenda]') : $('.cantos [data-abrir=loja]'); }, ok:() => !!S.porto || TROP || MED},
@@ -3886,6 +3905,9 @@
     const tot = VENDAVEIS.reduce((a, c) => a + (S.celeiro[c.id] || 0), 0);
     const b = $('#badgeArmazem'), ch = usoArmazem() >= capArmazem(); b.style.display = ch ? 'block' : 'none'; b.textContent = 'cheio'; b.classList.add('cheio'); // só avisa quando o armazém lota
     const pend = S.objetos.filter(o => TIPOS[o.tipo].animal).reduce((a, o) => a + estadoCercado(o).prontos, 0);
+    { let bt = $('#btnColetar'); const n = VISITA ? 0 : prontosPomar().length;
+      if (!bt && n) { bt = document.createElement('button'); bt.className = 'gbtn'; bt.id = 'btnColetar'; bt.addEventListener('click', coletarTudo); bt.innerHTML = '<i class="emo-gbtn">🧺</i><span>Coletar</span><b class="badge" id="badgeColetar"></b>'; $('.cantos.esq').appendChild(bt); }
+      if (bt) { bt.style.display = n >= 2 ? '' : 'none'; $('#badgeColetar').style.display = 'block'; $('#badgeColetar').textContent = n; } }
     { const bc = $('#badgeCacada'); if (bc) { const r = estCacada().redes; bc.style.display = r ? 'block' : 'none'; bc.textContent = r; } }
     const ba = $('#badgeAnimais'); ba.style.display = pend ? 'block' : 'none'; ba.textContent = pend > 99 ? '99+' : pend;
     $('#dicaCampo').textContent = dicaFerramenta();
@@ -4002,7 +4024,7 @@
       h += `<div class="loja-topo"><div class="subabas">${Object.entries(SUBLOJA).map(([k, v]) => `<button data-sub="${k}" class="${k === subLoja ? 'ativa' : ''}">${v}</button>`).join('')}${subLoja === 'fazenda' ? '<button class="editar-sub" data-acao="editar">✏️ Editar fazenda</button>' : ''}</div>
         <p class="dica">${DICAS[subLoja]}</p></div><div class="vitrine">`;
       if (subLoja === 'sementes' && MED) h += '<div class="tile larga"><div class="t-ic"><span class="emo-g">🏰</span></div><div class="t-nome">Aqui não se planta!</div><div class="t-info"><span class="desc">Na Ilha Medieval tudo se coleta: mina, bosque e pés de frutinhas voltam a encher sozinhos. Veja em Loja › Fazenda.</span></div><div class="t-acao"></div></div>';
-      if (subLoja === 'sementes') [...CROPS].sort((a, b) => podeAqui(b) - podeAqui(a)).forEach(c => {
+      if (subLoja === 'sementes') CROPS.filter(c => podeAqui(c)).forEach(c => {
         const trava = S.nivel < c.nivel, t = c.tempo * velocidade(), q = S.celeiro[c.id] || 0;
         h += tile({trava, cls:c.id === destaqueSem ? 'destaque' : '', attr:`data-card-sem="${c.id}"`,
           selo:trava ? `🔒 Nível ${c.nivel}` : q ? `Você tem ${q}` : c.soAchado ? '✨ Raro' : '', seloCls:trava ? 'trava' : '',
@@ -4028,15 +4050,15 @@
       });
       const cardCons = c => { const T = TIPOS[c.tipo], n = nTipo(c.tipo), noTeto = noMaximo(c.tipo), nv = nivelConstrucao(c.tipo), trava = !noTeto && S.nivel < nv, custo = custoConstrucao(c.tipo), feito = (c.unico && n > 0) || noTeto, lim = LIMITES[c.tipo];
         if (!podeAqui(c)) return tile({trava:true, selo:`${c.ilha === 'tropical' ? '🏝️' : '🏡'} ${NOME_ILHA[c.ilha]}`, seloCls:'trava', ic:iconeLoja(c.tipo, c.icone), nome:T.nome, info:`<span class="desc">${c.desc}</span><span class="so-ilha">Construa na ${NOME_ILHA[c.ilha]} (pelo ⚓ Porto${c.ilha === 'tropical' ? `, nível ${NIVEL_PORTO}` : ''})</span>`, acao:''});
-        return tile({trava:trava && !n, selo:noTeto ? `Máximo · ${nPosse(c.tipo)}/${TETO[c.tipo]}` : trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
+        return tile({trava:trava && !n, selo:noTeto ? `Máximo · ${nPosse(c.tipo)}/${teto(c.tipo)}` : trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
           ic:iconeLoja(c.tipo, c.icone), nome:T.nome, info:`<span class="desc">${c.desc}</span>`,
           acao:trava ? '' : noTeto ? '<span class="ok">✓ No máximo</span>' : feito ? '<span class="ok">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`}); };
       const ordemNv = (a, b) => podeAqui(b) - podeAqui(a) || nivelConstrucao(a.tipo) - nivelConstrucao(b.tipo) || custoConstrucao(a.tipo) - custoConstrucao(b.tipo);
-      if (subLoja === 'producao' || subLoja === 'animais') CONSTRUCOES.filter(c => GRUPO_LOJA[subLoja].includes(c.tipo)).sort(ordemNv).forEach(c => h += cardCons(c));
+      if (subLoja === 'producao' || subLoja === 'animais') CONSTRUCOES.filter(c => GRUPO_LOJA[subLoja].includes(c.tipo) && podeAqui(c)).sort(ordemNv).forEach(c => h += cardCons(c));
       if (subLoja === 'fazenda') {
         const livres = ZONAS.filter(z => !S.zonas.includes(z.key)).length;
         h += secaoLoja('🌾 Plantio');
-        CONSTRUCOES.filter(c => subDe(c.tipo) === 'fazenda').sort(ordemNv).forEach(c => h += cardCons(c));
+        CONSTRUCOES.filter(c => subDe(c.tipo) === 'fazenda' && podeAqui(c)).sort(ordemNv).forEach(c => h += cardCons(c));
         h += secaoLoja('🗺️ Terras e ilha');
         if (!TROP && !MED) h += tile({trava:S.nivel < NIVEL_PORTO, selo:S.porto ? '✓ Construído' : S.nivel < NIVEL_PORTO ? `🔒 Nível ${NIVEL_PORTO}` : 'Novo!', seloCls:S.nivel < NIVEL_PORTO ? 'trava' : '', ic:'<span class="emo-g">⚓</span>', nome:'Porto',
           info:'<span class="desc">Fica na praia. O barco leva você até a 🏝️ Ilha Tropical e traz pedidos grandes.</span>',
@@ -4053,7 +4075,7 @@
       }
       if (subLoja === 'decoracao') SECOES_DECOR.forEach(([tit, tipos]) => {
         h += secaoLoja(tit);
-        DECOR.filter(c => tipos.includes(c.tipo)).sort((a, b) => a.nivel - b.nivel || a.preco - b.preco).forEach(c => {
+        DECOR.filter(c => tipos.includes(c.tipo) && podeAqui(c)).sort((a, b) => a.nivel - b.nivel || a.preco - b.preco).forEach(c => {
           const T = TIPOS[c.tipo], trava = S.nivel < c.nivel || !podeAqui(c), n = nTipo(c.tipo), falta = c.itens && !temItens(c.itens);
           h += tile({trava, selo:S.nivel < c.nivel ? `🔒 Nível ${c.nivel}` : !podeAqui(c) ? `🏝️ ${NOME_ILHA[c.ilha]}` : n ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '', ic:iconeLoja(c.tipo, c.icone), nome:T.nome,
             info:`<span>Ocupa ${T.w}×${T.d}</span>${c.itens ? `<span class="so-ilha">✨ Pede: ${txtItens(c.itens, true)}</span>` : ''}`, acao:trava ? '' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < c.preco || falta ? 'disabled' : ''}>${moedaMini}${fmtN(c.preco)}</button>`});
@@ -4104,7 +4126,7 @@
     if (janela === 'animais') {
       atualizarProducao();
       h += `<div class="loja-topo ani-topo"><div class="topo-linha"><p class="dica">Ciclo: <b>🍽️ com fome</b> → dê ração → <b>⏳ produzindo</b> → <b>pronto</b> → colete. O botão de cada animal já faz o próximo passo.</p>${(() => { const c = resumoCuidar(); return `<button class="btn ${c.col || c.ali ? 'verde' : ''} mini-b" data-acao="cuidar-todos">🐾 Cuidar de todos${c.col || c.ali ? `<small>${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' · ')}</small>` : c.semR.length ? '<small>falta ração</small>' : '<small>tudo em dia</small>'}</button>`; })()}${Object.keys(pets).length ? `<button class="btn mini-b" data-acao="chamar-pets">${S.seguir ? '🐕 Soltar bichinhos' : '🐕 Chamar bichinhos'}</button>` : ''}</div></div><div class="vitrine ani-lista">`;
-      for (const k in ANIMAIS) {
+      for (const k in ANIMAIS) { if (!podeAqui(consDe(ANIMAIS[k].cercado))) continue;
         const a = ANIMAIS[k], n = qtdAnimal(k), mx = maxAnimal(k), it = item(a.prod), r = item(a.racao), cc = custoConstrucao(a.cercado), nvC = LIMITES[a.cercado] ? nivelDaN(a.cercado, 0) : nivelConstrucao(a.cercado), nvProx = nivelConstrucao(a.cercado);
         const trava = S.nivel < Math.max(a.nivel, nvC), nomeC = TIPOS[a.cercado].nome.toLowerCase();
         const ic = a.img ? `<span class="foto-g ${/webp$/.test(a.img) ? 'recorte' : ''}"><img src="assets/img/${a.img}" alt=""></span>` : `<span class="emo-g">${a.emoji}</span>`;
@@ -4139,6 +4161,8 @@
     if (janela === 'fabrica') {
       const t = janelaArg, F = FABRICAS[t], M = fabEstado(t), vagas = vagasFab(t), prontos = prontosFab(t);
       atualizarFab(t);
+      if (t === 'moinho' && listaMoinhos().length > 1) { const ms = listaMoinhos(), i = ms.findIndex(o => o.id === fabEstadoId());
+        h += `<div class="fab-troca"><button class="btn" data-acao="moinho-ant">◀</button><b>Moinho ${i + 1} de ${ms.length}</b><button class="btn" data-acao="moinho-prox">▶</button></div>`; }
       h += `<div class="fab-topo">`;
       for (let i = 0; i < vagas; i++) {
         const f = M.fila[i];
@@ -4147,7 +4171,7 @@
         h += `<div class="slotfab ${i === 0 ? 'ativo' : ''}">${iconeItem(r, 'e')}${i === 0 ? `<small data-fabtempo="1">${tempoCurto(f.dur - (Date.now() - (f.t0 || Date.now())))}</small><i class="pb" data-fabbarra="1" style="width:${f.t0 ? Math.min(100, 100 * (Date.now() - f.t0) / f.dur) : 0}%"></i>` : '<small>fila</small>'}</div>`;
       }
       h += `${prontos ? `<button class="btn verde" data-acao="coletar-fab">Pegar ×${prontos}</button>` : ''}</div>`;
-      F.receitas.forEach(r => {
+      F.receitas.filter(r => !r.racao || r.pet || !r.animal || podeAqui(consDe(ANIMAIS[r.animal].cercado))).forEach(r => {
         const trava = S.nivel < r.nivel, ok = temIngredientes(r) && M.fila.length < vagas;
         const ings = Object.entries(r.ing).map(([id, n]) => { const q = S.celeiro[id] || 0; return `<span class="ing ${q >= n ? 'tem' : 'falta'}" data-info="${id}">${emojiItem(item(id))}${q}/${n}</span>`; }).join('');
         const tem = S.celeiro[r.id] || 0;
@@ -4606,6 +4630,8 @@
     if (ac === 'nov-tut') { S.novVista = VERSAO; S.tutNv = a.dataset.v; S.tutN = 0; fechar(); salvar(); const T = tutAtual(); if (T && T.lista[0].entrar) T.lista[0].entrar(); mostrarTutorial(); verificarTutorial(); return; }
     if (ac === 'rede') { recolherRede(); return; }
     if (ac === 'castelo-subir') { subirCastelo(); return; }
+    if (ac === 'moinho-ant' || ac === 'moinho-prox') { const ms = listaMoinhos(), i = ms.findIndex(o => o.id === fabEstadoId()), j = (i + (ac === 'moinho-prox' ? 1 : -1) + ms.length) % ms.length; fabSel = ms[j].id; renderJanela(); return; }
+    if (ac === 'coletar-tudo') { coletarTudo(); return; }
     if (ac === 'dicas-tg') { S.dicas = S.dicas === false ? true : false; salvar(); renderJanela(); toast(S.dicas === false ? '💡 Dicas desligadas' : '💡 Dicas ligadas', 'bom'); return; }
     if (ac === 'tour-de-novo') { fechar(); iniciarTutExtra('tour'); return; }
     if (ac === 'cacada-ir') { comecarCacada(); return; }
