@@ -494,6 +494,7 @@
         { const limpa = (pl, onde) => (pl || []).forEach((q, i) => { if (q && q.c && !crop(q.c)) { if (item(q.c)) S.celeiro[q.c] = (S.celeiro[q.c] || 0) + 2; pl[i] = {c:null}; if (onde) S.devolvidos = (S.devolvidos || 0) + 1; } });
           limpa(S.plots, 1); Object.values(S.outras || {}).forEach(o => limpa(o.plots, 1)); // v0.53: banana e cacau viraram árvores; quem tinha plantado recebe 2 de volta por canteiro
           if (S.devolvidos) { const n = S.devolvidos; delete S.devolvidos; setTimeout(() => toast(`🌳 Banana e cacau agora dão em árvores! Seus ${n} canteiros foram liberados e você recebeu as frutas de volta.`, 'ouro'), 5000); } }
+        aplicarTetos();
         if (TROP || MED) { const ok = new Set(ZONAS.map(z => z.key)); S.zonas = [...new Set([...(MED ? ZONAS_MED_INICIAIS : ZONAS_TROP_INICIAIS), ...(S.zonas || []).filter(k => ok.has(k))])]; S.expansao = 0; // ilha redonda: só fatias que existem
           S.objetos = S.objetos.filter(o => o.tipo === 'lote' || celulas(o).every(([cx, cz]) => celulaUtil(cx, cz))); } // (algo de uma versão de teste fora da ilha redonda sai)
         if (VISITA) { // v0.45: bichinho só aparece na fazenda dos amigos (vira ajuda da visita)
@@ -582,9 +583,29 @@
   const qtdGuardado = t => (S.guardados || []).filter(g => g.tipo === t).length;
   const nPosse = t => nTipo(t) + qtdGuardado(t);
   const TETO_ILHA = {tropical:{lote:8, aprisco:2, bufalario:1, bananeira:3, coqueiro:3, mangueira:3, cacaueiro:3, acaizeiro:3, moinho:1},
-    medieval:{mina:2, bosque:2, amoreira:3, cogumelos:3, framboeseira:3, moinho:1}};
+    medieval:{mina:3, bosque:3, amoreira:3, cogumelos:3, framboeseira:3, moinho:1}};
   const teto = t => { const ti = TETO_ILHA[ILHA]; return ti && ti[t] != null ? ti[t] : TETO[t]; };
-  const noMaximo = t => teto(t) != null && nPosse(t) >= teto(t); // chegou no teto: o jogo cresce com coisas novas, não com mais do mesmo
+  const noMaximo = t => teto(t) != null && nPosse(t) >= teto(t);
+  function aplicarTetos() { // v0.54: o que passa do limite da ilha sai do jogo (para ninguém ficar com vantagem); o que estava plantado volta para o celeiro
+    if (VISITA) return; const tipos = new Set([...Object.keys(TETO), ...Object.keys(TETO_ILHA[ILHA] || {})]), tirou = [];
+    tipos.forEach(t => { const max = teto(t); if (max == null) return; let sobra = nPosse(t) - max; if (sobra <= 0) return; tirou.push(`${sobra} ${TIPOS[t].nome.toLowerCase()}`);
+      if (t === 'lote') return tirarLotes(sobra);
+      S.guardados = (S.guardados || []).filter(g => g.tipo !== t || sobra-- <= 0);
+      for (let i = S.objetos.length - 1; i >= 0 && sobra > 0; i--) if (S.objetos[i].tipo === t) { if (S.pomar) delete S.pomar[S.objetos[i].id]; S.objetos.splice(i, 1); sobra--; } });
+    for (const k in ANIMAIS) if (S.animais[k] > maxAnimal(k) && nTipo(ANIMAIS[k].cercado) >= 0) { S.animais[k] = maxAnimal(k); if (S.ani && S.ani[k]) S.ani[k] = S.ani[k].slice(0, S.animais[k]); }
+    if (tirou.length) setTimeout(() => toast(`📏 Limite da ilha: saíram ${tirou.join(', ')}. O que estava plantado voltou para o celeiro.`, 'aviso'), 6000);
+  }
+  function tirarLotes(sobra) {
+    const refs = [...(S.guardados || []).filter(g => g.tipo === 'lote').map(g => ({g, li:g.li})), ...S.objetos.filter(o => o.tipo === 'lote').map(o => ({o, li:o.li}))];
+    const vazio = li => [0, 1, 2, 3].every(k => !(S.plots[li * 4 + k] || {}).c);
+    refs.sort((a, b) => (!!b.g - !!a.g) || (vazio(b.li) - vazio(a.li)) || (b.li - a.li)); // primeiro os guardados, depois os vazios, depois os mais novos
+    const fora = new Set(refs.slice(0, sobra));
+    fora.forEach(r => { for (let k = 0; k < 4; k++) { const q = S.plots[r.li * 4 + k]; if (q && q.c && crop(q.c)) S.celeiro[q.c] = (S.celeiro[q.c] || 0) + 1; } // devolve a semente
+      if (r.g) S.guardados.splice(S.guardados.indexOf(r.g), 1); else S.objetos.splice(S.objetos.indexOf(r.o), 1); });
+    const ficam = refs.filter(r => !fora.has(r)).sort((a, b) => (!!a.g - !!b.g) || a.li - b.li), novos = []; // os colocados ficam com os primeiros canteiros
+    ficam.forEach((r, i) => { for (let k = 0; k < 4; k++) novos.push(S.plots[r.li * 4 + k] || {c:null}); if (r.g) r.g.li = i; else r.o.li = i; });
+    S.plots = novos;
+  } // chegou no teto: o jogo cresce com coisas novas, não com mais do mesmo
   const custoLote = () => Math.round(150 * Math.pow(Math.max(1, nPosse('lote')), 1.8) / 10) * 10;
   const CONSTRUCOES = [
     {tipo:'lote',       icone:'🟫', desc:'4 canteiros para plantar.'},
@@ -3755,7 +3776,8 @@
         '🧺 Botão <b>Coletar</b>: pega de uma vez tudo que está pronto (mina, bosque, árvores e arbustos)',
         '◀ ▶ Setas na janela do <b>Moinho</b> para trocar entre os seus moinhos',
         '🛒 Em cada ilha, a <b>Loja</b>, os <b>Animais</b> e o <b>Moinho</b> mostram só o que dá para usar lá',
-        '🏝️🏰 As ilhas novas ficaram mais enxutas: até 8 lotes, 1 ou 2 cercados e menos árvores, minas e bosques',
+        '🏝️🏰 As ilhas novas ficaram mais enxutas: até 8 lotes, 1 ou 2 cercados, 3 de cada árvore e até 3 minas e 3 bosques. O que passava do limite saiu (as plantas voltaram para o celeiro)',
+        '🪙 O saldo de moedas agora aparece só na Loja e no Armazém',
         '🌳 Banana e cacau agora dão em árvores: quem tinha plantado recebeu as frutas de volta',
         '🏰 Agora dá para liberar todas as terras da Ilha Medieval']},
     {v:'0.53', id:'medieval', titulo:'🏰 Chegou a Ilha Medieval!', nivel:NIVEL_MEDIEVAL,
@@ -3907,7 +3929,7 @@
     const pend = S.objetos.filter(o => TIPOS[o.tipo].animal).reduce((a, o) => a + estadoCercado(o).prontos, 0);
     { let bt = $('#btnColetar'); const n = VISITA ? 0 : prontosPomar().length;
       if (!bt && n) { bt = document.createElement('button'); bt.className = 'gbtn'; bt.id = 'btnColetar'; bt.addEventListener('click', coletarTudo); bt.innerHTML = '<i class="emo-gbtn">🧺</i><span>Coletar</span><b class="badge" id="badgeColetar"></b>'; $('.cantos.esq').appendChild(bt); }
-      if (bt) { bt.style.display = n >= 2 ? '' : 'none'; $('#badgeColetar').style.display = 'block'; $('#badgeColetar').textContent = n; } }
+      if (bt) { bt.style.display = n >= 1 ? '' : 'none'; $('#badgeColetar').style.display = 'block'; $('#badgeColetar').textContent = n; } }
     { const bc = $('#badgeCacada'); if (bc) { const r = estCacada().redes; bc.style.display = r ? 'block' : 'none'; bc.textContent = r; } }
     const ba = $('#badgeAnimais'); ba.style.display = pend ? 'block' : 'none'; ba.textContent = pend > 99 ? '99+' : pend;
     $('#dicaCampo').textContent = dicaFerramenta();
@@ -4007,7 +4029,7 @@
   function renderJanela() {
     if (!janela) return;
     $('#jtitulo').innerHTML = `<span class="contorno">${janela === 'fabrica' ? FABRICAS[janelaArg].emoji + ' ' + FABRICAS[janelaArg].nome + (janelaArg === 'moinho' && listaMoinhos().length > 1 ? ' ' + numMoinho(fabEstadoId()) : '') : TITULOS[janela]}</span>`;
-    $('#saldoJ').innerHTML = ['config', 'reset', 'nome', 'nuvem', 'contas', 'nomeRank', 'perfil', 'ajuda'].includes(janela) ? '' : `${UI('moeda')}<b>${fmtN(S.moedas)}</b>`; // saldo sempre à vista dentro das janelas
+    $('#saldoJ').innerHTML = ['loja', 'armazem'].includes(janela) ? `${UI('moeda')}<b>${fmtN(S.moedas)}</b>` : ''; // saldo sempre à vista dentro das janelas
     $('#jabas').innerHTML = ABAS.includes(janela) ? ABAS.map(k => `<button data-abrir="${k}" class="${k === janela ? 'ativa' : ''}">${TITULOS[k]}</button>`).join('') : '';
     $('.janela').classList.toggle('ani', janela === 'animais'); $('.janela').classList.toggle('cfg', janela === 'config');
     $('.janela').classList.toggle('larga', ['loja', 'armazem', 'celeiro', 'animais', 'galpao', 'pedidos', 'banca', 'passe'].includes(janela));
