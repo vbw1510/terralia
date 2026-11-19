@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.49'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.51'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -35,30 +35,30 @@
   // ================= DADOS =================
   const CROPS = [
     // trigo, milho e cenoura: os 3 primeiros (baratos e usados na ração dos bichos); alface vem depois
-    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:60,  preco:7,   xp:1,  nivel:1},
-    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:5,   tempo:90,  preco:15,  xp:2,  nivel:1},
-    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:120,  preco:26,  xp:4,  nivel:1},
-    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:20,  tempo:180,  preco:50,  xp:7,  nivel:2},
-    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:240,  preco:84,  xp:11, nivel:3},
-    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:360, preco:148, xp:17, nivel:4},
-    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:720, preco:285, xp:28, nivel:5},
-    {id:'batata',  nome:'Batata',  emoji:'🥔', semente:45,  tempo:300, preco:118, xp:18, nivel:7},
-    {id:'girassol',nome:'Girassol',emoji:'🌻', semente:70,  tempo:480, preco:178, xp:26, nivel:9},
-    {id:'cana',    nome:'Cana',    emoji:'🎋', semente:65,  tempo:420, preco:172, xp:28, nivel:11},
-    {id:'algodao', nome:'Algodão', emoji:'🤍', semente:110, tempo:780, preco:285, xp:38, nivel:13},
-    {id:'pimentao',nome:'Pimentão',emoji:'🫑', semente:95,  tempo:600, preco:250, xp:35, nivel:15},
-    {id:'melancia',nome:'Melancia',emoji:'🍉', semente:190, tempo:1080, preco:520, xp:60, nivel:18},
-    {id:'cafe',    nome:'Café',    emoji:'🫘', semente:280, tempo:1500,preco:780, xp:85, nivel:22},
-    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:1200, preco:590, xp:45, nivel:6},
+    {id:'trigo',   nome:'Trigo',   emoji:'🌾', semente:2,   tempo:60,  preco:6,   xp:1,  rar:'comum', nivel:1},
+    {id:'milho',   nome:'Milho',   emoji:'🌽', semente:5,   tempo:90,  preco:9,  xp:1,  rar:'comum', nivel:1},
+    {id:'cenoura', nome:'Cenoura', emoji:'🥕', semente:10,  tempo:120,  preco:12,  xp:2,  rar:'comum', nivel:1},
+    {id:'alface',  nome:'Alface',  emoji:'🥬', semente:20,  tempo:180,  preco:20,  xp:2,  rar:'comum', nivel:2},
+    {id:'tomate',  nome:'Tomate',  emoji:'🍅', semente:35,  tempo:240,  preco:30,  xp:4, rar:'comum', nivel:3},
+    {id:'morango', nome:'Morango', emoji:'🍓', semente:60,  tempo:360, preco:50, xp:6, rar:'comum', nivel:4},
+    {id:'abobora', nome:'Abóbora', emoji:'🎃', semente:115, tempo:480, preco:73, xp:9, rar:'incomum', nivel:5},
+    {id:'batata',  nome:'Batata',  emoji:'🥔', semente:45,  tempo:660, preco:119, xp:15, rar:'incomum', nivel:7},
+    {id:'girassol',nome:'Girassol',emoji:'🌻', semente:70,  tempo:780, preco:162, xp:20, rar:'incomum', nivel:9},
+    {id:'cana',    nome:'Cana',    emoji:'🎋', semente:65,  tempo:900, preco:212, xp:26, rar:'raro', nivel:11},
+    {id:'algodao', nome:'Algodão', emoji:'🤍', semente:110, tempo:1020, preco:269, xp:34, rar:'raro', nivel:13},
+    {id:'pimentao',nome:'Pimentão',emoji:'🫑', semente:95,  tempo:1140, preco:332, xp:42, rar:'epico', nivel:15},
+    {id:'melancia',nome:'Melancia',emoji:'🍉', semente:190, tempo:1320, preco:440, xp:55, rar:'epico', nivel:18},
+    {id:'cafe',    nome:'Café',    emoji:'🫘', semente:280, tempo:1560,preco:607, xp:76, rar:'lendario', nivel:22},
+    {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:600, preco:100, xp:12, rar:'incomum', nivel:6},
   ];
   const EXTRAS = [
-    {id:'ovo',   nome:'Ovo',   emoji:'🥚', preco:18, animal:'galinha'},
-    {id:'leite', nome:'Leite', emoji:'🥛', preco:40, animal:'vaca'},
-    {id:'la',    nome:'Lã',    emoji:'🧶', preco:70, animal:'ovelha'},
-    {id:'angora', nome:'Pelo de angorá', emoji:'☁️', preco:120, animal:'coelho'},
-    {id:'pena',   nome:'Pena',   emoji:'🪶', preco:85,  animal:'pato'},
-    {id:'trufa',  nome:'Bacon',  emoji:'🥓', preco:260, animal:'porco'},
-    {id:'mel',    nome:'Mel',    emoji:'🍯', preco:190, animal:'abelha'},
+    {id:'ovo',   nome:'Ovo',   emoji:'🥚', preco:13, xp:1, rar:'comum', animal:'galinha'},
+    {id:'leite', nome:'Leite', emoji:'🥛', preco:37, xp:4, rar:'comum', animal:'vaca'},
+    {id:'la',    nome:'Lã',    emoji:'🧶', preco:67, xp:7, rar:'comum', animal:'ovelha'},
+    {id:'angora', nome:'Pelo de angorá', emoji:'☁️', preco:114, xp:11, rar:'incomum', animal:'coelho'},
+    {id:'pena',   nome:'Pena',   emoji:'🪶', preco:144, xp:14, rar:'raro', animal:'pato'},
+    {id:'trufa',  nome:'Bacon',  emoji:'🥓', preco:238, xp:24, rar:'raro', animal:'porco'},
+    {id:'mel',    nome:'Mel',    emoji:'🍯', preco:294, xp:29, rar:'raro', animal:'abelha'},
   ];
   // frutas das árvores do pomar (plantou uma vez, colhe sempre)
   const FRUTAS = [
@@ -81,40 +81,40 @@
   Object.assign(RACOES[0], {mini:'🐔', cor:'#f5c542'}); Object.assign(RACOES[1], {mini:'🐄', cor:'#6cc357'}); Object.assign(RACOES[2], {mini:'🐑', cor:'#5bb3ea'}); Object.assign(RACOES[3], {mini:'🐰', cor:'#f29ac0'}); Object.assign(RACOES[4], {mini:'🦆', cor:'#7fd3d9'}); Object.assign(RACOES[5], {mini:'🐷', cor:'#f7a6a6'}); Object.assign(RACOES[6], {mini:'🐝', cor:'#ffcf3f'});
   // produtos das fábricas (valem bem mais que o ingrediente cru)
   const PRODUTOS = [
-    {id:'pao',      nome:'Pão',               emoji:'🍞', fab:'padaria',   ing:{trigo:3},                     tempo:180,  preco:60,   xp:6,  nivel:4},
-    {id:'paoMilho', nome:'Pão de milho',      emoji:'🫓', fab:'padaria',   ing:{milho:2, ovo:1},              tempo:300,  preco:150,  xp:10, nivel:4},
-    {id:'bolo',     nome:'Bolo',              emoji:'🎂', fab:'padaria',   ing:{trigo:2, ovo:2, leite:1},     tempo:600,  preco:320,  xp:18, nivel:5},
-    {id:'sanduiche',nome:'Sanduíche',         emoji:'🥪', fab:'padaria',   ing:{pao:1, alface:1, queijo:1},   tempo:540,  preco:480,  xp:24, nivel:6},
-    {id:'manteiga', nome:'Manteiga',          emoji:'🧈', fab:'laticinio', ing:{leite:2},                     tempo:360,  preco:140,  xp:10, nivel:5},
-    {id:'queijo',   nome:'Queijo',            emoji:'🧀', fab:'laticinio', ing:{leite:3},                     tempo:600,  preco:210,  xp:14, nivel:5},
-    {id:'iogurte',  nome:'Iogurte de morango',emoji:'🥤', fab:'laticinio', ing:{leite:1, morango:2},          tempo:480,  preco:330,  xp:18, nivel:6},
-    {id:'novelo',   nome:'Novelo de linha',   emoji:'🧵', fab:'tecelagem', ing:{la:1},                        tempo:300,  preco:110,  xp:8,  nivel:6},
-    {id:'cachecol', nome:'Cachecol',          emoji:'🧣', fab:'tecelagem', ing:{la:2},                        tempo:720,  preco:240,  xp:16, nivel:6},
-    {id:'sueter',   nome:'Suéter',            emoji:'🧥', fab:'tecelagem', ing:{la:3, novelo:1},              tempo:1500, preco:520,  xp:30, nivel:7},
-    {id:'luvas',    nome:'Luvas de angorá',   emoji:'🧤', fab:'tecelagem', ing:{angora:2},                    tempo:900,  preco:380,  xp:20, nivel:8},
-    {id:'gorro',    nome:'Gorro de angorá',   emoji:'👒', fab:'tecelagem', ing:{angora:3, novelo:1},          tempo:1800, preco:760,  xp:36, nivel:9},
-    {id:'omelete',  nome:'Omelete',           emoji:'🍳', fab:'cozinha',   ing:{ovo:2, tomate:1},             tempo:480,  preco:150,  xp:10, nivel:7},
-    {id:'salada',   nome:'Salada da horta',   emoji:'🥗', fab:'cozinha',   ing:{alface:2, tomate:1, cenoura:1}, tempo:420, preco:290,  xp:15, nivel:7},
-    {id:'torta',    nome:'Torta de abóbora',  emoji:'🥧', fab:'cozinha',   ing:{abobora:1, ovo:2, trigo:2},   tempo:1200, preco:640,  xp:32, nivel:7},
-    {id:'geleia',   nome:'Geleia de uva',     emoji:'🫐', fab:'cozinha',   ing:{uva:3},                       tempo:900,  preco:1900, xp:60, nivel:8},
-    {id:'paoMel',   nome:'Pão de mel',        emoji:'🍪', fab:'padaria',   ing:{trigo:2, mel:1},              tempo:720,  preco:520,  xp:26, nivel:14},
-    {id:'tortaMaca',nome:'Torta de maçã',     emoji:'🥮', fab:'padaria',   ing:{maca:3, trigo:2, acucar:1},   tempo:1200, preco:880,  xp:40, nivel:13},
-    {id:'batataFrita',nome:'Batata frita',    emoji:'🍟', fab:'cozinha',   ing:{batata:3, oleo:1},            tempo:600,  preco:720,  xp:34, nivel:12},
-    {id:'sucoLaranja',nome:'Suco de laranja', emoji:'🧃', fab:'cozinha',   ing:{laranja:3},                   tempo:480,  preco:330,  xp:18, nivel:12},
-    {id:'risoto',   nome:'Batata com bacon',   emoji:'🥘', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:1500, preco:1150, xp:52, nivel:15},
-    {id:'camiseta', nome:'Camiseta',          emoji:'👕', fab:'tecelagem', ing:{algodao:3},                   tempo:1200, preco:1000, xp:44, nivel:13},
-    {id:'travesseiro',nome:'Travesseiro de penas',emoji:'🛏️', fab:'tecelagem', ing:{pena:4, algodao:2},      tempo:1800, preco:1050, xp:50, nivel:14},
-    {id:'acucar',   nome:'Açúcar',            emoji:'🧂', fab:'engenho',   ing:{cana:3},                      tempo:420,  preco:560,  xp:22, nivel:11},
-    {id:'oleo',     nome:'Óleo de girassol',  emoji:'🫗', fab:'engenho',   ing:{girassol:3},                  tempo:480,  preco:580,  xp:24, nivel:11},
-    {id:'melado',   nome:'Melado',            emoji:'🍶', fab:'engenho',   ing:{cana:2, mel:1},               tempo:900,  preco:620,  xp:30, nivel:14},
-    {id:'cupcake',  nome:'Cupcake',           emoji:'🧁', fab:'docaria',   ing:{trigo:2, acucar:1, ovo:1},    tempo:900,  preco:780,  xp:36, nivel:13},
-    {id:'pudim',    nome:'Pudim',             emoji:'🍮', fab:'docaria',   ing:{leite:2, acucar:1, ovo:2},    tempo:1200, preco:900,  xp:42, nivel:14},
-    {id:'balaMel',  nome:'Bala de mel',       emoji:'🍬', fab:'docaria',   ing:{mel:1, acucar:1},             tempo:600,  preco:900,  xp:34, nivel:15},
-    {id:'docePimenta',nome:'Geleia de pimentão',emoji:'🫙', fab:'docaria', ing:{pimentao:3, acucar:1},        tempo:1200, preco:1400, xp:48, nivel:16},
-    {id:'sorvete',  nome:'Sorvete de morango',emoji:'🍨', fab:'sorveteria',ing:{leite:2, morango:2, acucar:1},tempo:900,  preco:1180, xp:46, nivel:16},
-    {id:'picole',   nome:'Picolé de melancia',emoji:'🍧', fab:'sorveteria',ing:{melancia:1, acucar:1},        tempo:720,  preco:1150, xp:44, nivel:18},
-    {id:'sorveteCereja',nome:'Sorvete de cereja',emoji:'🍦', fab:'sorveteria',ing:{leite:2, cereja:3, acucar:1},tempo:1200,preco:1500, xp:58, nivel:18},
-    {id:'cafeGelado',nome:'Café gelado',      emoji:'🧋', fab:'sorveteria',ing:{cafe:1, leite:2, acucar:1},   tempo:1500, preco:1900, xp:70, nivel:22},
+    {id:'pao',      nome:'Pão',               emoji:'🍞', fab:'padaria',   ing:{trigo:3},                     tempo:60,  preco:25,   xp:2,  rar:'comum', nivel:4},
+    {id:'paoMilho', nome:'Pão de milho',      emoji:'🫓', fab:'padaria',   ing:{milho:2, ovo:1},              tempo:120,  preco:43,  xp:3, rar:'comum', nivel:4},
+    {id:'bolo',     nome:'Bolo',              emoji:'🎂', fab:'padaria',   ing:{trigo:2, ovo:2, leite:1},     tempo:360,  preco:112,  xp:7, rar:'incomum', nivel:5},
+    {id:'sanduiche',nome:'Sanduíche',         emoji:'🥪', fab:'padaria',   ing:{pao:1, alface:1, queijo:1},   tempo:900,  preco:338,  xp:23, rar:'raro', nivel:6},
+    {id:'manteiga', nome:'Manteiga',          emoji:'🧈', fab:'laticinio', ing:{leite:2},                     tempo:360,  preco:111,  xp:7, rar:'incomum', nivel:5},
+    {id:'queijo',   nome:'Queijo',            emoji:'🧀', fab:'laticinio', ing:{leite:3},                     tempo:480,  preco:166,  xp:11, rar:'incomum', nivel:5},
+    {id:'iogurte',  nome:'Iogurte de morango',emoji:'🥤', fab:'laticinio', ing:{leite:1, morango:2},          tempo:600,  preco:206,  xp:14, rar:'incomum', nivel:6},
+    {id:'novelo',   nome:'Novelo de linha',   emoji:'🧵', fab:'tecelagem', ing:{la:1},                        tempo:300,  preco:100,  xp:7,  rar:'incomum', nivel:6},
+    {id:'cachecol', nome:'Cachecol',          emoji:'🧣', fab:'tecelagem', ing:{la:2},                        tempo:600,  preco:201,  xp:13, rar:'incomum', nivel:6},
+    {id:'sueter',   nome:'Suéter',            emoji:'🧥', fab:'tecelagem', ing:{la:3, novelo:1},              tempo:1200, preco:482,  xp:32, rar:'raro', nivel:7},
+    {id:'luvas',    nome:'Luvas de angorá',   emoji:'🧤', fab:'tecelagem', ing:{angora:2},                    tempo:900,  preco:342,  xp:23, rar:'incomum', nivel:8},
+    {id:'gorro',    nome:'Gorro de angorá',   emoji:'👒', fab:'tecelagem', ing:{angora:3, novelo:1},          tempo:1740, preco:707,  xp:47, rar:'raro', nivel:9},
+    {id:'omelete',  nome:'Omelete',           emoji:'🍳', fab:'cozinha',   ing:{ovo:2, tomate:1},             tempo:300,  preco:84,  xp:6, rar:'incomum', nivel:7},
+    {id:'salada',   nome:'Salada da horta',   emoji:'🥗', fab:'cozinha',   ing:{alface:2, tomate:1, cenoura:1}, tempo:360, preco:123,  xp:8, rar:'incomum', nivel:7},
+    {id:'torta',    nome:'Torta de abóbora',  emoji:'🥧', fab:'cozinha',   ing:{abobora:1, ovo:2, trigo:2},   tempo:480, preco:166,  xp:11, rar:'incomum', nivel:7},
+    {id:'geleia',   nome:'Geleia de uva',     emoji:'🫐', fab:'cozinha',   ing:{uva:3},                       tempo:900,  preco:450, xp:30, rar:'incomum', nivel:8},
+    {id:'paoMel',   nome:'Pão de mel',        emoji:'🍪', fab:'padaria',   ing:{trigo:2, mel:1},              tempo:1200,  preco:490,  xp:33, rar:'raro', nivel:14},
+    {id:'tortaMaca',nome:'Torta de maçã',     emoji:'🥮', fab:'padaria',   ing:{maca:3, trigo:2, acucar:1},   tempo:4080, preco:2057,  xp:137, rar:'epico', nivel:13},
+    {id:'batataFrita',nome:'Batata frita',    emoji:'🍟', fab:'cozinha',   ing:{batata:3, oleo:1},            tempo:3840,  preco:1930,  xp:129, rar:'epico', nivel:12},
+    {id:'sucoLaranja',nome:'Suco de laranja', emoji:'🧃', fab:'cozinha',   ing:{laranja:3},                   tempo:900,  preco:360,  xp:24, rar:'raro', nivel:12},
+    {id:'risoto',   nome:'Batata com bacon',   emoji:'🥘', fab:'cozinha',   ing:{trufa:1, leite:1, batata:2},  tempo:2700, preco:872, xp:58, rar:'epico', nivel:15},
+    {id:'camiseta', nome:'Camiseta',          emoji:'👕', fab:'tecelagem', ing:{algodao:3},                   tempo:2700, preco:1291, xp:86, rar:'raro', nivel:13},
+    {id:'travesseiro',nome:'Travesseiro de penas',emoji:'🛏️', fab:'tecelagem', ing:{pena:4, algodao:2},      tempo:2700, preco:1782, xp:119, rar:'raro', nivel:14},
+    {id:'acucar',   nome:'Açúcar',            emoji:'🧂', fab:'engenho',   ing:{cana:3},                      tempo:2520,  preco:1018,  xp:68, rar:'raro', nivel:11},
+    {id:'oleo',     nome:'Óleo de girassol',  emoji:'🫗', fab:'engenho',   ing:{girassol:3},                  tempo:1920,  preco:778,  xp:52, rar:'raro', nivel:11},
+    {id:'melado',   nome:'Melado',            emoji:'🍶', fab:'engenho',   ing:{cana:2, mel:1},               tempo:2700,  preco:1149,  xp:77, rar:'raro', nivel:14},
+    {id:'cupcake',  nome:'Cupcake',           emoji:'🧁', fab:'docaria',   ing:{trigo:2, acucar:1, ovo:1},    tempo:3480,  preco:1773,  xp:118, rar:'epico', nivel:13},
+    {id:'pudim',    nome:'Pudim',             emoji:'🍮', fab:'docaria',   ing:{leite:2, acucar:1, ovo:2},    tempo:3780, preco:1901,  xp:127, rar:'epico', nivel:14},
+    {id:'balaMel',  nome:'Bala de mel',       emoji:'🍬', fab:'docaria',   ing:{mel:1, acucar:1},             tempo:5400,  preco:2362,  xp:157, rar:'lendario', nivel:15},
+    {id:'docePimenta',nome:'Geleia de pimentão',emoji:'🫙', fab:'docaria', ing:{pimentao:3, acucar:1},        tempo:5820, preco:3625, xp:242, rar:'lendario', nivel:16},
+    {id:'sorvete',  nome:'Sorvete de morango',emoji:'🍨', fab:'sorveteria',ing:{leite:2, morango:2, acucar:1},tempo:5400,  preco:2146, xp:143, rar:'lendario', nivel:16},
+    {id:'picole',   nome:'Picolé de melancia',emoji:'🍧', fab:'sorveteria',ing:{melancia:1, acucar:1},        tempo:5400,  preco:2624, xp:175, rar:'lendario', nivel:18},
+    {id:'sorveteCereja',nome:'Sorvete de cereja',emoji:'🍦', fab:'sorveteria',ing:{leite:2, cereja:3, acucar:1},tempo:5400,preco:2560, xp:171, rar:'lendario', nivel:18},
+    {id:'cafeGelado',nome:'Café gelado',      emoji:'🧋', fab:'sorveteria',ing:{cafe:1, leite:2, acucar:1},   tempo:5400, preco:3058, xp:204, rar:'lendario', nivel:22},
   ];
   const FABRICAS = {
     moinho:    {nome:'Moinho',     emoji:'🌾', receitas:RACOES},
@@ -136,6 +136,8 @@
     maos:     {nome:'Mãos de fazendeiro', emoji:'🧤', desc:'Mais chance de colher em dobro: +5% a cada nível.', max:4, base:400, mult:2.6, niv:[4, 8, 13, 18]},
     moinhoVaga:{nome:'Fábricas maiores', emoji:'⚙️', desc:'+1 vaga na fila de produção do moinho e de todas as fábricas.', max:8, base:500, mult:2.2, niv:[4, 6, 8, 16, 30, 50, 80, 120]},
     adubo:    {nome:'Adubo especial', emoji:'🧪', desc:'+12% de chance de colheita dupla por nível.', max:5, base:150, mult:2.3, niv:[5, 7, 9, 11, 13]},
+    cercado:  {nome:'Cercado maior', emoji:'🏡', desc:'+1 animal em cada cercado, de todos os tipos, por nível.', max:5, base:3000, mult:2.4, niv:[10, 20, 35, 55, 80]},
+    engrenagem:{nome:'Engrenagens', emoji:'⚙️', desc:'Moinho e fábricas produzem 8% mais rápido por nível.', max:5, base:2500, mult:2.5, niv:[12, 25, 40, 60, 90]},
     aspersor: {nome:'Aspersores',     emoji:'💦', desc:'Tudo que você planta já nasce regado.', max:1, base:1200, mult:1, niv:[7]},
   };
   // materiais de ampliação: caem de vez em quando ao colher, coletar e produzir (não ocupam espaço)
@@ -179,9 +181,9 @@
     vaca:    {nome:'Vaca',    plural:'Vacas',    emoji:'🐄', img:'../ui/a_vaca.webp', prod:'leite', tempo:300, porRacao:2, racao:'racaoV', porCercado:3, custo:800,  mult:1.45, nivel:2, cercado:'curral'},
     ovelha:  {nome:'Ovelha',  plural:'Ovelhas',  emoji:'🐑', img:'../ui/a_ovelha.webp',       prod:'la',    tempo:480, porRacao:2, racao:'racaoO', porCercado:4, custo:1400, mult:1.4,  nivel:4, cercado:'pasto'},
     coelho:  {nome:'Coelho',  plural:'Coelhos',  emoji:'🐰', img:null,       prod:'angora', tempo:600, porRacao:2, racao:'racaoC', porCercado:5, custo:2200, mult:1.4, nivel:8, cercado:'coelheira'},
-    pato:    {nome:'Pato',    plural:'Patos',    emoji:'🦆', img:null,       prod:'pena',   tempo:420, porRacao:3, racao:'racaoP', porCercado:5, custo:2600, mult:1.4, nivel:10, cercado:'lagoinha'},
+    pato:    {nome:'Pato',    plural:'Patos',    emoji:'🦆', img:null,       prod:'pena',   tempo:720, porRacao:3, racao:'racaoP', porCercado:5, custo:2600, mult:1.4, nivel:10, cercado:'lagoinha'},
     porco:   {nome:'Porco',   plural:'Porcos',   emoji:'🐷', img:'../ui/a_porco.webp',       prod:'trufa',  tempo:900, porRacao:2, racao:'racaoS', porCercado:3, custo:4200, mult:1.45, nivel:12, cercado:'chiqueiro', fem:false},
-    abelha:  {nome:'Abelha',  plural:'Abelhas',  emoji:'🐝', img:null,       prod:'mel',    tempo:720, porRacao:3, racao:'nectar', porCercado:6, custo:3000, mult:1.35, nivel:14, cercado:'apiario'},
+    abelha:  {nome:'Abelha',  plural:'Abelhas',  emoji:'🐝', img:null,       prod:'mel',    tempo:1080, porRacao:3, racao:'nectar', porCercado:6, custo:3000, mult:1.35, nivel:14, cercado:'apiario'},
   };
   // construções do mapa (tamanho em células da grade)
   const TIPOS = {
@@ -373,7 +375,10 @@
   }
   const novoId = () => 'o' + (proxId++);
 
-  const xpProx = n => Math.round(30 * Math.pow(n, 1.6));
+  // v0.51: curva de XP sem nível máximo (simulada: casual ~nível 25 em 2 semanas, 50 em 2 meses, 100 em ~1 ano)
+  const xpProx = n => n <= 10 ? Math.round(30 * Math.pow(n, 1.6) * (1 + 7 * (n - 1) / 9))
+    : n <= 50 ? Math.round(8 * 30 * Math.pow(10, 1.6) * Math.pow(n / 10, 2.4))
+    : Math.round(8 * 30 * Math.pow(10, 1.6) * Math.pow(5, 2.4) * Math.pow(n / 50, 1.6));
   // pets comem ração de pet a cada 6 horas; com fome, ficam deitados e sem habilidade
   const FOME_PET = 6 * 3600 * 1000;
   const temPet = () => Object.keys(PETS).some(k => S.amigos[k]);
@@ -413,7 +418,8 @@
   const nTipo = t => S.objetos.filter(o => o.tipo === t).length;
   const qtdGuardado = t => (S.guardados || []).filter(g => g.tipo === t).length;
   const nPosse = t => nTipo(t) + qtdGuardado(t);
-  const custoLote = () => Math.round(150 * Math.pow(1.45, nPosse('lote') - 1));
+  const noMaximo = t => TETO[t] != null && nPosse(t) >= TETO[t]; // chegou no teto: o jogo cresce com coisas novas, não com mais do mesmo
+  const custoLote = () => Math.round(150 * Math.pow(Math.max(1, nPosse('lote')), 1.8) / 10) * 10;
   const CONSTRUCOES = [
     {tipo:'lote',       icone:'🟫', desc:'4 canteiros para plantar.'},
     {tipo:'galinheiro', icone:'🐔', nivel:2, base:300,  desc:'Casa das galinhas: cabem 6.'},
@@ -440,10 +446,13 @@
   const consDe = t => CONSTRUCOES.find(c => c.tipo === t);
   const decDe = t => DECOR.find(c => c.tipo === t);
   // quantas de cada construção dá para ter, conforme o nível
-  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 7, 12, 17]};
+  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 8, 18, 30]};
+  const TETO = {galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
-  const maxPermitido = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
-  const nivelConstrucao = t => t === 'lote' ? 1 + Math.ceil(nPosse('lote') * .67) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nPosse(t)) : consDe(t).nivel;
+  const maxPermitido = t => { if (TETO[t] != null && t !== 'lote') return Math.min(TETO[t], maxPermitido_(t)); return maxPermitido_(t); };
+  const maxPermitido_ = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
+  const nivelLote = k => k < 2 ? 1 : k <= 10 ? k : 10 + 2 * (k - 10); // nível do lote nº k+1
+  const nivelConstrucao = t => t === 'lote' ? nivelLote(nPosse('lote')) : decDe(t) ? decDe(t).nivel : LIMITES[t] ? nivelDaN(t, nPosse(t)) : consDe(t).nivel;
   const ehUnico = t => { const c = consDe(t); return !!(c && c.unico); };
   const custoConstrucao = t => t === 'lote' ? custoLote() : decDe(t) ? decDe(t).preco : Math.round(consDe(t).base * Math.pow(consDe(t).mult || 1.8, nPosse(t)));
   // bichinho (praga): enquanto está na planta, ela cresce na metade da velocidade
@@ -482,7 +491,7 @@
   }
   const pronto = p => p.c && p.reg && progresso(p) >= 1;
   const qtdAnimal = k => S.animais[k] || 0;
-  const maxAnimal = k => ANIMAIS[k].porCercado * nTipo(ANIMAIS[k].cercado);
+  const maxAnimal = k => (ANIMAIS[k].porCercado + (S.upg.cercado || 0)) * nTipo(ANIMAIS[k].cercado); // melhoria Cercado maior: +1 por cercado
   const custoAnimal = k => Math.round(ANIMAIS[k].custo * Math.pow(ANIMAIS[k].mult, qtdAnimal(k)));
   const aniLista = k => { const L = S.ani[k] || (S.ani[k] = []); while (L.length < qtdAnimal(k)) L.push({rest:0, t:0, prontos:0}); return L; };
   const nomePet = k => (S.nomes && S.nomes[k]) || PETS[k].nome;
@@ -2283,11 +2292,23 @@
     if (!S.mat) S.mat = {}; S.mat[m] = (S.mat[m] || 0) + 1;
     setTimeout(() => { somT('achou'); if (pos) flutuar(pos.clone().add(V3(0, 2.2, 0)), `🎁 +1 ${MATERIAIS[m].nome}`); toast(`🎁 Achou: ${MATERIAIS[m].nome}!`, 'bom'); }, 450);
   }
+  // prêmios de nível (v0.51): funciona para qualquer nível, sem limite
+  const MAT_NIVEL = ['parafuso', 'prego', 'tabua', 'tijolo', 'fita', 'tinta'], MAT_ILHA = ['escritura', 'marreta', 'estaca'];
+  function premiosNivel(n) {
+    const out = [], mo = Math.round(n * 50 / 10) * 10, m = MAT_NIVEL[n % MAT_NIVEL.length];
+    S.moedas += mo; out.push([UI('moeda', 'nv-img'), `${fmtN(mo)} moedas`]);
+    mudarEstoque(m, 1); out.push([matIco(m), `1 ${MATERIAIS[m].nome.toLowerCase()}`]);
+    if (n % 5 === 0) { // a cada 5 níveis: baú
+      const bm = Math.round(n * 100 / 10) * 10, ins = n % 10 === 0 ? 'super' : 'rapido', mi = MAT_ILHA[(n / 5) % 3];
+      S.moedas += bm; if (!S.ins) S.ins = {}; S.ins[ins] = (S.ins[ins] || 0) + 2; mudarEstoque(mi, 1);
+      out.push([UI('bau', 'nv-img'), `Baú: ${fmtN(bm)} moedas, 2 ${INSUMOS[ins].nome.toLowerCase()} e 1 ${MATERIAIS[mi].nome.toLowerCase()}`]); }
+    return out;
+  }
   function ganharXp(x) {
     S.xp += x;
-    let subiu = false, novos = [];
+    let subiu = false, novos = [], premios = [];
     while (S.xp >= xpProx(S.nivel)) {
-      S.xp -= xpProx(S.nivel); S.nivel++; subiu = true;
+      S.xp -= xpProx(S.nivel); S.nivel++; subiu = true; premios = premiosNivel(S.nivel);
       novos = [...CROPS.filter(c => c.nivel === S.nivel).map(c => [ITEM_IMG[c.id] ? UI(ITEM_IMG[c.id], 'nv-img') : c.emoji, c.nome]),
         ...Object.values(ANIMAIS).filter(a => a.nivel === S.nivel).map(a => [a.emoji, a.nome]),
         ...Object.values(PETS).filter(a => a.nivel === S.nivel).map(a => [a.emoji || '🐾', a.especie]),
@@ -2295,11 +2316,10 @@
         ...DECOR.filter(c => c.nivel === S.nivel).map(c => [c.icone, TIPOS[c.tipo].nome])];
       CROPS.filter(c => c.nivel === S.nivel).forEach(c => { S.celeiro[c.id] = (S.celeiro[c.id] || 0) + 2; setTimeout(() => toast(`🎁 Ganhou 2 ${c.emoji} ${c.nome} para começar a plantar!`, 'bom'), 1500); });
     }
-    if (subiu) { const premio = Math.round(S.nivel * 50 / 10) * 10; S.moedas += premio; // prêmio por subir de nível
-      atualizarPlacasTerra(); mostrarNivel(S.nivel, novos, premio); setTimeout(() => lembrarConvidado(true), 3000); }
+    if (subiu) { atualizarPlacasTerra(); mostrarNivel(S.nivel, novos, premios); setTimeout(() => lembrarConvidado(true), 3000); }
   }
   // ---------- tela de "subiu de nível": logo, estrela, fazendeiros, fogos e confete ----------
-  function mostrarNivel(nv, novos, premio = 0) {
+  function mostrarNivel(nv, novos, premios = []) {
     let el = $('#telaNivel');
     if (!el) { el = document.createElement('div'); el.id = 'telaNivel'; document.body.appendChild(el);
       el.addEventListener('click', e => { if (e.target.closest('[data-nv-ok]') || e.target === el) fecharNivel(); }); }
@@ -2309,7 +2329,7 @@
         <div class="nv-meio"><img class="nv-f1" src="assets/ui/fazendeiro.webp" alt="">
           <div class="nv-centro"><div class="nv-estrela"><img src="assets/ui/estrela.webp" alt=""><b>${nv}</b></div><div class="nv-par">PARABÉNS!</div>
             <div class="nv-sub">Você chegou ao <b>nível ${nv}</b></div>
-            ${premio ? `<div class="nv-premio">🎁 Prêmio: ${UI('moeda', 'nv-img')} <b>${fmtN(premio)}</b> moedas</div>` : ''}
+            ${premios.length ? `<div class="nv-premio"><span>🎁 Prêmios:</span>${premios.map(([i, t]) => `<span class="nv-pr">${i} ${t}</span>`).join('')}</div>` : ''}
             ${novos.length ? `<div class="nv-novos"><span>🔓 Liberou:</span>${novos.slice(0, 6).map(([i, n]) => `<span class="nv-item">${i} ${n}</span>`).join('')}</div>` : ''}
           </div><img class="nv-f2" src="assets/ui/fazendeira.webp" alt=""></div>
         <button class="btn verde grande" data-nv-ok>Continuar</button></div>`;
@@ -2372,6 +2392,7 @@
   // comprar construção nova: coloca no primeiro lugar livre e abre o modo edição para posicionar
   function comprarConstrucao(tipo, perto, doBau) { // doBau: item que estava guardado (sai de graça)
     const custo = doBau ? 0 : custoConstrucao(tipo);
+    if (!doBau && noMaximo(tipo)) { toast(`Você já tem o máximo de ${TIPOS[tipo].nome.toLowerCase()} (${TETO[tipo]}). Melhore com as Melhorias da Loja!`); return; }
     if (!doBau && S.nivel < nivelConstrucao(tipo)) { toast(`Libera no nível ${nivelConstrucao(tipo)}`); return; }
     if (!doBau && ehUnico(tipo) && nPosse(tipo)) { toast(qtdGuardado(tipo) ? 'Ela está guardada: coloque pela Loja › 📦 Guardados' : 'Você já tem essa construção'); return; }
     if (S.moedas < custo) { toast('Moedas insuficientes'); return; }
@@ -2453,7 +2474,7 @@
     const k = TIPOS[o.tipo].animal, a = ANIMAIS[k], it = item(a.prod), r = item(a.racao), L = animaisDoCercado(o), c = centro(o);
     let col = 0; L.forEach(x => { const n = Math.min(x.prontos, livreArmazem() - col); col += n; x.prontos -= n; });
     if (L.some(x => x.prontos > 0)) avisarCheio();
-    if (col) { acharMaterial(c, .1); S.celeiro[it.id] = (S.celeiro[it.id] || 0) + col; S.stats.coletou[it.id] = (S.stats.coletou[it.id] || 0) + col; flutuar(c.clone().add(V3(0, 2, 0)), `+${col} ${it.emoji}`); ganharXp(col); }
+    if (col) { acharMaterial(c, .1); S.celeiro[it.id] = (S.celeiro[it.id] || 0) + col; S.stats.coletou[it.id] = (S.stats.coletou[it.id] || 0) + col; flutuar(c.clone().add(V3(0, 2, 0)), `+${col} ${it.emoji}`); ganharXp(col * (it.xp || 1)); }
     let comeu = 0;
     L.forEach(x => { if (x.rest <= 0 && (S.celeiro[r.id] || 0) > 0) { S.celeiro[r.id]--; x.rest = a.porRacao; x.t = Date.now(); comeu++; } });
     if (comeu) { S.stats.alimentou += comeu; setTimeout(() => flutuar(c.clone().add(V3(0, 1.2, 0)), `🥣 ×${comeu}`), col ? 350 : 0); }
@@ -2481,7 +2502,7 @@
     if (M.fila.length >= vagasFab(t)) { if (!silencioso) toast('A fila está cheia. Compre a melhoria Fábricas maiores!'); return false; }
     if (!temIngredientes(r)) { if (!silencioso) toast('Faltam ingredientes no armazém'); return false; }
     Object.entries(r.ing).forEach(([k, n]) => S.celeiro[k] -= n);
-    M.fila.push({id, dur:r.tempo * 1000, t0:M.fila.length ? 0 : Date.now()});
+    M.fila.push({id, dur:Math.round(r.tempo * 1000 * (1 - .08 * (S.upg.engrenagem || 0))), t0:M.fila.length ? 0 : Date.now()});
     if (!silencioso) { toast(`⚙️ ${r.nome} entrou na fila`, 'bom'); tudo(); }
     return true;
   }
@@ -2718,6 +2739,8 @@
     apontar_(() => $(`[data-receita=${r.id}]`), null, 6000);
   }
   // ===== v0.45: tocar num item mostra o que é e onde consegue; "Ir lá" leva até o lugar com a mãozinha =====
+  const RAR_NOME = {comum:'Comum', incomum:'Incomum', raro:'Raro', epico:'Épico', lendario:'Lendário'};
+  const tagRar = it => it && it.rar ? `<span class="rar rar-${it.rar}">${RAR_NOME[it.rar]}</span>` : '';
   const fabDe = id => Object.keys(FABRICAS).find(f => FABRICAS[f].receitas.some(r => r.id === id));
   const noNa = n => (/a$|ão$|agem$|ade$/.test(n.toLowerCase()) && !/moinho|engenho|laticínio|galinheiro|curral|pasto|chiqueiro|apiário/i.test(n) ? 'na ' : 'no ') + n;
   function fonteItem(id) {
@@ -2758,7 +2781,7 @@
     let el = $('#infoItem');
     if (!el) { el = document.createElement('div'); el.id = 'infoItem'; document.body.appendChild(el);
       el.addEventListener('click', e => { const b = e.target.closest('[data-info-ir]'); if (b) guiarItem(b.dataset.infoIr); if (e.target.closest('[data-info-x]')) fecharInfo(); }); }
-    el.innerHTML = `<button class="info-x" data-info-x>✕</button><div class="info-topo">${iconeItem(it, 'grande')}<div><b>${esc(it.nome)}</b><small>Você tem ${fmtN(estoque(id))}</small></div></div>
+    el.innerHTML = `<button class="info-x" data-info-x>✕</button><div class="info-topo">${iconeItem(it, 'grande')}<div><b>${esc(it.nome)}</b> ${tagRar(it)}<small>Você tem ${fmtN(estoque(id))}${it.preco ? ` · vende por ${fmtN(precoAtual(id))}` : ''}</small></div></div>
       <p>${fonteItem(id)}</p><button class="btn verde" data-info-ir="${id}">Ir lá 👉</button>`;
     el.classList.add('on');
     const r = alvo.getBoundingClientRect(), w = el.offsetWidth, h = el.offsetHeight;
@@ -3334,10 +3357,10 @@
           ic:`<span class="emo-card">${n.emoji}</span>`, nome:n.nome, info:`<span class="desc">${n.desc}</span>`,
           acao:trava ? '' : `<button class="btn verde" data-compra="insumo:${k}" ${S.moedas < n.preco ? 'disabled' : ''}>Comprar · ${moedaMini}${n.preco}</button>`});
       });
-      const cardCons = c => { const T = TIPOS[c.tipo], nv = nivelConstrucao(c.tipo), trava = S.nivel < nv, custo = custoConstrucao(c.tipo), n = nTipo(c.tipo), feito = c.unico && n > 0, lim = LIMITES[c.tipo];
-        return tile({trava:trava && !n, selo:trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
+      const cardCons = c => { const T = TIPOS[c.tipo], n = nTipo(c.tipo), noTeto = noMaximo(c.tipo), nv = nivelConstrucao(c.tipo), trava = !noTeto && S.nivel < nv, custo = custoConstrucao(c.tipo), feito = (c.unico && n > 0) || noTeto, lim = LIMITES[c.tipo];
+        return tile({trava:trava && !n, selo:noTeto ? `Máximo · ${nPosse(c.tipo)}/${TETO[c.tipo]}` : trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
           ic:iconeLoja(c.tipo, c.icone), nome:T.nome, info:`<span class="desc">${c.desc}</span>`,
-          acao:trava ? '' : feito ? '<span class="ok">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`}); };
+          acao:trava ? '' : noTeto ? '<span class="ok">✓ No máximo</span>' : feito ? '<span class="ok">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`}); };
       const ordemNv = (a, b) => nivelConstrucao(a.tipo) - nivelConstrucao(b.tipo) || custoConstrucao(a.tipo) - custoConstrucao(b.tipo);
       if (subLoja === 'producao' || subLoja === 'animais') CONSTRUCOES.filter(c => GRUPO_LOJA[subLoja].includes(c.tipo)).sort(ordemNv).forEach(c => h += cardCons(c));
       if (subLoja === 'fazenda') {
@@ -3455,7 +3478,7 @@
         const trava = S.nivel < r.nivel, ok = temIngredientes(r) && M.fila.length < vagas;
         const ings = Object.entries(r.ing).map(([id, n]) => { const q = S.celeiro[id] || 0; return `<span class="ing ${q >= n ? 'tem' : 'falta'}" data-info="${id}">${emojiItem(item(id))}${q}/${n}</span>`; }).join('');
         const tem = S.celeiro[r.id] || 0;
-        h += `<div class="receita ${trava ? 'trava' : ''} ${destaqueRec === r.id ? 'destaque' : ''}" data-rec="${r.id}">${iconeItem(r, 'e')}<div class="meio"><b>${r.nome}</b> <span class="tem-qtd ${tem ? '' : 'zero'}">×${tem}</span>${trava ? ` <span class="nv">Nível ${r.nivel}</span>` : ''}
+        h += `<div class="receita ${trava ? 'trava' : ''} ${destaqueRec === r.id ? 'destaque' : ''}" data-rec="${r.id}">${iconeItem(r, 'e')}<div class="meio"><b>${r.nome}</b> ${tagRar(r)}<span class="tem-qtd ${tem ? '' : 'zero'}">×${tem}</span>${trava ? ` <span class="nv">Nível ${r.nivel}</span>` : ''}
           <div class="det">${ings} <span>⏱${tempoCurto(r.tempo * 1000)}</span> ${r.rende ? `<span>×${r.rende} porções</span>` : `<span>💰${r.preco}</span>`}</div></div>
           ${trava ? '' : `<button class="btn verde" data-receita="${r.id}" ${ok ? '' : 'disabled'}>+1</button><button class="btn" data-receita="${r.id}" data-max="1" ${ok ? '' : 'disabled'}>Máx</button>`}</div>`;
       });
@@ -5323,7 +5346,7 @@
   if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) || location.protocol === 'file:') window.Terralia = { dar:(m = 1000) => { S.moedas += m; tudo(); }, nivel:n => { S.nivel = n; atualizarPlacasTerra(); tudo(); }, estado:() => S,
     _teste:{ olhar:id => { const c = centro(objPorId(id)), d = camera.position.clone().sub(controls.target); controls.target.copy(c); camera.position.copy(c).add(d); controls.update(); }, tocar:id => clicarConstrucao(objPorId(id)), expulsar:() => expulsar(), zoom:d => { const v = camera.position.clone().sub(controls.target); v.setLength(d); camera.position.copy(controls.target).add(v); }, cena:() => scene, rend:() => renderer, matsvg:() => MAT_SVG, praga:i => { const p = S.plots[i]; p.pragaEm = Date.now() - 1000; atualizarTile(i); }, edit:() => editar.ativo, objPos:id => { const v = centro(objPorId(id)).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, sel:id => { entrarEdicao(); selecionar(objPorId(id)); }, grupos:() => { const r = []; scene.children.forEach(c => { let m = 0; c.traverse(o => { if (o.isMesh) m++; }); r.push([c.name || c.type + (c.userData && c.userData.tipo ? ':' + c.userData.tipo : ''), m]); }); r.sort((a, b) => b[1] - a[1]); return JSON.stringify(r.slice(0, 15)); }, info:() => { let n = 0, m = 0, st = 0; scene.traverse(o => { n++; if (o.isMesh) m++; if (!o.matrixAutoUpdate) st++; }); return JSON.stringify({calls:renderer.info.render.calls, tris:renderer.info.render.triangles, objetos:n, meshes:m, estaticos:st, geo:renderer.info.memory.geometries, tex:renderer.info.memory.textures, pr:renderer.getPixelRatio()}); },
       irPara:(x, z) => irPara(V3(x, 0, z)), centro:() => { focoCam = heroi.g.position.clone(); },
-      editar:() => entrarEdicao(), comprar:t => comprarConstrucao(t), cancelar:() => cancelarSel(), nivelTela:n => mostrarNivel(n, []), abrir:(n, sb) => abrir(n, sb), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
+      editar:() => entrarEdicao(), comprar:t => comprarConstrucao(t), cancelar:() => cancelarSel(), nivelTela:n => mostrarNivel(n, [], premiosNivel(n)), abrir:(n, sb) => abrir(n, sb), sel:id => selecionar(objPorId(id)), mover:(x, z) => moverSel(V3(x, 0, z)), girar:() => girarSel(), ok:() => confirmarSel(), sair:() => sairEdicao(),
       filaIds:() => [heroi.atual, ...heroi.fila].filter(Boolean).map(a => (a.lista || [a.i]).length),
       tilePos:i => { const v = posTile(i).project(camera); return [(v.x + 1) / 2 * innerWidth, (1 - v.y) / 2 * innerHeight]; }, heroi:() => JSON.stringify({fila:heroi.fila.map(a => a.tipo), atual:heroi.atual && {tipo:heroi.atual.tipo, fase:heroi.atual.fase, t:heroi.atual.t}, rota:heroi.rota.length, pos:heroi.g.position}), obj:id => clicarConstrucao(objPorId(id)), objs:() => S.objetos.map(o => o.id + ':' + o.tipo).join(' '), abrir:(n, x) => abrir(n, x), tile:i => clicarTile(i), ferr:f => { S.ferramenta = f; }, zona:k => comprarZona(k), cam:(x, z, d) => { controls.target.set(x, 0, z); camera.position.set(x + d * .5, d * .6, z + d * .5); }, girar90:() => girarCamera(), zonas:() => ZONAS.map(z => z.key), construir:t => { S.moedas += custoConstrucao(t); comprarConstrucao(t); }, nome:(id, ms) => mostrarNome(objPorId(id), ms), nomes:() => Object.values(obj3D).filter(r => r.rot && r.rot.visible).length + "/" + Object.values(obj3D).filter(r => r.rot).length + " ed:" + editar.ativo } };
 })();
