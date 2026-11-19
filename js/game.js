@@ -9,8 +9,8 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.51'; // a cada atualização: aumentar aqui e no versao.json
-  const MODO_TESTE = true; // fase de testes: mostra o botão Recomeçar. No lançamento, trocar para false.
+  const VERSAO = '0.53'; // a cada atualização: aumentar aqui e no versao.json
+  const MODO_TESTE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname); // só no computador de desenvolvimento (no site, o Recomeçar é só da conta GM)
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
   // imagens desenhadas (assets/ui) no lugar de alguns ícones
@@ -49,6 +49,10 @@
     {id:'pimentao',nome:'Pimentão',emoji:'🫑', semente:95,  tempo:1140, preco:332, xp:42, rar:'epico', nivel:15},
     {id:'melancia',nome:'Melancia',emoji:'🍉', semente:190, tempo:1320, preco:440, xp:55, rar:'epico', nivel:18},
     {id:'cafe',    nome:'Café',    emoji:'🫘', semente:280, tempo:1560,preco:607, xp:76, rar:'lendario', nivel:22},
+    // 🏝️ Ilha Tropical (v0.53): só crescem lá
+    {id:'banana',  nome:'Banana',  emoji:'🍌', semente:300, tempo:1680, preco:840, xp:105, rar:'lendario', nivel:30, ilha:'tropical'},
+    {id:'abacaxi', nome:'Abacaxi', emoji:'🍍', semente:320, tempo:1800, preco:900, xp:113, rar:'lendario', nivel:30, ilha:'tropical'},
+    {id:'cacau',   nome:'Cacau',   emoji:'🌰', semente:430, tempo:2040, preco:1218, xp:152, rar:'lendario', nivel:37, ilha:'tropical'},
     {id:'uva',     nome:'Uva',     emoji:'🍇', semente:230, tempo:600, preco:100, xp:12, rar:'incomum', nivel:6},
   ];
   const EXTRAS = [
@@ -59,12 +63,15 @@
     {id:'pena',   nome:'Pena',   emoji:'🪶', preco:144, xp:14, rar:'raro', animal:'pato'},
     {id:'trufa',  nome:'Bacon',  emoji:'🥓', preco:238, xp:24, rar:'raro', animal:'porco'},
     {id:'mel',    nome:'Mel',    emoji:'🍯', preco:294, xp:29, rar:'raro', animal:'abelha'},
+    {id:'leiteCabra', nome:'Leite de cabra', emoji:'🍼', preco:695, xp:70, rar:'lendario', animal:'cabra'},
   ];
   // frutas das árvores do pomar (plantou uma vez, colhe sempre)
   const FRUTAS = [
     {id:'maca',    nome:'Maçã',    emoji:'🍎', preco:60,  nivel:8,  arvore:'macieira',   tempo:1800, rende:4, cor:0xe83b2c},
     {id:'laranja', nome:'Laranja', emoji:'🍊', preco:75,  nivel:12, arvore:'laranjeira', tempo:2700, rende:4, cor:0xf59a23},
     {id:'cereja',  nome:'Cereja',  emoji:'🍒', preco:110, nivel:17, arvore:'cerejeira',  tempo:3600, rende:4, cor:0xc8102e},
+    {id:'coco',    nome:'Coco',    emoji:'🥥', preco:450, nivel:31, arvore:'coqueiro',   tempo:5400, rende:4, cor:0x7a5233},
+    {id:'manga',   nome:'Manga',   emoji:'🥭', preco:700, nivel:40, arvore:'mangueira',  tempo:7200, rende:4, cor:0xffb02e},
   ];
   // rações: feitas no moinho, servem para alimentar os animais (não são vendidas)
   const RACOES = [
@@ -76,6 +83,7 @@
     {id:'racaoS', nome:'Ração de porco',   emoji:'🥣', animal:'porco',   ing:{milho:2, batata:2},   tempo:300, nivel:12, preco:0, racao:true, rende:3},
     {id:'nectar', nome:'Néctar de flores', emoji:'🌼', animal:'abelha',  ing:{girassol:2},          tempo:300, nivel:14, preco:0, racao:true, rende:3},
     {id:'racaoPet', nome:'Ração de pet',   emoji:'🦴', animal:null, pet:true, ing:{milho:1, cenoura:1}, tempo:150, nivel:3, preco:0, racao:true, rende:3, mini:'🐾', cor:'#c8743a'},
+    {id:'racaoCa', nome:'Ração de cabra',  emoji:'🥣', animal:'cabra',   ing:{abacaxi:1, milho:3}, tempo:600, nivel:33, preco:0, racao:true, rende:3, mini:'🐐', cor:'#c9a26b', xp:6},
   ];
   RACOES.forEach(r => r.fab = 'moinho');
   Object.assign(RACOES[0], {mini:'🐔', cor:'#f5c542'}); Object.assign(RACOES[1], {mini:'🐄', cor:'#6cc357'}); Object.assign(RACOES[2], {mini:'🐑', cor:'#5bb3ea'}); Object.assign(RACOES[3], {mini:'🐰', cor:'#f29ac0'}); Object.assign(RACOES[4], {mini:'🦆', cor:'#7fd3d9'}); Object.assign(RACOES[5], {mini:'🐷', cor:'#f7a6a6'}); Object.assign(RACOES[6], {mini:'🐝', cor:'#ffcf3f'});
@@ -115,6 +123,14 @@
     {id:'picole',   nome:'Picolé de melancia',emoji:'🍧', fab:'sorveteria',ing:{melancia:1, acucar:1},        tempo:5400,  preco:2624, xp:175, rar:'lendario', nivel:18},
     {id:'sorveteCereja',nome:'Sorvete de cereja',emoji:'🍦', fab:'sorveteria',ing:{leite:2, cereja:3, acucar:1},tempo:5400,preco:2560, xp:171, rar:'lendario', nivel:18},
     {id:'cafeGelado',nome:'Café gelado',      emoji:'🧋', fab:'sorveteria',ing:{cafe:1, leite:2, acucar:1},   tempo:5400, preco:3058, xp:204, rar:'lendario', nivel:22},
+    // 🏝️ fábricas da Ilha Tropical (todas Lendárias: demoram, para deixar produzindo)
+    {id:'sucoAbacaxi', nome:'Suco de abacaxi',  emoji:'🍹', fab:'sucos',       ing:{abacaxi:2},               tempo:5400,  preco:3240,  xp:216, rar:'lendario', nivel:35},
+    {id:'aguaCoco',    nome:'Água de coco',     emoji:'🧉', fab:'sucos',       ing:{coco:3},                  tempo:5400,  preco:2430,  xp:162, rar:'lendario', nivel:35},
+    {id:'vitamina',    nome:'Vitamina de banana',emoji:'🥤', fab:'sucos',      ing:{banana:2, leiteCabra:1},  tempo:6840,  preco:4275,  xp:285, rar:'lendario', nivel:36},
+    {id:'sucoManga',   nome:'Suco de manga',    emoji:'🧃', fab:'sucos',       ing:{manga:2, acucar:1},       tempo:6960,  preco:4352,  xp:290, rar:'lendario', nivel:40},
+    {id:'chocolate',   nome:'Barra de chocolate',emoji:'🍫', fab:'chocolateria',ing:{cacau:2, acucar:1},      tempo:9960,  preco:6217,  xp:414, rar:'lendario', nivel:37},
+    {id:'bombom',      nome:'Caixa de bombons', emoji:'🎁', fab:'chocolateria', ing:{chocolate:1, leite:2},    tempo:10800, preco:11324, xp:755, rar:'lendario', nivel:38},
+    {id:'boloChoco',   nome:'Bolo de chocolate',emoji:'🎂', fab:'chocolateria', ing:{chocolate:1, trigo:3, ovo:2}, tempo:10800, preco:11270, xp:751, rar:'lendario', nivel:39},
   ];
   const FABRICAS = {
     moinho:    {nome:'Moinho',     emoji:'🌾', receitas:RACOES},
@@ -125,6 +141,8 @@
     engenho:   {nome:'Engenho',    emoji:'🏭', receitas:PRODUTOS.filter(p => p.fab === 'engenho')},
     docaria:   {nome:'Docaria',    emoji:'🧁', receitas:PRODUTOS.filter(p => p.fab === 'docaria')},
     sorveteria:{nome:'Sorveteria', emoji:'🍨', receitas:PRODUTOS.filter(p => p.fab === 'sorveteria')},
+    sucos:     {nome:'Casa de Sucos', emoji:'🍹', receitas:PRODUTOS.filter(p => p.fab === 'sucos')},
+    chocolateria:{nome:'Chocolateria', emoji:'🍫', receitas:PRODUTOS.filter(p => p.fab === 'chocolateria')},
   };
   const ITENS = [...CROPS, ...EXTRAS, ...FRUTAS, ...RACOES, ...PRODUTOS];
   const VENDAVEIS = ITENS.filter(i => !i.racao);
@@ -184,6 +202,7 @@
     pato:    {nome:'Pato',    plural:'Patos',    emoji:'🦆', img:null,       prod:'pena',   tempo:720, porRacao:3, racao:'racaoP', porCercado:5, custo:2600, mult:1.4, nivel:10, cercado:'lagoinha'},
     porco:   {nome:'Porco',   plural:'Porcos',   emoji:'🐷', img:'../ui/a_porco.webp',       prod:'trufa',  tempo:900, porRacao:2, racao:'racaoS', porCercado:3, custo:4200, mult:1.45, nivel:12, cercado:'chiqueiro', fem:false},
     abelha:  {nome:'Abelha',  plural:'Abelhas',  emoji:'🐝', img:null,       prod:'mel',    tempo:1080, porRacao:3, racao:'nectar', porCercado:6, custo:3000, mult:1.35, nivel:14, cercado:'apiario'},
+    cabra:   {nome:'Cabra',   plural:'Cabras',   emoji:'🐐', img:null, prod:'leiteCabra', tempo:1200, porRacao:2, racao:'racaoCa', porCercado:4, custo:12000, mult:1.4, nivel:33, cercado:'aprisco', fem:true},
   };
   // construções do mapa (tamanho em células da grade)
   const TIPOS = {
@@ -211,6 +230,11 @@
     macieira:   {nome:'Macieira',   w:1, d:1, obst:true, fruta:'maca'},
     laranjeira: {nome:'Laranjeira', w:1, d:1, obst:true, fruta:'laranja'},
     cerejeira:  {nome:'Cerejeira',  w:1, d:1, obst:true, fruta:'cereja'},
+    coqueiro:   {nome:'Coqueiro',   w:1, d:1, obst:true, fruta:'coco'},
+    mangueira:  {nome:'Mangueira',  w:1, d:1, obst:true, fruta:'manga', fem:true},
+    aprisco:    {nome:'Aprisco',    w:3, d:3, animal:'cabra'},
+    sucos:      {nome:'Casa de Sucos', w:2, d:2, obst:true, fab:true, fem:true},
+    chocolateria:{nome:'Chocolateria', w:2, d:2, obst:true, fab:true, fem:true},
     lago:       {nome:'Lago',       w:3, d:3, obst:true},
     galpao:     {nome:'Galpão',     w:2, d:2, abre:'galpao', obst:true},
     // decorações (só deixam a fazenda bonita)
@@ -286,6 +310,12 @@
   const VISITA = (() => { try { return JSON.parse(sessionStorage.getItem('terralia-visita')); } catch (e) { return null; } })(); // visitando a fazenda de outro jogador
   let ANEL = (() => { try { return Math.max(0, Math.min(6, (VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1'))).expansao | 0)); } catch (e) { return 0; } })();
   const MAX_ANEL = 6;
+  // 🏝️ ilhas (v0.53): o jogo carrega só a ilha em que você está; as outras ficam guardadas em S.outras
+  const ILHA = (() => { try { const d = VISITA ? VISITA.dados : JSON.parse(localStorage.getItem('terralia-v1')); return d && d.ilha === 'tropical' ? 'tropical' : 'principal'; } catch (e) { return 'principal'; } })();
+  const TROP = ILHA === 'tropical', NIVEL_PORTO = 30, CUSTO_PORTO = 25000;
+  const ILHA_CHAVES = ['objetos', 'plots', 'zonas', 'expansao', 'moinhos', 'fab', 'pomar', 'ani', 'animais', 'prod'];
+  const NOME_ILHA = {principal:'Ilha Principal', tropical:'Ilha Tropical'};
+  const podeAqui = x => !x || !x.ilha || x.ilha === ILHA; // planta ou construção desta ilha
   const ZONA = 5; let OFF = 12 + 5 * ANEL, NZ = 5 + 2 * ANEL; // células de -OFF a OFF, terras de 5×5 células
   let MEIA = (OFF + .5) * G + 1.6; // metade do lado da ilha quadrada
   const zonaDe = (cx, cz) => [Math.floor((cx + 12) / ZONA), Math.floor((cz + 12) / ZONA)]; // chaves das terras não mudam quando a ilha cresce
@@ -368,12 +398,17 @@
   let ultimoJson = '';
   function salvar() {
     if (ON.recarregando || VISITA) return;
-    try { const t = S.salvoEm; S.salvoEm = 0; const j = JSON.stringify(S); S.salvoEm = t;
+    try { const t = S.salvoEm, rv = S.rev; S.salvoEm = 0; S.rev = 0; const j = JSON.stringify(S); S.salvoEm = t; S.rev = rv;
       if (j === ultimoJson) return; // nada mudou: não grava de novo
-      ultimoJson = j; S.salvoEm = Date.now(); ON.sujo = true; // só conta como mudança se algo mudou de verdade
-      localStorage.setItem(KEY, j.replace('"salvoEm":0', '"salvoEm":' + S.salvoEm)); } catch (e) {}
+      ultimoJson = j;
+      // fazenda de conta que ainda não conferiu a nuvem: grava, mas NÃO conta como progresso novo
+      // (senão um save velho deste aparelho poderia passar por cima do que foi jogado em outro)
+      if (!(S.uid && !ON.sincronizado)) { S.salvoEm = Date.now(); S.rev = (rv || 0) + 1; ON.sujo = true; } // rev: conta cada mudança (não depende do relógio)
+      localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
   }
   const novoId = () => 'o' + (proxId++);
+  // qual save está mais adiantado: pelo contador de mudanças; o relógio só desempata (relógios de aparelhos diferentes não batem)
+  const maisAdiantado = (a, b) => a.rev && b.rev && a.rev !== b.rev ? a.rev > b.rev : (a.salvoEm || 0) > (b.salvoEm || 0);
 
   // v0.51: curva de XP sem nível máximo (simulada: casual ~nível 25 em 2 semanas, 50 em 2 meses, 100 em ~1 ano)
   const xpProx = n => n <= 10 ? Math.round(30 * Math.pow(n, 1.6) * (1 + 7 * (n - 1) / 9))
@@ -442,12 +477,18 @@
     {tipo:'laticinio',  icone:'🧀', nivel:5, base:2800, desc:'Transforma leite em manteiga, queijo e iogurte.', unico:true},
     {tipo:'tecelagem',  icone:'🧵', nivel:6, base:4000, desc:'Transforma lã e pelo de angorá em roupas.', unico:true},
     {tipo:'cozinha',    icone:'🍳', nivel:7, base:6000, desc:'Faz omelete, salada, torta de abóbora e geleia.', unico:true},
+    // 🏝️ só na Ilha Tropical
+    {tipo:'coqueiro', mult:1.35,  icone:'🥥', nivel:31, base:9000,  desc:'Coqueiro: dá 4 cocos a cada 1h30.', ilha:'tropical'},
+    {tipo:'aprisco',    icone:'🐐', nivel:33, base:18000, desc:'Casa das cabras: cabem 4. Elas dão leite de cabra.', ilha:'tropical'},
+    {tipo:'sucos',      icone:'🍹', nivel:35, base:22000, desc:'Casa de Sucos: suco de abacaxi, água de coco, vitamina e suco de manga.', unico:true, ilha:'tropical'},
+    {tipo:'chocolateria', icone:'🍫', nivel:37, base:30000, desc:'Chocolateria: chocolate, bombons e bolo de chocolate.', unico:true, ilha:'tropical'},
+    {tipo:'mangueira', mult:1.35, icone:'🥭', nivel:40, base:14000, desc:'Mangueira: dá 4 mangas a cada 2 horas.', ilha:'tropical'},
   ];
   const consDe = t => CONSTRUCOES.find(c => c.tipo === t);
   const decDe = t => DECOR.find(c => c.tipo === t);
   // quantas de cada construção dá para ter, conforme o nível
-  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 8, 18, 30]};
-  const TETO = {galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
+  const LIMITES = {galinheiro:[2, 5, 8, 12], curral:[3, 6, 10, 14], pasto:[5, 9, 13, 17], coelheira:[8, 12, 16, 20], lagoinha:[10, 15, 20, 26], chiqueiro:[12, 17, 23, 30], apiario:[14, 19, 25, 32], macieira:[8, 9, 11, 13, 16, 20, 25], laranjeira:[12, 13, 15, 18, 22, 27], cerejeira:[17, 18, 21, 25, 30, 36], moinho:[2, 8, 18, 30], aprisco:[33, 36, 40]};
+  const TETO = {aprisco:3, coqueiro:6, mangueira:6, galinheiro:5, curral:4, pasto:4, coelheira:3, lagoinha:3, chiqueiro:3, apiario:3, macieira:6, laranjeira:6, cerejeira:6, moinho:4, lote:40}; // v0.51: máximo de cada construção
   const nivelDaN = (t, k) => { const L = LIMITES[t]; return k < L.length ? L[k] : L[L.length - 1] + 4 * (k - L.length + 1); }; // nível do k-ésimo (0 = primeiro)
   const maxPermitido = t => { if (TETO[t] != null && t !== 'lote') return Math.min(TETO[t], maxPermitido_(t)); return maxPermitido_(t); };
   const maxPermitido_ = t => { if (!LIMITES[t]) return Infinity; let k = 0; while (nivelDaN(t, k) <= S.nivel) k++; return k; };
@@ -848,7 +889,7 @@
       g.add(mesh(new THREE.SphereGeometry(w / 2, 10, 6, 0, Math.PI), 0, x - larg / 2 + w / 2 + i * w, y - .18, z + .38, false, liso(i % 2 ? c2 : c1)));
     }
   }
-  const FAB_KK = {padaria:'casaPadaria', cozinha:'tavernaFab', engenho:'moinhoAgua', laticinio:'mercadoAzul', tecelagem:'mercadoVerde', docaria:'mercadoAmarelo', sorveteria:'mercadoVermelho'};
+  const FAB_KK = {sucos:'casaSucos', chocolateria:'chocoFab', padaria:'casaPadaria', cozinha:'tavernaFab', engenho:'moinhoAgua', laticinio:'mercadoAzul', tecelagem:'mercadoVerde', docaria:'mercadoAmarelo', sorveteria:'mercadoVermelho'};
   const FUMACA_KK = {padaria:[-.55, 3.7, -.85], cozinha:[.6, 4.3, -.9]}; // de onde sai a fumaça quando está produzindo
   function fumacaSolta(g, x, y, z) { // só a fumaça (a chaminé já vem no modelo)
     const f = new THREE.Group(); f.position.set(x, y, z); g.add(f);
@@ -999,7 +1040,11 @@
   // árvore do pomar: as frutas aparecem quando estão maduras
   const frutosArv = {};
   function modeloArvoreFruta(o) {
-    const f = item(TIPOS[o.tipo].fruta), g = arvore(1.05, null); g.rotation.y = 0;
+    if (o.tipo === 'coqueiro') { // palmeira com cocos
+      const g = palmeira(1.25); g.rotation.y = 0; const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
+      for (let i = 0; i < 5; i++) { const a = i * 1.25; fr.add(bola(.15, 0x7a5233, .3 + Math.cos(a) * .2, 3.35, Math.sin(a) * .2, 8)); }
+      frutosArv[o.id] = fr; return g; }
+    const f = item(TIPOS[o.tipo].fruta), g = arvore(o.tipo === 'mangueira' ? 1.2 : 1.05, null); g.rotation.y = 0;
     const fr = new THREE.Group(); fr.userData.anim = true; g.add(fr);
     for (let i = 0; i < 9; i++) { const a = i * .7 + rnd(0, .3), b = rnd(-.2, .9); fr.add(bola(.12, f.cor, Math.cos(a) * 1.0, 2.0 + b * .5, Math.sin(a) * 1.0, 8)); }
     frutosArv[o.id] = fr; return g;
@@ -1127,7 +1172,7 @@
   }
   function modeloCercado(tipo, w, d) {
     const g = new THREE.Group(), W = w * G - .4, D = d * G - .4;
-    const cores = {galinheiro:0xd9c08a, curral:0xc9a66b, pasto:0x8fd06a, coelheira:0x9fd67a, lagoinha:0x8fd06a, chiqueiro:0xb08a5a, apiario:0xa6dc7e};
+    const cores = {galinheiro:0xd9c08a, curral:0xc9a66b, pasto:0x8fd06a, coelheira:0x9fd67a, lagoinha:0x8fd06a, chiqueiro:0xb08a5a, apiario:0xa6dc7e, aprisco:0xd8c08e};
     g.add(chaoPlano(W, D, cores[tipo], .025));
     g.add(cerca(W, D, true, 0xa86f3c));
     const fx = W / 2 - .9, fz = -D / 2 + .55;
@@ -1186,7 +1231,7 @@
   // tamanho: altura (a) ou largura (l) desejada, em unidades do mundo
   const MODELOS = {
     moinho:{f:'hex/building_windmill_red', l:3.9}, mercado:{f:'hex/building_market_red', l:6.1}, poco:{f:'hex/building_well_red', l:1.95},
-    moinhoAgua:{f:'hex/building_watermill_red', l:3.7}, serraria:{f:'hex/building_lumbermill_red', l:3.9}, casaPadaria:{f:'hex/building_home_A_red', l:3.6}, tavernaFab:{f:'hex/building_tavern_red', l:3.9},
+    moinhoAgua:{f:'hex/building_watermill_red', l:3.7}, serraria:{f:'hex/building_lumbermill_red', l:3.9}, casaPadaria:{f:'hex/building_home_A_red', l:3.6}, casaSucos:{f:'hex/building_home_B_yellow', l:3.6}, chocoFab:{f:'hex/building_tavern_yellow', l:3.9}, tavernaFab:{f:'hex/building_tavern_red', l:3.9},
     mercadoAzul:{f:'hex/building_market_blue', l:3.9}, mercadoVerde:{f:'hex/building_market_green', l:3.9}, mercadoAmarelo:{f:'hex/building_market_yellow', l:3.9}, mercadoVermelho:{f:'hex/building_market_red', l:3.9},
     casaA:{f:'hex/building_home_A_red', l:3.9}, casaB:{f:'hex/building_home_B_red', l:3.9}, taverna:{f:'hex/building_tavern_red', l:6},
     cerca:{f:'hex/fence_wood_straight', l:2.15}, porteira:{f:'hex/fence_wood_straight_gate', l:2.15},
@@ -1238,10 +1283,14 @@
   let natureza = [], natAssinatura = '';
   const NAT_PESOS = [['capim1', 4], ['capim2', 4], ['arbusto1', 2], ['arbusto2', 2], ['arbusto3', 2], ['arbusto4', 1.5], ['pedra1', 1], ['pedra2', 1.2], ['pedra3', .8]];
   const NAT_ARV = ['arv1', 'arv1b', 'arv2', 'arv2c', 'arv3', 'arv4'];
-  const NAT_SOMBRA = {arbusto1:1, arbusto2:1, arbusto3:1, arbusto4:1, pedra1:1, pedra2:1, pedra3:1, arv1:1, arv1b:1, arv2:1, arv2c:1, arv3:1, arv4:1};
+  const NAT_SOMBRA = {palma:1, arbusto1:1, arbusto2:1, arbusto3:1, arbusto4:1, pedra1:1, pedra2:1, pedra3:1, arv1:1, arv1b:1, arv2:1, arv2c:1, arv3:1, arv4:1};
   let posBordaArv = []; // lugares das árvores da borda da ilha (guardados ao montar a ilha)
+  function cachePalma() { // palmeira pronta para desenhar muitas de uma vez (InstancedMesh), como as árvores do KayKit
+    if (glb.cache.palma) return; const pm = palmeira(1.15); pm.rotation.y = 0; mesclar(pm); pm.updateMatrixWorld(true); const partes = [];
+    pm.traverse(o => { if (o.isMesh) { const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); partes.push({g, mt:o.material}); } }); glb.cache.palma = partes;
+  }
   function espalharNatureza() {
-    if (!glb.ok) return;
+    if (!glb.ok) return; if (TROP) cachePalma();
     natureza.forEach(m => scene.remove(m)); natureza = [];
     const ocup = ocupacao(null), lista = {}, total = NAT_PESOS.reduce((a, p) => a + p[1], 0), mr = Math.random;
     try {
@@ -1250,7 +1299,7 @@
         for (const [cx, cz] of z.cel) {
           if (ocup.has(cx + ',' + cz)) continue;
           Math.random = sorteio((cx + 99) * 7919 + (cz + 99) * 104729);
-          if (!livre && Math.random() < .3) { const k = NAT_ARV[Math.random() * NAT_ARV.length | 0]; (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * .8, cz * G + (Math.random() - .5) * .8, Math.random() * 6.28, .85 + Math.random() * .35]); continue; } // terra bloqueada: mata
+          if (!livre && Math.random() < .3) { const k = TROP ? 'palma' : NAT_ARV[Math.random() * NAT_ARV.length | 0]; (lista[k] = lista[k] || []).push([cx * G + (Math.random() - .5) * .8, cz * G + (Math.random() - .5) * .8, Math.random() * 6.28, .85 + Math.random() * .35]); continue; } // terra bloqueada: mata
           const n = Math.random() < (livre ? .1 : .32) ? 1 + (Math.random() < .35 ? 1 : 0) : 0;
           for (let i = 0; i < n; i++) {
             let r = Math.random() * total, k = NAT_PESOS[0][0]; for (const [kk, w] of NAT_PESOS) { if ((r -= w) <= 0) { k = kk; break; } }
@@ -1259,7 +1308,7 @@
           }
         }
       }
-      posBordaArv.forEach(([x, z, i]) => { const k = NAT_ARV[i % NAT_ARV.length]; (lista[k] = lista[k] || []).push([x, z, i * 1.7, .9 + (i % 5) * .08]); }); // árvores da borda
+      posBordaArv.forEach(([x, z, i]) => { const k = TROP ? 'palma' : NAT_ARV[i % NAT_ARV.length]; (lista[k] = lista[k] || []).push([x, z, i * 1.7, .9 + (i % 5) * .08]); }); // árvores da borda
     } finally { Math.random = mr; }
     if (bordaArv) bordaArv.visible = false; // as árvores antigas da borda dão lugar às do KayKit
     const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = V3(), p = V3(), eixo = V3(0, 1, 0);
@@ -1339,16 +1388,46 @@
     g.add(bola(.13 * s, 0x7a5233, x + .1, y - .05, .08)); g.add(bola(.13 * s, 0x7a5233, x - .08, y - .08, -.1));
     g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
+  // ⚓ porto na praia do sul (não ocupa terra da fazenda) + barco
+  let porto3D = null, barco3D = null;
+  function montarPorto() {
+    if (porto3D) { scene.remove(porto3D); porto3D = null; barco3D = null; }
+    if (VISITA || !(TROP || S.porto)) return;
+    const g = new THREE.Group(), z0 = MEIA - .6, madeira = 0xb98552, escura = 0x7a5233;
+    for (let i = 0; i < 9; i++) g.add(mesh(new THREE.BoxGeometry(2.6, .14, .62), 0, 0, -.12, z0 + i * .66, true, liso(i % 2 ? madeira : 0xc6935e))); // tábuas do píer
+    [-1.2, 1.2].forEach(x => { for (let i = 0; i < 4; i++) g.add(cil(.12, .14, 2, escura, x, -1.05, z0 + .3 + i * 1.7, 7)); });
+    [-1.25, 1.25].forEach(x => g.add(mesh(new THREE.BoxGeometry(.1, .1, 5.9), 0, x, .28, z0 + 2.65, true, liso(escura))));
+    for (let i = 0; i < 4; i++) [-1.25, 1.25].forEach(x => g.add(cil(.05, .05, .42, escura, x, .08, z0 + .3 + i * 1.7, 6)));
+    g.add(mesh(new THREE.BoxGeometry(.6, .5, .6), 0, -.6, .15, z0 + .6, true, liso(0xa8743f))); g.add(mesh(new THREE.BoxGeometry(.45, .4, .45), 0, -.55, .6, z0 + .6, true, liso(0xc6935e))); // caixotes
+    g.add(cil(.25, .25, .55, 0x8b5a2b, .7, .2, z0 + .7, 10)); // barril
+    const placa = new THREE.Group(); placa.position.set(1.65, 0, z0 + .2); g.add(placa);
+    placa.add(cil(.05, .05, 1.4, escura, 0, .7, 0, 6)); placa.add(mesh(new THREE.BoxGeometry(1.1, .45, .08), 0, 0, 1.35, 0, true, liso(madeira)));
+    const t = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('⚓'), depthTest:true})); t.position.set(0, 1.36, .08); t.scale.setScalar(.42); placa.add(t);
+    // barco (aparece quando tem pedido do barco ou para viajar)
+    const b = new THREE.Group(); b.position.set(2.7, -1.35, z0 + 4.2); b.rotation.y = .15;
+    const casco = mesh(new THREE.BoxGeometry(1.6, .7, 3.6), 0, 0, .25, 0, true, liso(0xd2503f)); b.add(casco);
+    const proa = mesh(new THREE.ConeGeometry(.8, 1.2, 4), 0, 0, .25, 2.35, true, liso(0xd2503f)); proa.rotation.set(Math.PI / 2, Math.PI / 4, 0); proa.scale.set(1, 1, .44); b.add(proa);
+    b.add(mesh(new THREE.BoxGeometry(1.45, .1, 3.4), 0, 0, .62, .05, true, liso(0xe8c89a)));
+    b.add(mesh(new THREE.BoxGeometry(1.7, .14, 3.7), 0, 0, .62, 0, true, liso(0xf4f0e4)).translateY(-.02).translateY(0));
+    b.add(cil(.06, .07, 2.6, escura, 0, 1.9, .2, 6));
+    const vela = mesh(new THREE.PlaneGeometry(1.5, 1.7), 0, 0, 2.1, .25, true, new THREE.MeshStandardMaterial({color:C(0xfff8e8), side:THREE.DoubleSide, roughness:.9})); vela.rotation.y = Math.PI / 2; b.add(vela);
+    const band = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('🏝️'), depthTest:true})); band.position.set(0, 3.35, .2); band.scale.setScalar(.55); b.add(band);
+    [[-.3, .5], [.35, -.4]].forEach(([x, z]) => b.add(mesh(new THREE.BoxGeometry(.5, .45, .5), 0, x, .9, z, true, liso(0xa8743f))));
+    g.add(b); barco3D = b;
+    const pick = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3, 9.5), new THREE.MeshBasicMaterial({visible:false})); pick.position.set(1, 0, z0 + 3.5); g.add(pick); g.userData.pick = pick;
+    semSombra(g); g.traverse(o => { if (o.isMesh && o !== pick) o.castShadow = true; });
+    scene.add(g); porto3D = g;
+  }
   let sombraNuvens = null; const borboletas = [];
   let ilhaObjs = [], bordaArv = null;
   function montarIlha() {
     const antes = new Set(scene.children);
     const marGeo = new THREE.PlaneGeometry(360, 360, 40, 40); marGeo.rotateX(-Math.PI / 2);
-    aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(0x56b4e6), roughness:.3, metalness:.05}));
+    aguaMar = new THREE.Mesh(marGeo, new THREE.MeshStandardMaterial({color:C(TROP ? 0x2cc8d2 : 0x56b4e6), roughness:.3, metalness:.05})); // mar azul-turquesa na ilha tropical
     aguaMar.position.y = -1.55; scene.add(aguaMar);
     const areia = new THREE.ExtrudeGeometry(formaQuadrada(MEIA + 2.4, 6), {depth:1.6, bevelEnabled:true, bevelThickness:.4, bevelSize:.9, bevelSegments:2, curveSegments:10});
     areia.rotateX(-Math.PI / 2);
-    const ma = new THREE.Mesh(areia, liso(0xeedba0)); ma.position.y = -2.15; ma.receiveShadow = true; scene.add(ma);
+    const ma = new THREE.Mesh(areia, liso(TROP ? 0xf7e6b0 : 0xeedba0)); ma.position.y = -2.15; ma.receiveShadow = true; scene.add(ma);
     const terra = new THREE.ExtrudeGeometry(formaQuadrada(MEIA, 4), {depth:1, bevelEnabled:true, bevelThickness:.2, bevelSize:.25, bevelSegments:2, curveSegments:10});
     terra.rotateX(-Math.PI / 2);
     const mt = new THREE.Mesh(terra, liso(0x6cb84c)); mt.position.y = -1.2; mt.receiveShadow = true; scene.add(mt);
@@ -1360,7 +1439,7 @@
       if (Math.abs(x) > K && Math.abs(z) > K) { const cx = Math.sign(x) * K, cz = Math.sign(z) * K, dx = x - cx, dz = z - cz, d = Math.hypot(dx, dz); if (d > R) { x = cx + dx / d * R; z = cz + dz / d * R; pos.setX(i, x); pos.setZ(i, z); } }
       const n = Math.sin(x * .23) * Math.cos(z * .19) + Math.sin((x + z) * .11) * .7 + Math.sin(x * .7 + z * .5) * .15;
       const m = Math.sin(x * .05 + 1.3) * Math.cos(z * .06 - .4); // manchas grandes: grama mais clara e mais escura
-      c.setHSL(.265 + n * .018 - m * .015, .62 + n * .05, .40 + n * .05 + m * .045).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
+      c.setHSL((TROP ? .225 : .265) + n * .018 - m * .015, (TROP ? .66 : .62) + n * .05, .40 + n * .05 + m * .045).convertSRGBToLinear(); cores.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(cores, 3));
     const tg = document.createElement('canvas'); tg.width = tg.height = 256; const gg = tg.getContext('2d');
@@ -1864,6 +1943,23 @@
     return g;
   }
 
+  function criarCabra() { // 🐐 parecida com a ovelha, mas magrinha, com chifres e barbicha
+    const g = new THREE.Group(), corpo = new THREE.Group(); g.add(corpo);
+    const pelo = Math.random() < .5 ? 0xf3ece0 : 0xc89a6a, esc = 0x5a4130, chifre = 0xd8cbb0;
+    const b = bola(.34, pelo, 0, .78, 0, 14); b.scale.set(.8, .78, 1.35); corpo.add(b);
+    const pernas = [[-.16, .26], [.16, .26], [-.16, -.26], [.16, -.26]].map(([x, z]) => { const pp = perna(esc, .5, .05, x, .52, z); corpo.add(pp); return pp; });
+    const cab = new THREE.Group(); cab.position.set(0, 1.08, .48); corpo.add(cab);
+    const ca = bola(.18, pelo, 0, 0, .06, 12); ca.scale.set(.8, .9, 1.25); cab.add(ca);
+    [-1, 1].forEach(sd => { const c = mesh(new THREE.ConeGeometry(.05, .3, 6), 0, sd * .09, .2, -.04, true, liso(chifre)); c.rotation.set(-.55, 0, sd * -.25); cab.add(c);
+      const o = bola(.06, pelo, sd * .17, .04, -.02, 8); o.scale.set(1.7, .55, .8); cab.add(o); });
+    const barba = mesh(new THREE.ConeGeometry(.05, .16, 6), 0, 0, -.2, .2, true, liso(esc)); barba.rotation.x = Math.PI; cab.add(barba);
+    olhos(cab, .035, .18, .06, .05);
+    const cauda = new THREE.Group(); cauda.position.set(0, .95, -.5); corpo.add(cauda);
+    const cc = mesh(new THREE.ConeGeometry(.05, .18, 6), 0, 0, .06, 0, true, liso(pelo)); cc.rotation.x = -.6; cauda.add(cc);
+    g.add(sombraBlob(.55));
+    g.userData = {corpo, pernas, cauda, cab, fase:0, vel:1};
+    return g;
+  }
   function criarPato() {
     const g = new THREE.Group(), corpo = new THREE.Group(); g.add(corpo);
     const cor = Math.random() < .5 ? 0xffffff : 0xf7e9b0, lar = 0xff9a1f;
@@ -1961,14 +2057,14 @@
     p.rot = rotulo(nomePet(k), '#3f8d33'); p.rot.scale.multiplyScalar(.55); p.rot.position.y = ({cachorro:1.35, gato:1.05}[k] || .85); p.rot.visible = false; p.g.add(p.rot);
   }
   function atualizarRotulosPets() { for (const k in pets) colocarRotuloPet(k); }
-  const rebanho = {galinha:[], vaca:[], ovelha:[], coelho:[], pato:[], porco:[], abelha:[]};
+  const rebanho = {galinha:[], vaca:[], ovelha:[], coelho:[], pato:[], porco:[], abelha:[], cabra:[]};
   function cercadoDoAnimal(k, j) { const cs = cercadosDe(k); return cs[Math.min(cs.length - 1, Math.floor(j / ANIMAIS[k].porCercado))]; }
   function pontoNoCercado(o) { const L = limites(o); return V3(L.x + rnd(-L.hw, L.hw), 0, L.z + rnd(-L.hd, L.hd)); }
   function atualizarAnimais3D(reposicionar) {
     for (const k in ANIMAIS) {
       const lista = rebanho[k];
       while (lista.length < qtdAnimal(k)) {
-        const g = ({galinha:criarGalinha, vaca:criarVaca, coelho:criarCoelho, ovelha:criarOvelha, pato:criarPato, porco:criarPorco, abelha:criarAbelha}[k] || criarGalinha)();
+        const g = ({galinha:criarGalinha, vaca:criarVaca, coelho:criarCoelho, ovelha:criarOvelha, pato:criarPato, porco:criarPorco, abelha:criarAbelha, cabra:criarCabra}[k] || criarGalinha)();
         const o = cercadoDoAnimal(k, lista.length); if (!o) break;
         mesclarAnimado(g); g.traverse(m => { m.castShadow = false; }); g.position.copy(pontoNoCercado(o)); g.rotation.y = rnd(0, 6); scene.add(g);
         lista.push({g, alvo:g.position.clone(), espera:rnd(0, 3), est:'anda', est3d:'anda', estatua:null});
@@ -2208,6 +2304,17 @@
       } else if (id === 'cafe') {
         p.add(blob(.34, 0x2f7a35, 0, .55, 0)); p.add(cil(.05, .06, .4, 0x6b4a2b, 0, .2, 0, 6));
         for (let k = 0; k < 7; k++) p.add(bola(.06, k % 3 ? 0xc0272d : 0x7a1d1d, rnd(-.3, .3), .4 + rnd(0, .35), rnd(-.3, .3), 6));
+      } else if (id === 'banana') {
+        if (idx > 1) return; p.position.set(idx ? .42 : -.42, 0, 0);
+        p.add(cil(.09, .12, 1.2, 0x8a7a3a, 0, .6, 0, 7));
+        for (let k = 0; k < 5; k++) { const f = mesh(new THREE.BoxGeometry(.9, .03, .3), 0, 0, 1.25, 0, true, liso(0x4caf3a)); f.rotation.set(.5, k * 1.25, 0); f.translateX(.4); p.add(f); }
+        for (let k = 0; k < 6; k++) { const b = cil(.05, .04, .3, 0xffd23a, Math.cos(k) * .12, .95 - (k % 3) * .1, Math.sin(k) * .12, 6); b.rotation.z = .5; p.add(b); }
+      } else if (id === 'abacaxi') {
+        const a = bola(.22, 0xe0a22a, 0, .3, 0, 10); a.scale.set(.85, 1.3, .85); p.add(a);
+        for (let k = 0; k < 5; k++) { const f = folha(0x3f9a3a, .45, .06); f.position.y = .55; f.rotation.set(rnd(-.4, .4), k * 1.25, rnd(-.4, .4)); p.add(f); }
+      } else if (id === 'cacau') {
+        p.add(cil(.06, .08, .9, 0x6b4a2b, 0, .45, 0, 6)); p.add(blob(.36, 0x2f7a35, 0, 1.0, 0));
+        for (let k = 0; k < 4; k++) { const c = bola(.09, k % 2 ? 0xc86a1e : 0x8a3f12, Math.cos(k * 1.6) * .1, .55 + k * .07, Math.sin(k * 1.6) * .1, 8); c.scale.set(1, 1.6, 1); p.add(c); }
       } else if (id === 'uva') {
         if (idx > 1) return;
         p.position.set(idx ? .45 : -.45, 0, 0);
@@ -2392,6 +2499,7 @@
   // comprar construção nova: coloca no primeiro lugar livre e abre o modo edição para posicionar
   function comprarConstrucao(tipo, perto, doBau) { // doBau: item que estava guardado (sai de graça)
     const custo = doBau ? 0 : custoConstrucao(tipo);
+    if (!podeAqui(consDe(tipo))) { toast('🏝️ Essa construção é da Ilha Tropical: viaje pelo ⚓ Porto'); return; }
     if (!doBau && noMaximo(tipo)) { toast(`Você já tem o máximo de ${TIPOS[tipo].nome.toLowerCase()} (${TETO[tipo]}). Melhore com as Melhorias da Loja!`); return; }
     if (!doBau && S.nivel < nivelConstrucao(tipo)) { toast(`Libera no nível ${nivelConstrucao(tipo)}`); return; }
     if (!doBau && ehUnico(tipo) && nPosse(tipo)) { toast(qtdGuardado(tipo) ? 'Ela está guardada: coloque pela Loja › 📦 Guardados' : 'Você já tem essa construção'); return; }
@@ -2746,6 +2854,7 @@
   function fonteItem(id) {
     const it = item(id); if (!it) return '';
     if (MATERIAIS[id]) return '🎁 Cai de vez em quando ao colher e produzir. Também tem na Loja › Materiais.';
+    if (crop(id) && crop(id).ilha && !(S.nivel < crop(id).nivel)) return '🏝️ Planta da Ilha Tropical: plante lá (vá pelo ⚓ Porto). Sementes na Loja › Plantas.';
     if (crop(id)) return S.nivel < crop(id).nivel ? `🔒 Planta que libera no nível ${crop(id).nivel}.` : '🌱 Planta: plante num canteiro (sementes na Loja › Plantas). Cada colheita rende 2.';
     if (it.arvore) return `🌳 Dá na ${TIPOS[it.arvore].nome.toLowerCase()} (Loja › Fazenda).${S.nivel < it.nivel ? ` Libera no nível ${it.nivel}.` : ''}`;
     const an = Object.keys(ANIMAIS).find(k => ANIMAIS[k].prod === id);
@@ -2831,7 +2940,7 @@
     ilhaObjs.forEach(liberarIlha); ilhaObjs = []; borboletas.length = 0;
     for (const k in terras) { liberarIlha(terras[k]); delete terras[k]; } clicaveisTerra.length = 0;
     ANEL = novoAnel; OFF = 12 + 5 * ANEL; NZ = 5 + 2 * ANEL; MEIA = (OFF + .5) * G + 1.6;
-    calcZonas(); montarIlha(); montarTerras(); montarGrade(); ajustarSombraSol();
+    calcZonas(); montarIlha(); montarTerras(); montarGrade(); ajustarSombraSol(); montarPorto();
     if (renderer.shadowMap) renderer.shadowMap.needsUpdate = true;
   }
   // prévia em cinza de como a ilha fica depois de crescer
@@ -3251,7 +3360,7 @@
   }
   function abrirPlantio(i) {
     if (VISITA) return; alvoPlantio = i; modoSel = 'sementes'; seletorAberto = true;
-    const lib = CROPS.filter(c => c.nivel <= S.nivel), k = lib.findIndex(c => c.id === semAtual().id); paginaSem = Math.max(0, Math.floor(k / 6));
+    const lib = CROPS.filter(c => c.nivel <= S.nivel && podeAqui(c)), k = lib.findIndex(c => c.id === semAtual().id); paginaSem = Math.max(0, Math.floor(k / 6));
     abrirSeletor(true); verificarTutorial();
   }
   function renderSeletor() {
@@ -3271,7 +3380,7 @@
       el.innerHTML = `<div class="sel-lista ferr"><button class="sem ferr-arr" data-ferr-arr="${modoSel}"><span class="ico">${col ? FOICE : ICO.regador}</span><small>${col ? 'Foice' : 'Regador'}</small></button></div>`;
       posicionarSeletor(); return;
     }
-    const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
+    const atual = semAtual().id, lib = CROPS.filter(c => c.nivel <= S.nivel && podeAqui(c)), pags = Math.ceil(lib.length / 6); paginaSem = Math.min(paginaSem, pags - 1);
     el.innerHTML = '<div class="sel-linha">' + (pags > 1 ? `<button class="pg" data-sel="ant" ${paginaSem ? '' : 'disabled'}>◀</button>` : '') + '<div class="sel-lista pag">' + lib.slice(paginaSem * 6, paginaSem * 6 + 6).map(c => { const q = S.celeiro[c.id] || 0;
       return `<button class="sem ${c.id === atual ? 'ativo' : ''} ${q ? '' : 'vazio'}" data-sem="${c.id}"><span class="ico">${ICO.saco}<span class="emo">${emojiItem(c)}</span></span><small>${c.nome}</small>${q ? `<span class="qtd">${q}</span>` : '<span class="mais" data-comprar-sem="1">+</span>'}</button>`; }).join('') + '</div>' + (pags > 1 ? `<button class="pg" data-sel="prox" ${paginaSem < pags - 1 ? '' : 'disabled'}>▶</button>` : '') + '</div>';
     posicionarSeletor();
@@ -3288,13 +3397,13 @@
   }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
+  const TITULOS = {fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', porto:'⚓ Porto', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
   const SUBLOJA = {sementes:'🌱 Plantas', producao:'🏭 Produção', animais:'🐄 Animais', fazenda:'🏡 Fazenda', decoracao:'🌸 Decoração', melhorias:'⚡ Melhorias', insumos:'🧪 Adubos', materiais:'🧰 Materiais', guardados:'📦 Guardados'};
   // em qual aba da loja fica cada construção
-  const GRUPO_LOJA = {producao:['moinho', 'padaria', 'laticinio', 'tecelagem', 'cozinha', 'engenho', 'docaria', 'sorveteria'],
-    animais:['galinheiro', 'curral', 'pasto', 'coelheira', 'lagoinha', 'chiqueiro', 'apiario', 'casinhaPet']};
+  const GRUPO_LOJA = {producao:['moinho', 'padaria', 'laticinio', 'tecelagem', 'cozinha', 'engenho', 'docaria', 'sorveteria', 'sucos', 'chocolateria'],
+    animais:['galinheiro', 'curral', 'pasto', 'coelheira', 'lagoinha', 'chiqueiro', 'apiario', 'aprisco', 'casinhaPet']};
   const SECOES_DECOR = [['🌿 Natureza', ['flores', 'jardim', 'arvoreDec']], ['🪵 Cercas e caminhos', ['caminho', 'cercaDec', 'cercaMadeira', 'porteira']],
     ['🛢️ Enfeites', ['banco', 'bancoRustico', 'espantalho', 'poste', 'caixotes', 'barris', 'carroca', 'tecidos', 'carrinho', 'fonte']], ['🏠 Casas', ['casinhaA', 'casinhaB', 'taverna']]];
   const subDe = t => decDe(t) ? 'decoracao' : GRUPO_LOJA.producao.includes(t) ? 'producao' : GRUPO_LOJA.animais.includes(t) ? 'animais' : 'fazenda';
@@ -3338,7 +3447,7 @@
         h += tile({trava, cls:c.id === destaqueSem ? 'destaque' : '', attr:`data-card-sem="${c.id}"`,
           selo:trava ? `🔒 Nível ${c.nivel}` : q ? `Você tem ${q}` : '', seloCls:trava ? 'trava' : '',
           ic:ITEM_IMG[c.id] ? `<span class="img-g">${UI(ITEM_IMG[c.id])}</span>` : `<span class="emo-card">${c.emoji}</span>`, nome:c.nome,
-          info:`<span>⏱ ${fmtT(t)}</span><span>Colhe 2 · vende ${moedaMini}${c.preco} cada</span>`,
+          info:`<span>⏱ ${fmtT(t)}</span><span>Colhe 2 · vende ${moedaMini}${c.preco} cada</span>${c.ilha ? '<span class="so-ilha">🏝️ cresce só na Ilha Tropical</span>' : ''}`,
           acao:trava ? '' : `<button class="btn verde" data-compra="planta:${c.id}" ${S.moedas < precoPlanta(c) ? 'disabled' : ''}>Comprar · ${moedaMini}${precoPlanta(c)}</button>`});
       });
       if (subLoja === 'materiais') Object.keys(MATERIAIS).forEach(k => {
@@ -3358,6 +3467,7 @@
           acao:trava ? '' : `<button class="btn verde" data-compra="insumo:${k}" ${S.moedas < n.preco ? 'disabled' : ''}>Comprar · ${moedaMini}${n.preco}</button>`});
       });
       const cardCons = c => { const T = TIPOS[c.tipo], n = nTipo(c.tipo), noTeto = noMaximo(c.tipo), nv = nivelConstrucao(c.tipo), trava = !noTeto && S.nivel < nv, custo = custoConstrucao(c.tipo), feito = (c.unico && n > 0) || noTeto, lim = LIMITES[c.tipo];
+        if (!podeAqui(c)) return tile({trava:true, selo:'🏝️ Ilha Tropical', seloCls:'trava', ic:iconeLoja(c.tipo, c.icone), nome:T.nome, info:`<span class="desc">${c.desc}</span><span class="so-ilha">Construa na Ilha Tropical (pelo ⚓ Porto, nível ${NIVEL_PORTO})</span>`, acao:''});
         return tile({trava:trava && !n, selo:noTeto ? `Máximo · ${nPosse(c.tipo)}/${TETO[c.tipo]}` : trava ? `🔒 ${n ? 'Próximo no nível' : 'Nível'} ${nv}` : lim ? `${n}/${Math.max(n, maxPermitido(c.tipo))}` : n && !feito ? `Você tem ${n}` : '', seloCls:trava ? 'trava' : '',
           ic:iconeLoja(c.tipo, c.icone), nome:T.nome, info:`<span class="desc">${c.desc}</span>`,
           acao:trava ? '' : noTeto ? '<span class="ok">✓ No máximo</span>' : feito ? '<span class="ok">✓ Construído</span>' : `<button class="btn verde" data-construir="${c.tipo}" ${S.moedas < custo ? 'disabled' : ''}>${moedaMini}${fmtN(custo)}</button>`}); };
@@ -3368,6 +3478,9 @@
         h += secaoLoja('🌾 Plantio');
         CONSTRUCOES.filter(c => subDe(c.tipo) === 'fazenda').sort(ordemNv).forEach(c => h += cardCons(c));
         h += secaoLoja('🗺️ Terras e ilha');
+        if (!TROP) h += tile({trava:S.nivel < NIVEL_PORTO, selo:S.porto ? '✓ Construído' : S.nivel < NIVEL_PORTO ? `🔒 Nível ${NIVEL_PORTO}` : 'Novo!', seloCls:S.nivel < NIVEL_PORTO ? 'trava' : '', ic:'<span class="emo-g">⚓</span>', nome:'Porto',
+          info:'<span class="desc">Fica na praia. O barco leva você até a 🏝️ Ilha Tropical e traz pedidos grandes.</span>',
+          acao:S.porto ? '<button class="btn" data-abrir="porto">Abrir</button>' : S.nivel < NIVEL_PORTO ? '' : `<button class="btn verde" data-acao="comprar-porto">${moedaMini}${fmtN(CUSTO_PORTO)}</button>`});
         h += tile({selo:`${S.zonas.length}/${ZONAS.length}`, ic:'<span class="emo-g">🌳</span>', nome:'Terras',
           info:`<span class="desc">${livres ? `Mais espaço para construir. Próxima: ${moedaMini}${fmtN(custoZona())} · nível ${nivelZona()}` : 'Você liberou a ilha inteira!'}</span>`,
           acao:livres ? `<button class="btn" data-acao="ver-terra">Ver</button>` : ''});
@@ -3558,11 +3671,12 @@
           <button class="btn ${novaVersao ? 'verde' : ''}" data-acao="${novaVersao ? 'atualizar-ja' : 'procurar-versao'}">${novaVersao ? 'Atualizar agora' : 'Procurar atualização'}</button></div>
         <p class="dica legal">🎵 Músicas e sons: Mixkit (licença livre), OpenGameArt (CC0) e Pixabay.</p>
         <p class="dica legal"><a href="privacidade.html" target="_blank">Privacidade</a> · <a href="termos.html" target="_blank">Termos de uso</a></p>
-        ${MODO_TESTE ? '<div class="linha-cfg"><span>↺ Recomeçar do zero (teste)</span><button class="btn vermelho" data-abrir="reset">Recomeçar</button></div>' : ''}`;
+        ${ON.gm || (MODO_TESTE && !ON.user) ? '<div class="linha-cfg"><span>↺ Recomeçar do zero (teste · só GM)</span><button class="btn vermelho" data-abrir="reset">Recomeçar</button></div>' : ''}`;
     }
     if (janela === 'ranking') h += htmlRanking();
     if (janela === 'pedidos') h += htmlPedidos();
     if (janela === 'passe') h += htmlPasse();
+    if (janela === 'porto') h += htmlPorto();
     if (janela === 'banca') h += htmlBanca();
     if (janela === 'amigos') h += (ON.user ? `<div class="subabas"><button data-social="amigos" class="${SOC.aba !== 'coop' ? 'ativa' : ''}">👥 Amigos</button><button data-social="coop" class="${SOC.aba === 'coop' ? 'ativa' : ''}">🤝 Cooperativa</button></div>` : '') + (SOC.aba === 'coop' && ON.user ? htmlCoop() : htmlAmigos());
     if (janela === 'nuvem') h += htmlNuvem();
@@ -3794,6 +3908,7 @@
     if (heroi.atual && ray.intersectObject(heroi.g, true).length) { idsAcao(heroi.atual).forEach(j => marcar(j, false)); heroi.atual = null; heroi.acao = null; heroi.rota = []; renderFila(); toast('✋ Tarefa atual cancelada'); return; }
     for (const k in pets) if (ray.intersectObject(pets[k].g, true).length) { const p = pets[k]; if (p.rot) { p.rot.visible = true; clearTimeout(p.rotT); p.rotT = setTimeout(() => { if (p.rot) p.rot.visible = false; }, 3000); } flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); somT(k, 600); if (petsComFome() && !VISITA) alimentarPets(); return; }
     if (tonho && ray.intersectObject(tonho, true).length) { irPara(tonho.position.clone().add(V3(.8, 0, .8))); abrir('ajuda'); return; }
+    if (porto3D && ray.intersectObject(porto3D.userData.pick).length) { abrir('porto'); return; } // ⚓
     const o = pickConstrucao(false); if (clicavel(o)) { clicarConstrucao(o); return; }
     const z = pickTerra(); if (z) { const tg = terras[z]; if (tg && tg.userData.rotulo) { const r = tg.userData.rotulo; r.visible = true; clearTimeout(r.userData.t); r.userData.t = setTimeout(() => r.visible = false, 3500); } zonaSel = z; abrir('zona'); return; }
     const p = pontoChao(); if (p) { const d = ajustarDestino(p.clone()); if (!enfileirar({tipo:'andar', pos:d})) return; marcador.position.set(d.x, .06, d.z); marcador.visible = true; marcadorT = 1; }
@@ -3914,6 +4029,12 @@
     if (ac === 'instalar' && pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.finally(() => { pedidoInstalar = null; renderJanela(); }); }
     if (ac === 'chamar-pets') { S.seguir = !S.seguir; atualizarPets3D(); salvar(); renderJanela(); toast(S.seguir ? '🐾 Seus bichinhos estão seguindo você' : '🐾 Bichinhos soltos para passear'); }
     if (ac === 'resgatar-passe') { resgatarPasse(); return; }
+    if (ac === 'comprar-porto') { if (S.porto || S.nivel < NIVEL_PORTO) return; if (S.moedas < CUSTO_PORTO) { toast('Moedas insuficientes'); return; }
+      S.moedas -= CUSTO_PORTO; S.porto = true; salvar(); montarPorto(); fechar(); tudo(); somT('nivel'); toast('⚓ Porto construído na praia! Toque nele para viajar', 'ouro');
+      if (porto3D) focar(porto3D.userData.pick.getWorldPosition(V3())); return; }
+    if (ac === 'viajar') { viajar(e.target.closest('[data-ilha]').dataset.ilha); return; }
+    if (ac === 'barco-caixa') { encherCaixa(+e.target.closest('[data-cx]').dataset.cx); return; }
+    if (ac === 'barco-trocar') { S.barco = null; S.barcoVolta = Date.now() + 3600 * 1000; salvar(); renderJanela(); toast('🚢 Pedido dispensado. Um barco novo chega em 1 hora'); return; }
     if (ac === 'cuidar-todos') {
       const c = resumoCuidar();
       if (c.alvos.length) { c.alvos.forEach(o => enfileirar({tipo:'cercado', oid:o.id})); toast(`🐾 Indo ${[c.col && `coletar ${c.col}`, c.ali && `alimentar ${c.ali}`].filter(Boolean).join(' e ')}`, 'bom'); }
@@ -3960,7 +4081,14 @@
     if (ac === 'vender-galpao') { let t = 0; Object.keys(MATERIAIS).forEach(m => { const q = ((S.mat || {})[m] || 0) - 3; if (q > 0) { S.mat[m] -= q; t += q * MAT_PRECO[m]; } }); if (t) { S.moedas += t; S.stats.vendeu = (S.stats.vendeu || 0) + t; somT('moeda'); toast(`Vendeu os materiais extras por ${fmtN(t)} moedas (ficaram 3 de cada)`, 'bom'); pulsar(); } tudo(); return; }
     if (ac === 'vender-celeiro') { let t = 0; CROPS.concat(FRUTAS).forEach(c => { const q = (S.celeiro[c.id] || 0) - 3; if (q > 0) t += vender(c.id, q); }); if (t) { toast(`Vendeu as sobras por ${fmtN(t)} moedas (ficaram 3 de cada)`, 'bom'); pulsar(); } tudo(); return; }
     if (ac === 'vender-tudo') { let t = 0; VENDAVEIS.filter(c => !ehPlanta(c.id)).forEach(c => t += vender(c.id)); if (t) { toast(`Vendeu tudo por ${fmtN(t)} moedas`, 'bom'); pulsar(); } tudo(); }
-    if (ac === 'reset-sim') { const leve = S.leve, ql = S.qual; S = novo(); S.leve = leve; S.qual = ql; S.viuAjuda = true; salvar(); location.reload(); }
+    if (ac === 'reset-sim') { (async () => {
+      if (ON.user && !ON.gm) { toast('Só a conta GM pode recomeçar do zero'); return; }
+      const velho = S, leve = S.leve, ql = S.qual; guardarBackup(velho, 'antes de recomeçar');
+      const n = novo(); n.leve = leve; n.qual = ql; n.perfil = velho.perfil; n.rev = (velho.rev || 0) + 1000; n.salvoEm = Date.now(); // rev maior: o save novo vence o antigo em qualquer aparelho
+      if (ON.user) { n.uid = ON.user.id; toast('↺ Zerando a fazenda…');
+        try { const {data, error} = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:n, atualizado:new Date().toISOString()}).select('atualizado').maybeSingle();
+          if (error) throw error; n.nuvemVer = verDe(data.atualizado); } catch (e) { toast('☁️ Sem conexão: não deu para zerar agora. Tente de novo.'); return; } }
+      ON.recarregando = true; try { localStorage.setItem(KEY, JSON.stringify(n)); } catch (e) {} location.reload(); })(); }
   });
   document.addEventListener('keydown', e => {
     if (e.target && e.target.tagName === 'INPUT') { if (e.key === 'Enter' && e.target.id === 'inNome') escolherNome(e.target.value); if (e.key === 'Enter' && e.target.id === 'inAmigo') pedirAmizade(e.target.value); if (e.key === 'Enter' && e.target.id === 'inBuscaCoop') { COOP.busca = e.target.value.trim(); COOP.meu = undefined; carregarCoop(); } return; }
@@ -3992,6 +4120,7 @@
       b.scale.setScalar(1 + f * 5); b.material.opacity = (1 - f) * .45;
     });
     if (aguaMar) aguaMar.position.y = -1.55 + Math.sin(t * .8) * .06;
+    if (barco3D) { barco3D.position.y = -1.35 + Math.sin(t * 1.1) * .07; barco3D.rotation.z = Math.sin(t * .9) * .03; }
   }
   let quadro = 0;
   function animar(t) {
@@ -4200,6 +4329,60 @@
         <div class="passe-card prem"><div class="pc-ic">${pr.ic}</div><small>${pr.txt}</small><b class="pc-tranca">🔒</b></div></div>`;
     }
     return h + `</div><p class="dica passe-dica">Cada dia do mês libera um prêmio. Faltou alguns dias? Pegue tudo de uma vez até o fim do mês. A cada 7 dias tem um <b>baú</b> 🧰.</p>`;
+  }
+  // ================= ILHAS E BARCO (v0.53) =================
+  function ilhaNova() { return {objetos:layoutInicial(), plots:Array.from({length:4}, () => ({c:null})), zonas:ZONAS.filter(z => z.inicial).map(z => z.key), expansao:0, moinhos:{}, fab:{}, pomar:{}, ani:{}, animais:{}, prod:{}}; }
+  function viajar(dest) {
+    if (dest === ILHA || VISITA) return;
+    if (S.nivel < NIVEL_PORTO) { toast(`🏝️ A Ilha Tropical libera no nível ${NIVEL_PORTO}`); return; }
+    if (editar.ativo) sairEdicao(); fechar(); salvar();
+    const d = JSON.parse(JSON.stringify(S)), atual = {};
+    ILHA_CHAVES.forEach(k => { if (k in d) atual[k] = d[k]; delete d[k]; });
+    d.outras = d.outras || {}; d.outras[ILHA] = atual;
+    const alvo = d.outras[dest] || ilhaNova(); delete d.outras[dest];
+    Object.assign(d, alvo); d.ilha = dest; d.rev = (S.rev || 0) + 1; d.salvoEm = Date.now(); // conta como progresso: sobe para a nuvem ao chegar
+    let el = $('#telaViagem'); if (!el) { el = document.createElement('div'); el.id = 'telaViagem'; document.body.appendChild(el); }
+    el.innerHTML = `<div class="via-mar"><div class="via-barco">⛵</div><div class="via-onda"></div></div><h3>Viajando para a ${NOME_ILHA[dest]}…</h3><p>${dest === 'tropical' ? '🏝️ Bananas, abacaxis e cocos esperando por você!' : '🏡 Voltando para casa'}</p>`;
+    el.classList.add('on'); somT('abrir');
+    ON.recarregando = true; try { localStorage.setItem(KEY, JSON.stringify(d)); sessionStorage.setItem(ON.user ? 'terralia-entrar' : 'terralia-entrar-conv', '1'); } catch (e) {} // ao chegar, entra direto no jogo
+    setTimeout(() => carregarFazenda(d, dest === 'tropical' ? '🏝️ Bem-vindo à Ilha Tropical!' : '🏡 De volta à Ilha Principal!'), 2600);
+  }
+  // pedidos do barco: 3 caixas grandes, um barco a cada 6 horas
+  const BARCO_INTERVALO = 6 * 3600 * 1000;
+  function gerarBarco() {
+    const L = S.nivel, pool = ITENS.filter(i => !i.racao && (i.nivel || 1) <= L && i.preco > 0 && !MATERIAIS[i.id]);
+    const caros = pool.filter(i => i.fab || i.animal || (i.nivel || 1) >= Math.max(1, L - 12)), base = caros.length >= 3 ? caros : pool;
+    const esc = [], usados = new Set();
+    while (esc.length < 3 && usados.size < base.length) { const it = base[Math.random() * base.length | 0]; if (usados.has(it.id)) continue; usados.add(it.id);
+      const n = Math.max(2, Math.min(30, Math.round(1500 * (1 + L / 20) / it.preco))); esc.push({id:it.id, n, feito:false}); }
+    const valor = esc.reduce((t, c) => t + c.n * item(c.id).preco, 0), xp = esc.reduce((t, c) => t + c.n * (item(c.id).xp || Math.round(item(c.id).preco / 12)), 0);
+    S.barco = {caixas:esc, moedas:Math.round(valor * 2 / 10) * 10, xp:Math.round(xp * .8 + 20), chegou:Date.now()}; S.barcoVolta = null;
+  }
+  function barcoAtual() { // o barco chega sozinho quando dá a hora
+    if (!S.porto && !TROP) return null;
+    if (!S.barco && (!S.barcoVolta || Date.now() >= S.barcoVolta)) { gerarBarco(); salvar(); }
+    return S.barco;
+  }
+  function encherCaixa(i) {
+    const b = barcoAtual(); if (!b) return; const c = b.caixas[i]; if (!c || c.feito) return;
+    if (estoque(c.id) < c.n) { toast(`Faltam ${c.n - estoque(c.id)} ${item(c.id).nome.toLowerCase()}`); somT('erro'); return; }
+    mudarEstoque(c.id, -c.n); c.feito = true; somT('moeda'); toast(`📦 Caixa ${i + 1} carregada!`, 'bom');
+    if (b.caixas.every(x => x.feito)) { S.moedas += b.moedas; ganharXp(b.xp); S.barco = null; S.barcoVolta = Date.now() + BARCO_INTERVALO; S.stats.barcos = (S.stats.barcos || 0) + 1;
+      setTimeout(() => toast(`🚢 Barco completo! +${fmtN(b.moedas)} moedas e +${fmtN(b.xp)} XP`, 'ouro'), 400); somT('nivel'); }
+    salvar(); tudo(); renderJanela();
+  }
+  function htmlPorto() {
+    const outra = TROP ? 'principal' : 'tropical', b = barcoAtual();
+    let h = `<div class="porto-viagem"><div class="pv-ic">${TROP ? '🏡' : '🏝️'}</div><div class="pv-txt"><b>${TROP ? 'Voltar para a Ilha Principal' : 'Viajar para a Ilha Tropical'}</b>
+      <small>${TROP ? 'Sua fazenda de casa continua produzindo enquanto você está aqui.' : 'Bananas, abacaxis, cocos, cabras e fábricas novas. Celeiro e Armazém são os mesmos nas duas ilhas.'}</small></div>
+      <button class="btn verde" data-acao="viajar" data-ilha="${outra}">⛵ ${TROP ? 'Voltar' : 'Viajar'}</button></div>`;
+    h += `<div class="secao-titulo">🚢 Pedido do barco</div>`;
+    if (!b) { const r = Math.max(0, (S.barcoVolta || 0) - Date.now()); h += `<p class="dica">O próximo barco chega em <b>${fmtT(r / 1000)}</b>. Ele traz 3 caixas grandes para encher, e paga o dobro do caminhão.</p>`; return h; }
+    h += `<div class="barco-caixas">${b.caixas.map((c, i) => { const it = item(c.id), tem = estoque(c.id), ok = tem >= c.n;
+      return `<div class="bx ${c.feito ? 'feito' : ''}"><span class="bx-n">Caixa ${i + 1}</span><div class="bx-ic" data-info="${c.id}">${iconeItem(it, 'e')}</div><b>${c.n} ${esc(it.nome)}</b>
+        ${c.feito ? '<span class="ok">✓ Carregada</span>' : `<small class="${ok ? 'tem' : 'falta'}">você tem ${fmtN(tem)}</small><button class="btn ${ok ? 'verde' : ''}" data-acao="barco-caixa" data-cx="${i}" ${ok ? '' : 'disabled'}>Carregar</button>`}</div>`; }).join('')}</div>
+      <div class="barco-premio">Prêmio ao encher as 3: ${moedaMini}<b>${fmtN(b.moedas)}</b> · ⭐ <b>${fmtN(b.xp)} XP</b> <button class="btn mini-b" data-acao="barco-trocar">Dispensar</button></div>`;
+    return h;
   }
   function htmlPedidos() {
     if (S.nivel < NIVEL_PEDIDOS) return `<p class="dica">O caminhão de pedidos chega no nível ${NIVEL_PEDIDOS}. 🚚</p>`;
@@ -4674,7 +4857,7 @@
       if (novo) { ON.sincronizado = false; setTimeout(sincronizarAoEntrar, 0); }
       if (janela === 'config' || janela === 'ranking') renderJanela();
     });
-    setInterval(() => { if (ON.user && ON.sujo && Date.now() - (ON.tentou || 0) > 3500) enviarSave(); }, 1500); // salva na nuvem ~3 s depois de qualquer mudança
+    setInterval(() => { if (ON.user && ON.sujo && Date.now() - (ON.tentou || 0) > 1500) enviarSave(); }, 1000); // salva na nuvem ~1,5 s depois de qualquer mudança
     setInterval(() => { if (!document.hidden && ON.user && ON.sincronizado && !ON.expulso) conferirSessao(); }, 8000);
     setInterval(batida, 60000); setTimeout(batida, 8000);
     document.addEventListener('visibilitychange', () => { if (document.hidden) salvarAoFechar(); else if (ON.user && ON.sincronizado && !ON.expulso) conferirSessao(); });
@@ -4751,9 +4934,10 @@
     if (!data) { ON.sincronizado = true; await enviarSave(true); return; }
     if (S.nuvemVer == null && Math.abs((nv.salvoEm || 0) - (S.salvoEm || 0)) < 2000) S.nuvemVer = ver; // saves antigos
     const mudouAqui = (S.salvoEm || 0) > (S.nuvemVer || 0) + 2000; // jogou neste aparelho depois do último envio
-    if (S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo) enviarSave(); return; } // tudo em dia
+    if (S.nuvemVer === ver) { ON.sincronizado = true; if (mudouAqui || ON.sujo || (S.rev || 0) > (nv.rev || 0)) enviarSave(false, true); return; } // tudo em dia (ou este aparelho tem progresso a mais, ex.: viagem de ilha)
     // saves diferentes: fica o mais recente (o que tem a última coisa feita na fazenda), sem perguntar; o outro vira cópia de segurança
-    if ((nv.salvoEm || ver) >= (S.salvoEm || 0)) { guardarBackup(S, 'aparelho'); carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); return; }
+    if (S.rev && nv.rev === S.rev) { S.nuvemVer = ver; salvar(); ON.sincronizado = true; if (ON.sujo) enviarSave(); return; } // mesmo save
+    if (!maisAdiantado(S, nv)) { guardarBackup(S, 'aparelho'); carregarFazenda(Object.assign({}, nv, {uid, nuvemVer:ver, salvoEm:ver}), '☁️ Fazenda carregada da nuvem!'); return; }
     guardarBackup(nv, 'nuvem'); ON.sincronizado = true; await enviarSave(false, true); // o deste aparelho é mais novo: sobe para a nuvem
   }
   // cópia de segurança do save que não foi usado (fica 7 dias no aparelho)
@@ -4843,16 +5027,18 @@
         if (data && verDe(data.atualizado) !== S.nuvemVer) {
           const r = await lerNuvem('dados, atualizado'); ON.enviando = false;
           if (r.data) { const nv = r.data.dados || {}, ver = verDe(r.data.atualizado);
-            if ((nv.salvoEm || ver) > (S.salvoEm || 0)) { guardarBackup(S, 'aparelho'); carregarDaNuvem(nv, ver); return; } // a nuvem está mais adiantada
+            if (S.rev && nv.rev === S.rev) { S.nuvemVer = ver; salvar(); setTimeout(() => enviarSave(), 50); return; } // é o mesmo save: só a hora mudou
+            if (maisAdiantado(nv, S)) { guardarBackup(S, 'aparelho'); carregarDaNuvem(nv, ver); return; } // a nuvem está mais adiantada
             guardarBackup(nv, 'nuvem'); setTimeout(() => enviarSave(false, true), 50); } // este aparelho está mais adiantado: sobrescreve
           return;
         }
       }
       const agora = new Date().toISOString(), p = S.perfil || {};
       S.uid = ON.user.id; S.nuvemVer = verDe(agora); salvar(); S.salvoEm = S.nuvemVer; salvar();
-      const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora});
+      const r1 = await ON.sb.from('saves').upsert({user_id:ON.user.id, dados:S, atualizado:agora}).select('atualizado').maybeSingle();
+      if (!r1.error && r1.data && r1.data.atualizado) { S.nuvemVer = verDe(r1.data.atualizado); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} } // a versão é a hora do servidor
       const rank = !r1.error && (avisar || Date.now() - (ON.ultRank || 0) > 60000); if (rank) ON.ultRank = Date.now(); // ranking e foto pública: no máximo 1 vez por minuto
-      const r2 = !rank ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length, avatar:p.avatar || null, atualizado:agora, visto_em:agora});
+      const r2 = !rank ? {} : await ON.sb.from('ranking').upsert({user_id:ON.user.id, nome:(p.nome || 'Fazendeiro').slice(0, 24), nivel:S.nivel, producao:producaoTotal(), terras:S.zonas.length + Object.values(S.outras || {}).reduce((t, i) => t + ((i.zonas || []).length), 0), avatar:p.avatar || null, atualizado:agora, visto_em:agora});
       if (rank) ON.sb.from('fazendas_publicas').upsert({user_id:ON.user.id, dados:fotoFazenda(), atualizado:agora}).then(() => {}, () => {});
       if (r2.error && r2.error.code === '23505') { ON.sujo = false; ON.ultimo = Date.now(); ON.erro = 'escolha outro nome para o ranking'; abrirEscolhaNome('ocupado'); ON.enviando = false; return; }
       const err = r1.error || r2.error;
@@ -4885,7 +5071,10 @@
     if (!el) { el = document.createElement('div'); el.id = 'telaExpulso'; document.body.appendChild(el);
       el.addEventListener('click', async e => { const b = e.target.closest('[data-exp]'); if (!b) return;
         el.querySelectorAll('button').forEach(x => x.disabled = true);
-        if (b.dataset.exp === 'aqui') { await assumirSessao(); const {data} = await lerNuvem('dados, atualizado'); if (data) carregarDaNuvem(data.dados, verDe(data.atualizado)); else location.reload(); }
+        if (b.dataset.exp === 'aqui') { salvar(); await assumirSessao(); const {data} = await lerNuvem('dados, atualizado');
+          if (data && !maisAdiantado(S, data.dados || {})) carregarDaNuvem(data.dados, verDe(data.atualizado)); // o outro aparelho jogou mais: fica o de lá
+          else if (data) { guardarBackup(data.dados, 'nuvem'); S.nuvemVer = verDe(data.atualizado); ON.expulso = false; ON.pausado = false; el.classList.remove('on'); await enviarSave(true, true); } // este aparelho estava mais adiantado: nada se perde
+          else location.reload(); }
         else { ON.sujo = false; sairDaConta(); }
       }); }
     el.innerHTML = `<div class="exp-caixa"><div class="exp-ic">📱</div><h3>Sua conta foi aberta em outro aparelho</h3><p>Para não perder nada, a fazenda só pode ficar aberta em um lugar por vez. O progresso de lá está salvo na nuvem.</p>
@@ -5101,7 +5290,7 @@
   aplicarQualidade();
   if (!S.audio) S.audio = {musica:.5, efeitos:.8, mudo:false};
   if (window.SOM) { SOM.config(S.audio); SOM.tocarMusica(); }
-  montarCeu(); montarIlha(); montarTerras(); montarNuvens(); montarObjetos(); montarPersonagens(); montarTonho();
+  montarCeu(); montarIlha(); montarTerras(); montarNuvens(); montarObjetos(); montarPersonagens(); montarTonho(); montarPorto();
   azAtual = azAlvo = S.camLivre && S.azLivre != null ? S.azLivre : Math.PI / 4 + (S.az || 0) * Math.PI / 2; inclina = S.camLivre ? S.inclina || 0 : 0; pintarTrava();
   redimensionar();
   atualizarProducao();
@@ -5162,7 +5351,7 @@
   if (MODO_BAIXAR) { document.body.classList.add('modo-baixar'); renderBaixar(); window.addEventListener('beforeinstallprompt', () => setTimeout(renderBaixar, 0)); }
   window.addEventListener('appinstalled', () => { pedidoInstalar = null; if (MODO_BAIXAR) { const t = $('#painelBaixar .bx-tit'); if (t) t.textContent = '✅ Instalado! Abra o jogo pelo ícone 🐄 na sua tela'; } if (btnInst) btnInst.textContent = '✅ Instalado! Abra pelo ícone'; toast('📲 Terrália Farm instalado! Abra pelo ícone na tela inicial.', 'bom'); if (janela === 'config') renderJanela(); });
   setInterval(tickMercado, MERCADO_MS);
-  setInterval(salvar, 5000);
+  setInterval(salvar, 2000); // grava no aparelho a cada 2 s (só se algo mudou)
   document.addEventListener('visibilitychange', () => { if (document.hidden) salvar(); });
 
   // terminou de montar a fazenda: tira a tela de carregamento (visitas) e pula a capa
