@@ -9,7 +9,7 @@
   const instalado = () => matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches || !!navigator.standalone;
   // fora do app instalado, o site é só a página de baixar (?navegador=1 libera para testes; ?baixar=1 força a página)
   const MODO_BAIXAR = /[?&]baixar=1/.test(location.search) || (!instalado() && !/[?&]navegador=1/.test(location.search) && !/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^https?:$/.test(location.protocol));
-  const VERSAO = '0.54'; // a cada atualização: aumentar aqui e no versao.json
+  const VERSAO = '0.55'; // a cada atualização: aumentar aqui e no versao.json
   const MODO_TESTE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname); // só no computador de desenvolvimento (no site, o Recomeçar é só da conta GM)
   const MOBILE = matchMedia('(pointer:coarse)').matches || Math.min(screen.width, screen.height) < 600;
   const ICO = window.ICONES || {};
@@ -1625,7 +1625,11 @@
     g.rotation.y = rnd(0, 6); semSombra(g); return g;
   }
   // ⚓ porto na praia do sul (não ocupa terra da fazenda) + barco
-  let porto3D = null, barco3D = null;
+  let porto3D = null, barco3D = null; const navios = {};
+  function carregarNavio(k, cb) { // ⛵ navios do Watercraft Kit (Kenney, CC0)
+    if (!THREE.GLTFLoader) return; const n = navios[k] = navios[k] || {fila:[]}; if (n.cena) return cb(n.cena); n.fila.push(cb); if (n.carregando) return; n.carregando = true;
+    new THREE.GLTFLoader().load(`assets/barcos/${k}.glb`, gl => { n.cena = gl.scene; n.cena.traverse(o => { if (o.isMesh && o.material) { o.material.roughness = .8; o.material.metalness = 0; o.material.envMapIntensity = .3; o.material.color.multiplyScalar(.8); } }); n.fila.forEach(f => f(n.cena)); n.fila = []; }, undefined, () => {});
+  }
   function montarPorto() {
     if (porto3D) { scene.remove(porto3D); porto3D = null; barco3D = null; }
     if (VISITA || !(TROP || MED || S.porto)) return;
@@ -1642,15 +1646,20 @@
     const t = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('⚓'), depthTest:true})); t.position.set(0, 1.36, .08); t.scale.setScalar(.42); placa.add(t);
     // barco (aparece quando tem pedido do barco ou para viajar)
     const b = new THREE.Group(), grande = !TROP && !MED; // na ilha principal: navio maior, de lado, parado na frente do píer
-    if (grande) { b.position.set(-7.2, -1.35, z0 + 5.2); b.rotation.y = .1; b.scale.setScalar(1.75); } else { b.position.set(2.7, -1.35, z0 + 4.2); b.rotation.y = .15; }
-    const casco = mesh(new THREE.BoxGeometry(1.6, .7, 3.6), 0, 0, .25, 0, true, liso(0xd2503f)); b.add(casco);
-    const proa = mesh(new THREE.ConeGeometry(.8, 1.2, 4), 0, 0, .25, 2.35, true, liso(0xd2503f)); proa.rotation.set(Math.PI / 2, Math.PI / 4, 0); proa.scale.set(1, 1, .44); b.add(proa);
-    b.add(mesh(new THREE.BoxGeometry(1.45, .1, 3.4), 0, 0, .62, .05, true, liso(0xe8c89a)));
-    b.add(mesh(new THREE.BoxGeometry(1.7, .14, 3.7), 0, 0, .62, 0, true, liso(0xf4f0e4)).translateY(-.02).translateY(0));
-    b.add(cil(.06, .07, 2.6, escura, 0, 1.9, .2, 6));
-    const vela = mesh(new THREE.PlaneGeometry(1.5, 1.7), 0, 0, 2.1, .25, true, new THREE.MeshStandardMaterial({color:C(0xfff8e8), side:THREE.DoubleSide, roughness:.9})); vela.rotation.y = Math.PI / 2; b.add(vela);
-    const band = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('⛵'), depthTest:true})); band.position.set(0, 3.35, .2); band.scale.setScalar(.55); b.add(band);
-    [[-.3, .5], [.35, -.4]].forEach(([x, z]) => b.add(mesh(new THREE.BoxGeometry(.5, .45, .5), 0, x, .9, z, true, liso(0xa8743f))));
+    if (grande) { b.position.set(-3.8, -1.35, z0 + 5.6); b.rotation.y = .1; b.scale.setScalar(1.75); } else { b.position.set(2.7, -1.35, z0 + 4.2); b.rotation.y = .15; }
+    const bp = new THREE.Group(); b.add(bp); // barquinho desenhado (fica até o modelo do navio baixar)
+    const casco = mesh(new THREE.BoxGeometry(1.6, .7, 3.6), 0, 0, .25, 0, true, liso(0xd2503f)); bp.add(casco);
+    const proa = mesh(new THREE.ConeGeometry(.8, 1.2, 4), 0, 0, .25, 2.35, true, liso(0xd2503f)); proa.rotation.set(Math.PI / 2, Math.PI / 4, 0); proa.scale.set(1, 1, .44); bp.add(proa);
+    bp.add(mesh(new THREE.BoxGeometry(1.45, .1, 3.4), 0, 0, .62, .05, true, liso(0xe8c89a)));
+    bp.add(mesh(new THREE.BoxGeometry(1.7, .14, 3.7), 0, 0, .62, 0, true, liso(0xf4f0e4)).translateY(-.02).translateY(0));
+    bp.add(cil(.06, .07, 2.6, escura, 0, 1.9, .2, 6));
+    const vela = mesh(new THREE.PlaneGeometry(1.5, 1.7), 0, 0, 2.1, .25, true, new THREE.MeshStandardMaterial({color:C(0xfff8e8), side:THREE.DoubleSide, roughness:.9})); vela.rotation.y = Math.PI / 2; bp.add(vela);
+    const band = new THREE.Sprite(new THREE.SpriteMaterial({map:emojiTex('⛵'), depthTest:true})); band.position.set(0, 3.35, .2); band.scale.setScalar(.55); bp.add(band);
+    [[-.3, .5], [.35, -.4]].forEach(([x, z]) => bp.add(mesh(new THREE.BoxGeometry(.5, .45, .5), 0, x, .9, z, true, liso(0xa8743f))));
+    const pb = new THREE.Mesh(new THREE.BoxGeometry(2.4, 3, 5), new THREE.MeshBasicMaterial({visible:false})); pb.position.y = 1; b.add(pb); b.userData.pick = pb;
+    carregarNavio(grande ? 'ship-large' : 'ship-small', cena => { const m = cena.clone(true), bb = new THREE.Box3().setFromObject(m), tam = bb.getSize(V3()), esc = (grande ? 4.6 : 3.8) / Math.max(tam.x, tam.z);
+      m.scale.setScalar(esc); m.position.set(-(bb.min.x + bb.max.x) / 2 * esc, -bb.min.y * esc + .05, -(bb.min.z + bb.max.z) / 2 * esc); if (tam.x > tam.z) m.rotation.y = Math.PI / 2;
+      m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } }); b.add(m); bp.visible = false; });
     g.add(b); barco3D = b;
     const pick = new THREE.Mesh(new THREE.BoxGeometry(5.5, 3, 9.5), new THREE.MeshBasicMaterial({visible:false})); pick.position.set(1, 0, z0 + 3.5); g.add(pick); g.userData.pick = pick;
     semSombra(g); g.traverse(o => { if (o.isMesh && o !== pick) o.castShadow = true; });
@@ -2819,11 +2828,37 @@
     return g;
   }
   function posTile(i) { return tiles[i].g.getWorldPosition(V3()); }
+  // 🌱 plantações do Nature Crops Pack (Quaternius, CC0): 4 fases crescendo + a planta pronta, cada uma bem diferente
+  const PLANTAS_GLB = {trigo:{n:'Wheat', h:1.05}, milho:{n:'Corn', h:1.75}, cenoura:{n:'Carrot', h:.75, cor:{LightOrange:0xff7f1a, Green:0x4fae2c}}, alface:{n:'Lettuce', h:.6, cor:{DarkGreen:0x8fd14f}}, tomate:{n:'Tomato', h:1.15},
+    morango:{n:'BushBerries', h:.75}, abobora:{n:'Pumpkin', h:.8}, girassol:{n:'Flower', h:1.35, cor:{Cyan:0xffc21a, Yellow:0x7a4a1c}}, cana:{n:'Bamboo', h:1.9}, melancia:{n:'Watermelon', h:.75}};
+  const FASES = ['1', '2', '3', '4'], plantasGLB = {}; // a fase 4 é a planta pronta, com os frutos
+  function carregarPlanta(id) { // baixa só as plantas que aparecem na fazenda
+    const P = PLANTAS_GLB[id]; if (!P || !THREE.GLTFLoader || plantasGLB[id]) return; plantasGLB[id] = {carregando:true};
+    const L = new THREE.GLTFLoader();
+    Promise.all(FASES.concat('Crop').map(f => new Promise(res => L.load(`assets/plantas/${P.n}_${f}.glb`, gl => res(gl.scene), undefined, () => res(null))))).then(cenas => {
+      if (cenas.some(c => !c)) return; // se algo falhar, fica a planta desenhada
+      const bbF = new THREE.Box3().setFromObject(cenas[3]), tf = bbF.getSize(V3()), escP = Math.min(P.h / tf.y, .92 / Math.max(tf.x, tf.z)); // a escala da planta pronta vale para todas as fases
+      const bbC = new THREE.Box3().setFromObject(cenas[4]), tc = bbC.getSize(V3()), escC = .5 / Math.max(tc.x, tc.y, tc.z); // o fruto colhido, bem visível no chão
+      const fases = cenas.map((cena, k) => { const esc = k === 4 ? escC : escP; cena.updateMatrixWorld(true); const bb = new THREE.Box3().setFromObject(cena), cx = (bb.min.x + bb.max.x) / 2, cz = (bb.min.z + bb.max.z) / 2, partes = [];
+        cena.traverse(o => { if (!o.isMesh) return; const g = o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.translate(-cx, -bb.min.y, -cz); g.scale(esc, esc, esc);
+          const ms = (Array.isArray(o.material) ? o.material : [o.material]).map(m => { const n = new THREE.MeshStandardMaterial({color:m.color.clone(), roughness:.9, metalness:0, flatShading:true, envMapIntensity:.25});
+            if (P.cor && P.cor[m.name] != null) n.color = C(P.cor[m.name]); else n.color.offsetHSL(0, .12, .02); return n; });
+          partes.push({g, mt:Array.isArray(o.material) ? ms : ms[0]}); });
+        return partes; });
+      plantasGLB[id] = {fases:fases.slice(0, 4), fruto:fases[4]}; S.plots.forEach((q, i) => { if (q.c === id && tiles[i]) { tiles[i].chave = null; atualizarTile(i); } });
+    });
+  }
+  function plantaGLB(id, fase) { // 4 plantinhas no canteiro, com a fase certa
+    const P = plantasGLB[id]; if (!P || !P.fases) { carregarPlanta(id); return null; }
+    const g = new THREE.Group(); PONTOS.forEach(([x, z], idx) => { P.fases[fase].forEach(({g:geo, mt}) => { const m = new THREE.Mesh(geo, mt); m.position.set(x, 0, z); m.rotation.y = idx * 1.7; m.receiveShadow = true; g.add(m); });
+      if (fase === 3 && P.fruto) P.fruto.forEach(({g:geo, mt}) => { const m = new THREE.Mesh(geo, mt); m.position.set(x + .17, .02, z + .17); m.rotation.y = idx * 2.3 + .6; m.castShadow = true; g.add(m); }); }); // pronto: o fruto aparece ao lado
+    return g;
+  }
   function atualizarTile(i) {
     const t = tiles[i]; if (!t) return;
     const p = S.plots[i];
     let chave = 'vazio';
-    if (p.c) { const f = progresso(p); chave = `${p.c}|${p.reg ? 1 : 0}|${f >= 1 ? 2 : f >= .45 ? 1 : 0}|${temPraga(p) ? 1 : 0}|${p.dobro ? 1 : 0}`; }
+    if (p.c) { const f = progresso(p); chave = `${p.c}|${p.reg ? 1 : 0}|${f >= 1 ? 2 : f >= .45 ? 1 : 0}|${temPraga(p) ? 1 : 0}|${p.dobro ? 1 : 0}|${f >= 1 ? 3 : Math.min(2, Math.floor(f * 3))}`; }
     if (t.chave === chave) return;
     const antiga = t.chave; t.chave = chave;
     while (t.planta.children.length) t.planta.remove(t.planta.children[0]);
@@ -2831,7 +2866,8 @@
     t.icone.visible = false;
     if (chave !== 'vazio') {
       const est = +chave.split('|')[2];
-      { const pl = est === 2 ? maduro(p.c) : est === 1 ? crescendo(p.c) : broto(); pl.traverse(m => { m.castShadow = false; }); mesclar(pl); t.planta.add(pl); } // planta em poucas peças
+      { const fase = +chave.split('|')[5], pg = PLANTAS_GLB[p.c] ? plantaGLB(p.c, p.reg ? fase : 0) : null;
+        const pl = pg || (est === 2 ? maduro(p.c) : est === 1 ? crescendo(p.c) : broto()); pl.traverse(m => { m.castShadow = false; }); mesclar(pl); t.planta.add(pl); } // planta em poucas peças
       if (!p.reg) { t.icone.material.map = emojiTex('💧'); t.icone.visible = true; t.icone.scale.setScalar(.85); }
       else if (temPraga(p)) { t.icone.material.map = emojiTex('🐛'); t.icone.visible = true; t.icone.scale.setScalar(.95); }
       if (antiga && antiga.split('|')[2] !== String(est)) t.pop = 1;
@@ -3775,6 +3811,11 @@
   ];
   // ===== Novidades de cada atualização: resumo + mini tutorial (adicione a nova versão no topo) =====
   const NOVIDADES = [
+    {v:'0.55', titulo:'🌱 Plantações novas e navio de verdade', itens:[
+        '🌾 As <b>plantações</b> ganharam visual novo e crescem em <b>fases</b>: brotinho, mudinha, planta crescendo e planta pronta',
+        '🥕 Quando fica <b>pronta</b>, o fruto aparece no chão ao lado da planta (cenoura laranja, tomate, morango, abóbora, melancia...) — fica fácil saber o que colher',
+        '🚢 O barco do pedido virou um <b>navio de verdade</b>, ancorado na ponta do píer',
+        '👆 <b>Toque no navio</b> para abrir direto o pedido do barco e ver as caixas que ele quer']},
     {v:'0.54', titulo:'🔧 Ajustes nas ilhas', itens:[
         '🧺 Botão <b>Coletar</b>: pega de uma vez tudo que está pronto (mina, bosque, árvores e arbustos)',
         '◀ ▶ Setas na janela do <b>Moinho</b> para trocar entre os seus moinhos',
@@ -4007,7 +4048,7 @@
   }
 
   let janela = null, zonaSel = null;
-  const TITULOS = {castelo:'🏰 Castelo', cacada:'🦋 Caçada mágica', album:'📖 Álbum de criaturas', novidades:'🎉 Novidades', fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', porto:'⚓ Porto', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
+  const TITULOS = {barco:'🚢 Pedido do barco', castelo:'🏰 Castelo', cacada:'🦋 Caçada mágica', album:'📖 Álbum de criaturas', novidades:'🎉 Novidades', fabrica:'Fábrica', loja:'Loja', celeiro:'Celeiro', armazem:'Armazém', animais:'Animais', galpao:'Galpão', ajuda:'Como jogar', config:'Configurações', reset:'Recomeçar?', zona:'Terra nova', moinho:'Moinho', nome:'Nome do bichinho', perfil:'Seu personagem', pedidos:'🚚 Pedidos', porto:'⚓ Porto', passe:'🎁 Passe do Fazendeiro', amigos:'👥 Amigos', banca:'🏪 Banca', ranking:'🏆 Ranking', nuvem:'☁️ Qual fazenda usar?', contas:'👥 Trocar de conta', nomeRank:'✏️ Nome no ranking'};
   let janelaArg = null, perfilTemp = null;
   const ABAS = ['armazem', 'celeiro', 'galpao']; // só estas três dividem a mesma janela
   const SUBLOJA = {sementes:'🌱 Plantas', animais:'🐄 Animais', producao:'🏭 Produção', fazenda:'🏡 Fazenda', melhorias:'⚡ Melhorias', decoracao:'🌸 Decoração', insumos:'🧪 Adubos', materiais:'🧰 Materiais', guardados:'📦 Guardados'}; // na ordem do mais importante
@@ -4301,6 +4342,7 @@
     if (janela === 'pedidos') h += htmlPedidos();
     if (janela === 'passe') h += htmlPasse();
     if (janela === 'porto') h += htmlPorto();
+    if (janela === 'barco') h += htmlBarco();
     if (janela === 'novidades') h += htmlNovidades();
     if (janela === 'castelo') h += htmlCastelo();
     if (janela === 'album') h += htmlAlbum();
@@ -4536,6 +4578,7 @@
     if (heroi.atual && ray.intersectObject(heroi.g, true).length) { idsAcao(heroi.atual).forEach(j => marcar(j, false)); heroi.atual = null; heroi.acao = null; heroi.rota = []; renderFila(); toast('✋ Tarefa atual cancelada'); return; }
     for (const k in pets) if (ray.intersectObject(pets[k].g, true).length) { const p = pets[k]; if (p.rot) { p.rot.visible = true; clearTimeout(p.rotT); p.rotT = setTimeout(() => { if (p.rot) p.rot.visible = false; }, 3000); } flutuar(p.g.position.clone().add(V3(0, 1.2, 0)), '💕'); somT(k, 600); if (petsComFome() && !VISITA) alimentarPets(); return; }
     if (tonho && ray.intersectObject(tonho, true).length) { irPara(tonho.position.clone().add(V3(.8, 0, .8))); abrir('ajuda'); return; }
+    if (barco3D && barco3D.visible && barco3D.userData.pick && ray.intersectObject(barco3D.userData.pick).length) { abrir(!TROP && !MED ? 'barco' : 'porto'); return; } // 🚢 tocar no navio abre o pedido
     if (porto3D && ray.intersectObject(porto3D.userData.pick).length) { abrir('porto'); return; } // ⚓
     if (castelo3D && ray.intersectObject(castelo3D.userData.pick).length) { abrir('castelo'); return; } // 🏰
     const o = pickConstrucao(false); if (clicavel(o)) { clicarConstrucao(o); return; }
@@ -5034,6 +5077,10 @@
     { const r = Math.max(0, (S.redeEm || 0) - Date.now()); // 🎣 rede de pesca do píer
       h += `<div class="rede-pesca"><div class="pv-ic">🎣</div><div class="pv-txt"><b>Rede de pesca</b><small>${r ? `A rede está na água. Recolha em <b>${fmtT(r / 1000)}</b>` : 'A rede está cheia! Vem peixe e, com sorte, conchas, pérolas e cristais.'}</small></div>
         <button class="btn ${r ? '' : 'verde'}" data-acao="rede" ${r ? 'disabled' : ''}>Recolher</button></div>`; }
+    return h + htmlBarco();
+  }
+  function htmlBarco() {
+    const b = barcoAtual(); let h = '';
     if (TROP || MED) return h + '<div class="secao-titulo">🚢 Pedido do barco</div><p class="dica">Os pedidos do barco chegam no porto da <b>Ilha Principal</b>. 🏡</p>';
     h += `<div class="secao-titulo">🚢 Pedido do barco${b && b.especial ? ' <span class="selo-especial">✨ Especial</span>' : ''}</div>`;
     if (!b) { const r = Math.max(0, (S.barcoVolta || 0) - Date.now()); h += `<p class="dica">O próximo barco chega em <b>${fmtT(r / 1000)}</b>. Ele traz 3 caixas grandes para encher, e paga o dobro do caminhão.</p>`; return h; }
